@@ -1,0 +1,17 @@
+# Local planning package: never publish by default.
+/docs/*
+!/docs/public/
+/assignment/
+/references/
+/history/
+/START_HERE.md
+/FILE_MANIFEST.sha256
+/.local/
+node_modules/
+dist/
+.env*
+!.env.example
+*.log
+.DS_Store
+supabase/.temp/
+supabase/.branches/

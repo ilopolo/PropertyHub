@@ -1,0 +1,12 @@
+# PropertyHub — инструкции за работа
+
+- Отговаряй на български. Срокът за учебния проект е 10.11.2026.
+- HTML/CSS/чист JavaScript/Bootstrap + Node/npm/Vite multi-page. Backend: Supabase DB/Auth/Storage. Без React/Vue/TypeScript.
+- Първо проверявай файлове, Git status, staged diff и remote. Запазвай съществуващата работа и история. Не създавай дублиращи външни проекти.
+- Реалната техническа документация е README.md и docs/public/ARCHITECTURE.md. Локалният игнориран пакет: START_HERE.md, docs/HANDOFF.md, IDE_START.md, ACCEPTANCE_MATRIX.md, MVP_SCOPE.md, DECISIONS.md, ARCHITECTURE.md, MIGRATION_PLAN.md, SETUP_AND_WORKFLOW.md и SECURITY_PRIVACY_IP.md (в docs/). Прочети относимите документи, ако са налични; при липса я посочи. Не приемай достъп до стар чат.
+- Локалните docs извън docs/public/, assignment/, references/, history/, manifest и START_HERE не се публикуват. Не използвай git add .; добавяй само прегледани изрични пътища. Преди първи push покажи точния списък и провери съществуващата remote история. Без force push.
+- DEV-01 е основа, не работещ registry/Auth. Не отчитай placeholder като завършена функция. Не започвай всички планирани таблици, бъдещи модули или финансови формули.
+- Отделяй UI (src/ui), контролери (src/pages), операции (src/services), домейн и BG ресурси. HTML входовете са изрично в vite.config.js. Каталогът на действия НЕ дава права.
+- Не поставяй тайни/реални лични данни в Git, логове или клиентски bundle. VITE_* са публични. Права се налагат със server/RLS/Storage policies, не със скрити бутони.
+- Проверки: npm.cmd ci, npm.cmd run build; реален dev/preview старт и навигация, тесен/широк екран, две теми. npm.cmd run check:navigation проверява работещ production preview.
+- Обновявай локалния docs/HANDOFF.md и ACCEPTANCE_MATRIX след задача с действителни резултати, ограничения и Git checkpoint. Не измисляй commits, тестове, URL или дати.

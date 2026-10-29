@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { readAuthCallback, callbackNotice } from '../src/domain/auth-callback.js';
+import { callbackBg } from '../src/i18n/auth-bg.js';
+const read=suffix=>readAuthCallback(new URL(`https://example.test/pages/account.html${suffix}`));
+assert.equal(callbackNotice(read(''),false),null);
+const expired=read('#error=access_denied&error_code=otp_expired');
+assert.equal(callbackNotice(expired,false),'expired');
+assert.equal(callbackNotice(expired,true),'confirmed_with_link_error');
+assert.equal(callbackNotice(read('?error=access_denied&error_code=flow_state_not_found'),false),'session');
+assert.equal(callbackNotice(read('#error_description=untrusted-description'),false),'unknown');
+assert.equal(callbackNotice(read('?code=sensitive-test-code'),false),'session');
+assert.equal(callbackNotice(read('?code=sensitive-test-code'),true),'confirmed');
+assert.ok(!JSON.stringify(read('?code=sensitive-test-code')).includes('sensitive-test-code'));
+assert.ok(!JSON.stringify(read('#error_description=untrusted-description')).includes('untrusted-description'));
+assert.match(callbackBg.expired,/вече използвана/);
+assert.match(callbackBg.unknown,/Ако вече потвърди/);
+assert.ok(!callbackBg.session.includes('Потвърденият акаунт'));
+console.log('PASS: callback categories distinguish expired/used links, session failures and verified existing sessions; no token/description reflection. This does not prove email delivery or a fresh successful callback.');

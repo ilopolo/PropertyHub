@@ -2,7 +2,7 @@
 export const modules = Object.freeze([
   { id: 'dashboard', label: 'Табло', href: 'pages/dashboard.html', actions: [], available: true },
   { id: 'registry', label: 'Сгради', href: 'pages/buildings.html', actions: ['registry.read', 'registry.write'], available: true },
-  { id: 'access', label: 'Достъп и роли', actions: ['access.manage'], available: false },
+  { id: 'access', label: 'Достъп и роли', href: 'pages/account.html', actions: ['access.manage'], available: true },
   { id: 'finances', label: 'Финанси', actions: ['charges.publish', 'payments.record'], available: false },
   { id: 'reports', label: 'Отчети', actions: ['reports.read'], available: false },
   { id: 'tickets', label: 'Сигнали и задачи', actions: ['tickets.create'], available: false },

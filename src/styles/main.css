@@ -9,6 +9,8 @@ main { padding-top: 3rem; padding-bottom: 4rem; }
 h1 { font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -.04em; max-width: 20ch; }
 .lead { max-width: 55ch; }
 .card { border-radius: var(--ph-radius); }
+code { overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
 .nav-link[aria-current="page"] { color: var(--ph-accent); font-weight: 700; text-decoration: underline; text-underline-offset: .4em; }
 :focus-visible { outline: 3px solid var(--ph-accent); outline-offset: 4px; }
 .skip-link { position: absolute; top: -5rem; left: 1rem; z-index: 10; }

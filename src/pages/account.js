@@ -1,11 +1,12 @@
 import './main.js';
-import { loadAccount, login, register, logout, resendConfirmation, updateProfile } from '../services/auth.js';
-import { requestOrganization, listRequests } from '../services/access.js';
+import { loadAccount, logout, updateProfile } from '../services/auth.js';
+import { requestOrganization, listRequests, reviseRequest, closeRequest } from '../services/access.js';
 import { authBg, authError, callbackBg } from '../i18n/auth-bg.js';
 import { readAuthCallback, callbackNotice } from '../domain/auth-callback.js';
 import { bindForm, message } from '../ui/forms.js';
 
 const field = (data, name) => String(data.get(name) || '').trim();
+let pendingRequest;
 async function refresh() {
   const account = await loadAccount();
   document.querySelector('#signed-out').hidden = Boolean(account);
@@ -24,18 +25,19 @@ async function refresh() {
   }
   if (!account.contexts.length) contexts.textContent = 'Все още няма разрешени управленски обхвати.';
   const requests = await listRequests();
-  document.querySelector('#requests').textContent = requests.filter(r => r.requester_profile_id === account.profile.id).map(r => `${r.request_payload.name}: ${r.status === 'pending' ? 'очаква преглед' : r.status === 'fulfilled' ? 'активирана' : 'отказана'}`).join(' · ') || 'Нямаш подадени заявки.';
-  document.querySelector('#organization-request').hidden = requests.some(r => r.requester_profile_id === account.profile.id && r.status === 'pending');
+  const states = { pending: 'очаква преглед', fulfilled: 'активирана', rejected: 'отказана', revoked: 'оттеглена' };
+  document.querySelector('#requests').textContent = requests.filter(r => r.requester_profile_id === account.profile.id).map(r => `${r.request_payload.name}: ${states[r.status]}${r.review_note ? ` · ${r.review_note}` : ''}`).join(' · ') || 'Нямаш подадени заявки.';
+  pendingRequest = requests.find(r => r.requester_profile_id === account.profile.id && r.status === 'pending');
+  document.querySelector('#organization-request').hidden = Boolean(pendingRequest);
+  document.querySelector('#request-actions').hidden = !pendingRequest;
+  if (pendingRequest) {
+    document.querySelector('#revise-name').value = pendingRequest.request_payload.name;
+    document.querySelector('#revise-kind').value = pendingRequest.request_payload.organization_kind;
+  }
   return account;
 }
-bindForm('#login', async (data, form) => { await login(field(data, 'email'), String(data.get('password'))); form.reset(); await refresh(); message('Успешен вход.'); });
-bindForm('#register', async (data, form) => {
-  const password = String(data.get('password'));
-  if (password !== String(data.get('password-confirm'))) { message('Паролите не съвпадат.', true); return; }
-  await register(field(data, 'email'), password, field(data, 'name'));
-  form.reset(); await refresh(); message(authBg.signup);
-});
-bindForm('#resend', async data => { await resendConfirmation(field(data, 'email')); message('Ако заявката е допустима, ще получиш ново писмо за потвърждение.'); });
+bindForm('#revise-request', async data => { await reviseRequest(pendingRequest, field(data, 'name'), field(data, 'kind')); await refresh(); message('Корекцията е запазена. Заявката остава за преглед.'); });
+bindForm('#withdraw-request', async (data, form) => { await closeRequest(pendingRequest, 'revoked', field(data, 'note')); form.reset(); await refresh(); message('Заявката е оттеглена.'); });
 bindForm('#profile', async data => { await updateProfile(field(data, 'name')); await refresh(); message('Името е запазено.'); });
 bindForm('#organization-request', async data => {
   const account = await loadAccount();

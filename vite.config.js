@@ -8,7 +8,7 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
-      input: Object.fromEntries(['index.html', 'pages/dashboard.html', 'pages/buildings.html', 'pages/account.html', 'pages/admin.html'].map(path => [path, fileURLToPath(new URL(path, import.meta.url))])),
+      input: Object.fromEntries(['index.html', 'pages/dashboard.html', 'pages/buildings.html', 'pages/account.html', 'pages/admin.html', 'pages/login.html', 'pages/register.html', 'pages/platform-admin.html', 'pages/organization-admin.html'].map(path => [path, fileURLToPath(new URL(path, import.meta.url))])),
     },
   },
 });

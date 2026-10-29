@@ -16,7 +16,7 @@ export function bindForm(id, action) {
     message('Изпълнява се…');
     try { await action(new FormData(form), form); }
     catch (error) { message(authError(error), true); }
-    finally { buttons.forEach(b => b.disabled = false); }
+    finally { buttons.forEach(b => b.disabled = b.dataset.unavailable === 'true'); }
   });
 }
 export function option(select, value, label) {

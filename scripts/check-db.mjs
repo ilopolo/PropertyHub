@@ -3,6 +3,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 
+process.on('uncaughtException', error => { console.error(`FAILED: ${error.code || ''} ${error.message}`); process.exit(1); });
+
 // Disposable real PostgreSQL engine. Auth/claims below are fixtures, NOT live GoTrue sessions.
 const db = new PGlite({ extensions: { btree_gist } });
 await db.exec(`create role anon; create role authenticated; create role service_role;
@@ -66,17 +68,74 @@ await ok('operator bootstrap exact confirmed UUID, idempotent and one target',as
 const org={},scope={},role={},unit={};
 for (const suffix of ['A','B']) {
  const request=(await as(`org${suffix}`,`insert into public.access_requests(request_kind,requester_profile_id,request_payload) values('organization_onboarding',$1,$2) returning id`,[profile[`org${suffix}`],{name:`Synthetic ${suffix}`,organization_kind:'self_managed'}])).rows[0].id;
- await denied(()=>as(`org${suffix}`,'select public.activate_organization($1)',[request]));
- org[suffix]=(await as('platform','select public.activate_organization($1) id',[request])).rows[0].id;
- assert.equal((await as('platform','select public.activate_organization($1) id',[request])).rows[0].id,org[suffix]);
- scope[suffix]=(await as(`org${suffix}`,'select public.create_management_context($1,$2,$3) id',[org[suffix],`Synthetic address ${suffix}`,`Context ${suffix}`])).rows[0].id;
- role[suffix]=(await as(`org${suffix}`,'select public.assign_staff_role($1,$2,$3,$4,$5) id',[org[suffix],ids[`manager${suffix}`],scope[suffix],'manager',['read_registry','manage_registry']])).rows[0].id;
- unit[suffix]=(await as(`manager${suffix}`,'select public.create_unit($1,$2,$3) id',[scope[suffix],'03','apartment'])).rows[0].id;
+ await denied(()=>as(`org${suffix}`,"select public.activate_organization($1,1,'Synthetic review')",[request]));
+ org[suffix]=(await as('platform','select public.activate_organization($1,1,$2) id',[request,'Synthetic representation checked'])).rows[0].id;
+ assert.equal((await as('platform','select public.activate_organization($1,1,$2) id',[request,'Synthetic representation checked'])).rows[0].id,org[suffix]);
+ await denied(()=>as(`org${suffix}`,'select public.create_management_context($1,$2,$3)',[org[suffix],'forbidden','forbidden']));
+ const setup=(await as(`org${suffix}`,'select public.request_scope_setup($1,$2,$3) id',[org[suffix],ids[`manager${suffix}`],`Context ${suffix}`])).rows[0].id;
+ await denied(()=>as(`org${suffix}`,"select public.complete_scope_setup($1,'forbidden',null,'declaration','Synthetic declaration',current_date)",[setup]));
+ scope[suffix]=(await as(`manager${suffix}`,"select public.complete_scope_setup($1,$2,null,'declaration','Synthetic declaration',current_date) id",[setup,`Synthetic address ${suffix}`])).rows[0].id;
+ assert.equal((await as(`manager${suffix}`,"select public.complete_scope_setup($1,$2,null,'declaration','Synthetic declaration',current_date) id",[setup,`Synthetic address ${suffix}`])).rows[0].id,scope[suffix]);
+ await denied(()=>as(`manager${suffix}`,"select public.complete_scope_setup($1,'changed',null,'declaration','Synthetic declaration',current_date)",[setup]));
+ role[suffix]=(await as(`manager${suffix}`,"select id from public.user_roles where role_code='manager'")).rows[0].id;
+ unit[suffix]=(await as(`manager${suffix}`,"select public.create_unit($1,$2,$3,source_kind=>'declaration',source_reference=>'Synthetic declaration',known_from=>current_date) id",[scope[suffix],'03','apartment'])).rows[0].id;
 }
 await ok('two orgs and units actually persisted',async()=>{
  assert.equal((await db.query('select count(*)::int n from public.organizations')).rows[0].n,2);
  assert.equal((await db.query('select count(*)::int n from public.units')).rows[0].n,2);
  assert.equal((await db.query('select count(*)::int n from public.unit_scope_periods')).rows[0].n,2);
+});
+await ok('explicit initial appointment: wrong recipient, expiry, issuer revocation and cancellation',async()=>{
+ const setup=(await as('orgA','select public.request_scope_setup($1,$2,$3) id',[org.A,ids.managerA,'Pending setup'])).rows[0].id;
+ const complete=who=>as(who,"select public.complete_scope_setup($1,'Synthetic address',null,'declaration','Synthetic source',current_date)",[setup]);
+ await denied(()=>complete('managerB'));
+ await denied(()=>complete('orgA'));
+ await db.query("update public.profiles set status='disabled' where id=$1",[profile.orgA]);
+ await denied(()=>complete('managerA'));
+ await denied(()=>as('orgA','select public.revoke_scope_setup($1,1)',[setup]));
+ await db.query("update public.profiles set status='active' where id=$1",[profile.orgA]);
+ await db.query("update public.scope_setup_requests set expires_at=now()-interval '1 second' where id=$1",[setup]);
+ await denied(()=>complete('managerA'));
+ await as('orgA','select public.revoke_scope_setup($1,1)',[setup]);
+ assert.equal((await db.query('select status from public.scope_setup_requests where id=$1',[setup])).rows[0].status,'revoked');
+ assert.equal((await db.query('select count(*)::int n from public.buildings')).rows[0].n,2);
+});
+await ok('minimal provenance: source required, unknown area retained, verified only by permitted reviewer',async()=>{
+ const row=(await as('managerA','select * from public.units where id=$1',[unit.A])).rows[0];
+ assert.equal(row.verification_status,'needs_review'); assert.equal(row.source_kind,'declaration');
+ assert.equal(row.area,null); assert.equal(row.recorded_by,profile.managerA); assert.ok(row.known_from);
+ await denied(()=>as('managerA','select public.create_unit($1,$2,$3)',[scope.A,'no-source','apartment']));
+ await denied(()=>as('managerA',"select public.create_unit($1,'future','apartment',source_kind=>'document',source_reference=>'Synthetic',known_from=>current_date+1)",[scope.A]));
+ await denied(()=>as('managerB',"select public.verify_registry_record($1,'unit',$2,'Synthetic review')",[scope.B,unit.A]));
+ await denied(()=>as('orgA',"select public.verify_registry_record($1,'unit',$2,'Synthetic review')",[scope.A,unit.A]));
+ await denied(()=>as('managerA',"update public.units set verification_status='verified' where id=$1",[unit.A]));
+ await as('managerA',"select public.verify_registry_record($1,'unit',$2,'Synthetic document checked; area remains unknown')",[scope.A,unit.A]);
+ const verified=(await as('managerA','select * from public.units where id=$1',[unit.A])).rows[0];
+ assert.equal(verified.verification_status,'verified'); assert.equal(verified.verified_by,profile.managerA); assert.equal(verified.area,null);
+ assert.equal((await db.query('select count(*)::int n from public.units')).rows[0].n,2);
+});
+await ok('organization staff projection stays inside own org and does not grant registry access',async()=>{
+ const own=(await as('orgA','select * from public.organization_staff($1)',[org.A])).rows;
+ assert.ok(own.some(r=>r.role_id===role.A)); assert.ok(!own.some(r=>r.role_id===role.B));
+ await denied(()=>as('orgA','select * from public.organization_staff($1)',[org.B]));
+ await denied(()=>as('managerA','select * from public.organization_staff($1)',[org.A]));
+ assert.equal((await as('orgA','select * from public.units')).rows.length,0);
+});
+await ok('organization request revision, stale review, rejection and withdrawal persist correct lifecycle',async()=>{
+ const request=async()=> (await as('pending',"insert into public.access_requests(request_kind,requester_profile_id,request_payload) values('organization_onboarding',$1,$2) returning id",[profile.pending,{name:'Synthetic request',organization_kind:'self_managed'}])).rows[0].id;
+ const first=await request();
+ await denied(()=>as('orgB',"select public.revise_organization_request($1,1,'Foreign','self_managed')",[first]));
+ await as('pending',"select public.revise_organization_request($1,1,'Synthetic community','self_managed')",[first]);
+ await denied(()=>as('platform',"select public.activate_organization($1,1,'Stale review')",[first]));
+ await denied(()=>as('pending',"select public.close_organization_request($1,2,'rejected','Self approval denied')",[first]));
+ await as('platform',"select public.close_organization_request($1,2,'rejected','Synthetic reason')",[first]);
+ assert.equal((await db.query('select status from public.access_requests where id=$1',[first])).rows[0].status,'rejected');
+ const second=await request();
+ await as('pending',"select public.close_organization_request($1,1,'revoked','Withdrawn by synthetic requester')",[second]);
+ await denied(()=>as('platform',"select public.activate_organization($1,1,'Withdrawn request')",[second]));
+ assert.equal((await db.query('select status from public.access_requests where id=$1',[second])).rows[0].status,'revoked');
+ assert.equal((await db.query("select count(*)::int n from public.audit_events where action='request_organization' and target_id in($1,$2)",[first,second])).rows[0].n,2);
+ assert.equal((await db.query('select count(*)::int n from public.organizations')).rows[0].n,2);
 });
 await ok('manager SELECT isolation both directions; pending/platform/org-admin have no operational inheritance',async()=>{
  for(const s of ['A','B']) {
@@ -125,7 +184,7 @@ await ok('deactivated organization closes current access',async()=>{
 await ok('all public tables RLS; no anon grants or public SECURITY DEFINER',async()=>{
  assert.equal((await db.query("select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity")).rows[0].n,0);
  assert.equal((await db.query("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef")).rows[0].n,0);
- for (const t of ['profiles','organizations','organization_memberships','user_roles','role_permissions','audit_events','access_requests','buildings','entrances','management_units','management_assignments','units','unit_scope_periods']) {
+ for (const t of ['profiles','organizations','organization_memberships','user_roles','role_permissions','audit_events','access_requests','scope_setup_requests','buildings','entrances','management_units','management_assignments','units','unit_scope_periods']) {
   assert.equal((await db.query("select has_table_privilege('anon',$1,'SELECT,INSERT,UPDATE,DELETE') allowed",[`public.${t}`])).rows[0].allowed,false);
  }
 });
@@ -144,7 +203,7 @@ await ok('deleted or unconfirmed recipient cannot be activated',async()=>{
  const req=(await db.query("insert into public.access_requests(request_kind,requester_profile_id,request_payload) values('organization_onboarding',$1,$2) returning id",[pid,{name:'Deleted target',organization_kind:'self_managed'}])).rows[0].id;
  await db.exec('reset role');
  await db.query('delete from auth.users where id=$1',[fresh]);
- await denied(()=>as('platform','select public.activate_organization($1)',[req]));
+ await denied(()=>as('platform',"select public.activate_organization($1,1,'Synthetic review')",[req]));
  assert.equal((await db.query('select status from public.access_requests where id=$1',[req])).rows[0].status,'pending');
  assert.equal((await db.query('select count(*)::int n from public.organizations')).rows[0].n,2);
 });

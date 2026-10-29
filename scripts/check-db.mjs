@@ -105,7 +105,7 @@ await ok('minimal provenance: source required, unknown area retained, verified o
  assert.equal(row.verification_status,'needs_review'); assert.equal(row.source_kind,'declaration');
  assert.equal(row.area,null); assert.equal(row.recorded_by,profile.managerA); assert.ok(row.known_from);
  await denied(()=>as('managerA','select public.create_unit($1,$2,$3)',[scope.A,'no-source','apartment']));
- await denied(()=>as('managerA',"select public.create_unit($1,'future','apartment',source_kind=>'document',source_reference=>'Synthetic',known_from=>current_date+1)",[scope.A]));
+ await denied(()=>as('managerA',"select public.create_unit($1,'future','apartment',source_kind=>'document',source_reference=>'Synthetic',known_from=>(now() at time zone 'Europe/Sofia')::date+1)",[scope.A]));
  await denied(()=>as('managerB',"select public.verify_registry_record($1,'unit',$2,'Synthetic review')",[scope.B,unit.A]));
  await denied(()=>as('orgA',"select public.verify_registry_record($1,'unit',$2,'Synthetic review')",[scope.A,unit.A]));
  await denied(()=>as('managerA',"update public.units set verification_status='verified' where id=$1",[unit.A]));
@@ -120,6 +120,10 @@ await ok('organization staff projection stays inside own org and does not grant 
  await denied(()=>as('orgA','select * from public.organization_staff($1)',[org.B]));
  await denied(()=>as('managerA','select * from public.organization_staff($1)',[org.A]));
  assert.equal((await as('orgA','select * from public.units')).rows.length,0);
+});
+await ok('known-from accepts the Bulgarian date after UTC midnight boundary and rejects the following date',async()=>{
+ await db.query("select private.check_provenance('declaration','Synthetic calendar boundary',(now() at time zone 'Europe/Sofia')::date)");
+ await denied(()=>db.query("select private.check_provenance('declaration','Synthetic calendar boundary',(now() at time zone 'Europe/Sofia')::date+1)"));
 });
 await ok('organization request revision, stale review, rejection and withdrawal persist correct lifecycle',async()=>{
  const request=async()=> (await as('pending',"insert into public.access_requests(request_kind,requester_profile_id,request_payload) values('organization_onboarding',$1,$2) returning id",[profile.pending,{name:'Synthetic request',organization_kind:'self_managed'}])).rows[0].id;

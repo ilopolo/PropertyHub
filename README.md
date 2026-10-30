@@ -63,3 +63,11 @@ Supabase Site URL е HTTPS origin; точният `https://propertyhub-ilopolo.n
 Първият platform admin е назначен чрез защитения операторски bootstrap след проверен pending тест и точен предоставен Auth UUID; role/audit записите са проверени. DEV-02 Auth/RLS/ранен live обхват е проверен, включително чист signup callback, recovery и реалните 2-org/pending API/UI allow/deny проверки. Следва DEV-03 за регистъра и проверените собственически връзки. Числовите Auth настройки и ограничението server minimum password6/UI minimum12 са описани в [Supabase документацията](supabase/README.md); те не са променяни по време на тестовете. Виж [архитектурата](docs/public/ARCHITECTURE.md).
 
 Vite конфигурацията следва официалното [multi-page ръководство](https://vite.dev/guide/build.html#multi-page-app).
+
+### Scoped persons and password policy
+
+The registry supports staff-authorized scoped person records with optional contacts, explicit provenance and a separate verification step. Full-record replacement requires a fresh source assertion, checks the expected revision, preserves the previous revision privately and clears verification. Equal names/emails stay separate. This does not create account links, ownership or owner access.
+
+New passwords in registration, recovery and account change require 8–256 characters and at least one ASCII digit. Existing-password login is unaffected. The accepted temporary hosted policy is minimum 8 without character requirements: the hosted API permits passwords without digits; the digit check is client validation, not server enforcement. Deployment/configuration verification is recorded separately. A unified server policy remains a decision before business launch. No uppercase/special-character requirement or forced reset is added.
+
+Targeted checks: `node scripts/check-password-policy.mjs`, `npm run check:password-reset` (isolated browser contract, no delivered email), `node scripts/check-persons.mjs` (existing synthetic A/B/pending resources; creates four identified synthetic person records and retains them), and `node scripts/check-persons-browser.mjs` (local production preview). QA output and credentials remain ignored.

@@ -169,10 +169,53 @@ await ok('FK scope mismatch, overlapping periods and invalid area rejected atomi
  await denied(()=>as('managerA','select public.create_unit($1,$2,$3,null,0)',[scope.A,'bad','apartment']));
  assert.equal((await db.query('select count(*)::int n from public.units')).rows[0].n,2);
 });
+const savePersonSQL = `select public.save_scoped_person($1,$2,$3,'physical',$4,$5,null,'active','declaration','Synthetic full-record declaration',(now() at time zone 'Europe/Sofia')::date) id`;
+const person = {};
+await ok('scoped persons: duplicates stay separate; no account/owner grant; explicit field evidence',async()=>{
+ for (const label of ['A','B']) person[label]=(await as(`manager${label}`,savePersonSQL,[scope[label],null,0,'Synthetic same name','same@example.invalid'])).rows[0].id;
+ person.duplicate=(await as('managerA',savePersonSQL,[scope.A,null,0,'Synthetic same name','same@example.invalid'])).rows[0].id;
+ assert.notEqual(person.A,person.duplicate);
+ assert.equal((await as('managerA','select * from public.persons')).rows.length,2);
+ assert.equal((await as('managerB','select * from public.persons')).rows.length,1);
+ const row=(await as('managerA','select * from public.persons where id=$1',[person.A])).rows[0];
+ assert.equal(row.verification_status,'needs_review'); assert.equal(row.contact_phone,null);
+ assert.deepEqual(Object.keys(row.field_evidence).sort(),['contact_email','display_name','person_kind','status']);
+ assert.equal(row.field_evidence.display_name.source_kind,'declaration');
+ for (const role of ['pending','platform','orgA']) {
+  assert.equal((await as(role,'select * from public.persons')).rows.length,0);
+  await denied(()=>as(role,savePersonSQL,[scope.A,null,0,'Forbidden',null]));
+ }
+ await denied(()=>as('anon','select * from public.persons'));
+ assert.equal((await db.query("select to_regclass('public.account_person_links') is null absent")).rows[0].absent,true);
+});
+await ok('persons: scope tampering/direct writes/private history and forged verification denied',async()=>{
+ await denied(()=>as('managerA',savePersonSQL,[scope.B,person.B,1,'Foreign',null]));
+ await denied(()=>as('managerA',savePersonSQL,[scope.A,person.B,1,'Disguised foreign',null]));
+ await denied(()=>as('managerA',"update public.persons set verification_status='verified' where id=$1",[person.A]));
+ await denied(()=>as('managerA','delete from public.persons where id=$1',[person.A]));
+ await denied(()=>as('managerA','select * from private.person_revisions'));
+ await denied(()=>as('managerB',"select public.verify_scoped_person($1,$2,1,'Foreign')",[scope.B,person.A]));
+ assert.equal((await db.query('select display_name from public.persons where id=$1',[person.B])).rows[0].display_name,'Synthetic same name');
+});
+await ok('person revision: review resets on full replacement; stale edit/review denied; prior evidence retained',async()=>{
+ await as('managerA',"select public.verify_scoped_person($1,$2,1,'Synthetic reviewed')",[scope.A,person.A]);
+ await as('managerA',savePersonSQL,[scope.A,person.A,1,'Synthetic revised',null]);
+ const row=(await as('managerA','select * from public.persons where id=$1',[person.A])).rows[0];
+ assert.equal(row.revision,2); assert.equal(row.verification_status,'needs_review'); assert.equal(row.verified_by,null); assert.equal(row.contact_email,null);
+ assert.equal(Object.hasOwn(row.field_evidence,'contact_email'),false);
+ const previous=(await db.query('select snapshot from private.person_revisions where person_id=$1',[person.A])).rows[0].snapshot;
+ assert.equal(previous.verification_status,'verified'); assert.equal(previous.contact_email,'same@example.invalid');
+ await denied(()=>as('managerA',savePersonSQL,[scope.A,person.A,1,'Stale',null]));
+ await denied(()=>as('managerA',"select public.verify_scoped_person($1,$2,1,'Stale')",[scope.A,person.A]));
+ assert.equal((await db.query('select count(*)::int n from private.person_revisions where person_id=$1',[person.A])).rows[0].n,1);
+});
 await ok('delegated read-only controller cannot write',async()=>{
  await as('orgA','select public.assign_staff_role($1,$2,$3,$4,$5)',[org.A,ids.pending,scope.A,'controller',['read_registry']]);
  assert.equal((await as('pending','select * from public.units')).rows.length,1);
  await denied(()=>as('pending','select public.create_unit($1,$2,$3)',[scope.A,'forbidden','apartment']));
+ assert.equal((await as('pending','select * from public.persons')).rows.length,2);
+ await denied(()=>as('pending',savePersonSQL,[scope.A,person.A,2,'Read-only denied',null]));
+ await denied(()=>as('pending',"select public.verify_scoped_person($1,$2,2,'Read-only denied')",[scope.A,person.A]));
 });
 await ok('revocation uses current DB grant with same session identity',async()=>{
  await as('orgA','select public.revoke_staff_role($1)',[role.A]);

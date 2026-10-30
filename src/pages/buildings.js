@@ -7,6 +7,7 @@ import { bindForm, message, option } from '../ui/forms.js';
 import { authError } from '../i18n/auth-bg.js';
 import { registryToday, calendarLabel } from '../domain/registry.js';
 import { unitDetails } from '../ui/registry.js';
+import { showPersons } from './scoped-persons.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -22,6 +23,8 @@ async function showUnits() {
   const context = account.contexts.find(c => c.scope_id === scopeSelect.value);
   const canManage = context?.can_manage_registry && date === registryToday();
   document.querySelector('#unit-create').hidden = !canManage;
+  await showPersons(scope,Boolean(context?.can_manage_registry),date===registryToday());
+  if (revision !== loadRevision) return;
   const list = document.querySelector('#units'); list.textContent = 'Зареждане…';
   document.querySelector('#registry-count').textContent = '';
   let units;

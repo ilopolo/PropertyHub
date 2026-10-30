@@ -1,17 +1,26 @@
 import './main.js';
-import { loadAccount, logout, updateProfile, loadPasswordRecovery, resetPassword } from '../services/auth.js';
+import { loadAccount, logout, updateProfile, loadPasswordRecovery, resetPassword, changePassword } from '../services/auth.js';
 import { requestOrganization, listRequests, reviseRequest, closeRequest } from '../services/access.js';
-import { authBg, authError, callbackBg, recoveryBg } from '../i18n/auth-bg.js';
+import { authBg, authError, callbackBg, recoveryBg, PASSWORD_HINT } from '../i18n/auth-bg.js';
 import { readAuthCallback, callbackNotice } from '../domain/auth-callback.js';
 import { bindForm, message } from '../ui/forms.js';
 import { clearRecoverySession, isRecoveryRequested } from '../services/supabase.js';
+import { validNewPassword } from '../domain/password.js';
 
 const field = (data, name) => String(data.get(name) || '').trim();
 let pendingRequest;
+bindForm('#password-change', async (data, form) => {
+  const password = String(data.get('password') || '');
+  if (password !== String(data.get('password-confirm') || '')) { message(recoveryBg.mismatch, true); return; }
+  if (!validNewPassword(password)) { message(PASSWORD_HINT, true); return; }
+  await changePassword(password);
+  form.reset();
+  message(recoveryBg.updated);
+});
 bindForm('#password-update', async (data, form) => {
   const password = String(data.get('password') || '');
   if (password !== String(data.get('password-confirm') || '')) { message(recoveryBg.mismatch, true); return; }
-  if (password.length < 12 || password.length > 256) { message(recoveryBg.length, true); return; }
+  if (!validNewPassword(password)) { message(PASSWORD_HINT, true); return; }
   await resetPassword(password);
   form.reset();
   form.hidden = true;

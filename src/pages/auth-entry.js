@@ -1,7 +1,8 @@
 import './main.js';
 import { login, register, resendConfirmation, requestPasswordReset } from '../services/auth.js';
 import { bindForm, message } from '../ui/forms.js';
-import { authBg, recoveryBg } from '../i18n/auth-bg.js';
+import { authBg, recoveryBg, PASSWORD_HINT } from '../i18n/auth-bg.js';
+import { validNewPassword } from '../domain/password.js';
 const field = (data, name) => String(data.get(name) || '').trim();
 bindForm('#login', async (data, form) => {
   await login(field(data, 'email'), String(data.get('password')));
@@ -9,6 +10,7 @@ bindForm('#login', async (data, form) => {
 });
 bindForm('#register', async (data, form) => {
   const password = String(data.get('password'));
+  if (!validNewPassword(password)) { message(PASSWORD_HINT, true); return; }
   if (password !== String(data.get('password-confirm'))) { message('Паролите не съвпадат.', true); return; }
   await register(field(data, 'email'), password, field(data, 'name'));
   form.reset(); message(authBg.signup);

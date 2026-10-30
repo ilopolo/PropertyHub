@@ -76,3 +76,5 @@ Hosted резултат: 11 реално преминали групи с publis
 Audit/bootstrap таблиците умишлено нямат клиентски grants/policies; security advisor ги отбелязва с INFO `rls_enabled_no_policy`. Не добавяй отворена policy за премахване на известието. [Описание на проверката](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). FK предупрежденията са отстранени; unused indexes са очаквани върху празната схема.
 
 Service-role ключове, DB пароли, refresh/access tokens и тестови пароли не принадлежат във frontend, VITE_* или Git. Hosting/live и Storage остават предстоящи.
+
+DB-C/1: migration `20261030160838_scoped_persons.sql` adds staff-scoped persons, private revision snapshots, explicit field provenance and guarded create/replace/review RPCs. It does not add account-person links or ownership. Run `npm run check:db` for a clean disposable PostgreSQL rebuild; `node scripts/check-persons.mjs` tests the existing hosted synthetic resources with ordinary sessions. Do not recreate or reset fixtures to rerun a read.

@@ -1,7 +1,9 @@
 import { getClient, unwrap, isRecoverySession, clearRecoverySession, markRecoveryRequested } from './supabase.js';
+import { requireNewPassword } from '../domain/password.js';
 
 export const callbackUrl = () => new URL('pages/account.html', new URL(import.meta.env.BASE_URL, location.origin)).href;
 export async function register(email, password, displayName) {
+  requireNewPassword(password);
   clearRecoverySession();
   return unwrap(await getClient().auth.signUp({ email, password, options: { emailRedirectTo: callbackUrl(), data: { display_name: displayName } } }));
 }
@@ -29,10 +31,16 @@ export async function loadPasswordRecovery() {
   return user.email_confirmed_at && user.id === session.user.id ? user : null;
 }
 export async function resetPassword(password) {
-  if (typeof password !== 'string' || password.length < 12 || password.length > 256) throw new Error('Invalid password length');
+  requireNewPassword(password);
   if (!await loadPasswordRecovery()) throw new Error('Recovery session required');
   unwrap(await getClient().auth.updateUser({ password }));
   clearRecoverySession();
+}
+export async function changePassword(password) {
+  requireNewPassword(password);
+  const { user } = unwrap(await getClient().auth.getUser());
+  if (!user?.email_confirmed_at) throw new Error('Confirmed session required');
+  unwrap(await getClient().auth.updateUser({ password }));
 }
 export async function loadAccount() {
   const { data: { session }, error } = await getClient().auth.getSession();

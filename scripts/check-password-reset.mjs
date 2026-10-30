@@ -23,7 +23,7 @@ try {
     page.on('console', message => { if (message.type() === 'error' && !message.text().includes('422')) errors.push('console.error'); });
     page.on('response', response => { if (response.url().startsWith(base) && response.status() >= 400) errors.push('asset-http-error'); });
     let recoveryRedirect;
-    let requests = 0, updates = 0, unexpected = 0;
+    let requests = 0, updates = 0, unexpected = 0, signups = 0;
     let rejectUpdate = false;
     const user = { id: '00000000-0000-4000-8000-000000000001', email: 'recovery-ui@example.invalid', email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: {} };
     await page.route('**/auth/v1/**', async route => {
@@ -31,7 +31,11 @@ try {
       const url = new URL(request.url());
       let body = {};
       let status = 200;
-      if (url.pathname.endsWith('/recover')) {
+      if (url.pathname.endsWith('/signup')) {
+        signups++;
+        assert.equal(request.postDataJSON().password,'abcdefg1');
+        body={user:{...user,email_confirmed_at:null},session:null};
+      } else if (url.pathname.endsWith('/recover')) {
         requests++;
         recoveryRedirect = new URL(url.searchParams.get('redirect_to'));
         assert.equal(recoveryRedirect.origin, base);
@@ -53,6 +57,18 @@ try {
     });
     // Fail closed if the tested screens attempt any database operation.
     await page.route('**/rest/v1/**', async route => { unexpected++; await route.abort(); });
+    await page.goto(`${base}/pages/register.html`);
+    for(const value of ['abcdef1','abcdefgh','abcdefg1']) {
+      await page.locator('#register-name').fill('Synthetic policy QA');
+      await page.locator('#register-email').fill('policy@example.invalid');
+      await page.locator('#register-password').fill(value);
+      await page.locator('#register-confirm').fill(value);
+      await page.locator('#register button').click();
+      if(value==='abcdefg1') await page.getByText('Ако регистрацията е допустима,',{exact:false}).waitFor();
+      assert.equal(signups,value==='abcdefg1'?1:0);
+    }
+    await page.screenshot({path:`${output}/register-${width}-${theme}.png`,fullPage:true});
+    results.push({target:'register',width,theme,screenshot:`${output}/register-${width}-${theme}.png`});
     await page.goto(`${base}/pages/login.html`);
     await page.locator('#password-reset summary').click();
     await page.locator('#password-reset-request button').click();
@@ -81,15 +97,21 @@ try {
       await page.screenshot({ path: screenshot, fullPage: true });
       results.push({ target, width, theme, screenshot, geometry });
     }
-    await page.locator('#new-password').fill('Local-test-password-01');
+    for (const invalid of ['abcdef1','abcdefgh']) {
+      await page.locator('#new-password').fill(invalid);
+      await page.locator('#new-password-confirm').fill(invalid);
+      await page.locator('#password-update button').click();
+      assert.equal(updates,0,'Invalid new-password policy must not submit');
+    }
+    await page.locator('#new-password').fill('abcdefg1');
     await page.locator('#new-password-confirm').fill('short');
     await page.locator('#password-update button').click();
     assert.equal(updates, 0, 'Short password must not submit');
-    await page.locator('#new-password-confirm').fill('Local-test-password-02');
+    await page.locator('#new-password-confirm').fill('abcdefg2');
     await page.locator('#password-update button').click();
     await page.getByText('Паролите не съвпадат.', { exact: true }).waitFor();
     assert.equal(updates, 0);
-    await page.locator('#new-password-confirm').fill('Local-test-password-01');
+    await page.locator('#new-password-confirm').fill('abcdefg1');
     phase = `${width}/${theme}/server-password-rejection`;
     rejectUpdate = true;
     await page.locator('#password-update button').click();
@@ -136,8 +158,8 @@ try {
   assert.equal(await page.locator('#password-recovery').isVisible(), false);
   assert.equal(externalRequests, 0, 'Invalid callbacks must not send recovery operations');
   await context.close();
-  await writeFile(`${output}/report.json`, JSON.stringify({ status: 'contract-pass; visual review pending', results, hostedRecovery: 'NOT PASSED; SMTP required' }, null, 2));
-  console.log(`PASS: isolated real-browser reset UI/SDK contract; ${results.length} screenshots await visual review. No hosted Auth changes/email delivery; real recovery NOT PASSED.`);
+  await writeFile(`${output}/report.json`, JSON.stringify({ status: 'contract-pass; visual review pending', results, hostedRecovery: 'Not exercised in this isolated run; previous delivered-email evidence is unchanged.' }, null, 2));
+  console.log(`PASS: isolated real-browser reset UI/SDK contract; ${results.length} screenshots await visual review. No hosted Auth changes/email delivery; previous real recovery evidence unchanged.`);
 } catch (error) {
   const notice = await activePage?.locator('#message').textContent().catch(() => null);
   await writeFile(`${output}/report.json`, JSON.stringify({ status: 'failed', phase, errorType: error.name, notice, results }, null, 2));

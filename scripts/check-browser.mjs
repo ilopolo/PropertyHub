@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 // Real browser and ordinary synthetic user sessions; no privileged key or saved auth state.
 for (const file of ['.env.local', '.env.rls.local']) { try { loadEnvFile(file); } catch {} }
 const base = process.env.QA_BASE_URL || 'http://127.0.0.1:4173';
-const output = '.local/browser-qa';
+const output = base.startsWith('https://') ? '.local/browser-qa-live' : '.local/browser-qa';
 const reportPath = `${output}/${process.argv.includes('--contrast') ? 'contrast-report' : 'report'}.json`;
 const fixtures = JSON.parse(await readFile('.local/rls-fixtures.json', 'utf8'));
 await mkdir(output, { recursive: true });
@@ -93,10 +93,10 @@ try {
     }
     await context.close();
   }
-  await writeFile(reportPath, JSON.stringify({ status: 'automated-pass; visual inspection pending', results }, null, 2));
+  await writeFile(reportPath, JSON.stringify({ base, status: 'automated-pass; visual inspection pending', results }, null, 2));
   console.log(`PASS: ${results.length} real-browser role/viewport/theme cases; screenshots require human/agent inspection.`);
 } catch {
-  await writeFile(reportPath, JSON.stringify({ status: 'failed', phase, results }, null, 2));
+  await writeFile(reportPath, JSON.stringify({ base, status: 'failed', phase, results }, null, 2));
   console.error(`FAIL: browser QA at ${phase}; no credentials or raw browser call logs emitted.`);
   process.exitCode = 1;
 } finally { await browser?.close(); }

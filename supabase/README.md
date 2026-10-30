@@ -29,18 +29,21 @@ DB-A/B е приложено в съществуващия проект `qfybswn
 
 ## Текущи Auth настройки
 
+На 30.10.2026 всичките осем remote migration statements са сверени с локалните SQL (нормализирани нови редове), без повторно прилагане. След изрично потвърждение са записани Site URL `https://propertyhub-ilopolo.netlify.app` и точният HTTPS `/pages/account.html` redirect; двата локални 5173/4173 адреса са запазени. Списъкът и Site URL са проверени след reload. Live pending login/logout/relogin и отрицателни callback сценарии преминаха. Clean successful email confirmation остава непроверен; SMTP delivery и PKCE exchange не се удостоверяват само от allowlist или operator-confirmed synthetic users.
+
 Проверено на 29.10.2026: email provider включен, signup разрешен, Confirm email включено, anonymous sign-ins и manual linking изключени. Data API върна `PGRST106` за private и потвърди exposed schemas `public, graphql_public`. Остави private неизложена.
 
-Site URL остава `http://localhost:3000`. Потребителят добави двата Redirect URLs; последващ read-only Dashboard преглед потвърди точно два запазени адреса:
+Текущ Site URL: `https://propertyhub-ilopolo.netlify.app`. След reload са потвърдени точно три Redirect URLs:
 
 - `http://127.0.0.1:5173/pages/account.html`
 - `http://127.0.0.1:4173/pages/account.html`
+- `https://propertyhub-ilopolo.netlify.app/pages/account.html`
 
-Приложението подава callback URL от действителния origin. PKCE потвърждението трябва да се отвори в същия браузър/профил, в който е започнала регистрацията. При hosting се добавя действителният HTTPS callback и се преглежда Site URL; няма измислен live адрес. Не изключвай потвърждението като обход на SMTP проблем.
+Приложението подава callback URL от действителния origin. PKCE потвърждението трябва да се отвори в същия браузър/профил и origin, в който е започнала регистрацията. Не изключвай потвърждението като обход на SMTP проблем.
 
 SMTP Settings е проверено: custom SMTP е изключен. Според [официалната документация](https://supabase.com/docs/guides/auth/auth-smtp) вграденият изпращач допуска само имейлите на членовете на Supabase организацията. За личния първи тест използвай имейла, с който членуваш в организацията на проекта; друг адрес изисква собствен SMTP. Не се обещава доставка преди действително получено писмо и не се отгатва текущият лимит. Email/OTP expiry, password policy, JWT expiry, session lifetime и числовите rate limits остават непроверени: Authentication → Sign In / Providers → Email; Sessions; Rate Limits; Project Settings → JWT Keys/свързаните JWT настройки. Не изпращай пароли/ключове в чат. `signOut({scope:'local'})` приключва текущия клиентски login; не се твърди, че вече издаденият JWT веднага изтича.
 
-Локалният адрес е `http://127.0.0.1:5173/pages/account.html` при работещ `npm.cmd run dev`; production preview е на `http://127.0.0.1:4173/pages/account.html`. Потребителят лично се регистрира и потвърди login → pending без права → logout/reload → повторен login. Confirmation връзката показа грешка; DB и последващият вход потвърждават, че Auth имейлът е потвърден. Причината за конкретната callback грешка не е доказана и нов чист callback още не е приет. `check:auth-callback` проверява безопасната класификация на изтекли/използвани връзки, session проблеми и съществуваща потвърдена сесия. Не се иска ново писмо като единствен изход за вече потвърден акаунт. Личният акаунт и парола са създадени от потребителя; последващият операторски bootstrap е описан отделно. Вграденият callback е разрешен изрично, така че непромененият Site URL не се използва за този signup път. Отваряй новите връзки в същия браузър/профил и origin, в който са поискани.
+Локалният адрес е `http://127.0.0.1:5173/pages/account.html` при работещ `npm.cmd run dev`; production preview е на `http://127.0.0.1:4173/pages/account.html`. Потребителят лично се регистрира и потвърди login → pending без права → logout/reload → повторен login. Confirmation връзката показа грешка; DB и последващият вход потвърждават, че Auth имейлът е потвърден. Причината за конкретната callback грешка не е доказана и нов чист callback още не е приет. `check:auth-callback` проверява безопасната класификация на изтекли/използвани връзки, session проблеми и съществуваща потвърдена сесия. Не се иска ново писмо като единствен изход за вече потвърден акаунт. Личният акаунт и парола са създадени от потребителя; последващият операторски bootstrap е описан отделно. Вграденият callback е разрешен изрично, като всяка среда подава своя разрешен origin. Отваряй новите връзки в същия браузър/профил и origin, в който са поискани.
 
 ## Първи platform admin
 

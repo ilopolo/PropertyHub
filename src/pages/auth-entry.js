@@ -1,7 +1,7 @@
 import './main.js';
-import { login, register, resendConfirmation } from '../services/auth.js';
+import { login, register, resendConfirmation, requestPasswordReset } from '../services/auth.js';
 import { bindForm, message } from '../ui/forms.js';
-import { authBg } from '../i18n/auth-bg.js';
+import { authBg, recoveryBg } from '../i18n/auth-bg.js';
 const field = (data, name) => String(data.get(name) || '').trim();
 bindForm('#login', async (data, form) => {
   await login(field(data, 'email'), String(data.get('password')));
@@ -14,3 +14,8 @@ bindForm('#register', async (data, form) => {
   form.reset(); message(authBg.signup);
 });
 bindForm('#resend', async data => { await resendConfirmation(field(data, 'email')); message('Ако заявката е допустима, ще получиш ново писмо за потвърждение.'); });
+bindForm('#password-reset-request', async (data, form) => {
+  await requestPasswordReset(field(data, 'email'));
+  form.reset();
+  message(recoveryBg.requested);
+});

@@ -15,6 +15,7 @@
     "check:rls": "node scripts/check-rls.mjs",
     "check:public-api": "node scripts/check-public-api.mjs",
     "check:auth-callback": "node scripts/check-auth-callback.mjs",
+    "check:password-reset": "node scripts/check-password-reset.mjs",
     "check:browser": "node scripts/check-browser.mjs",
     "check:live": "node scripts/check-live.mjs",
     "check:public-package": "node scripts/check-public-package.mjs",

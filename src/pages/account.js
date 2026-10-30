@@ -1,12 +1,27 @@
 import './main.js';
-import { loadAccount, logout, updateProfile } from '../services/auth.js';
+import { loadAccount, logout, updateProfile, loadPasswordRecovery, resetPassword } from '../services/auth.js';
 import { requestOrganization, listRequests, reviseRequest, closeRequest } from '../services/access.js';
-import { authBg, authError, callbackBg } from '../i18n/auth-bg.js';
+import { authBg, authError, callbackBg, recoveryBg } from '../i18n/auth-bg.js';
 import { readAuthCallback, callbackNotice } from '../domain/auth-callback.js';
 import { bindForm, message } from '../ui/forms.js';
+import { clearRecoverySession, isRecoveryRequested } from '../services/supabase.js';
 
 const field = (data, name) => String(data.get(name) || '').trim();
 let pendingRequest;
+bindForm('#password-update', async (data, form) => {
+  const password = String(data.get('password') || '');
+  if (password !== String(data.get('password-confirm') || '')) { message(recoveryBg.mismatch, true); return; }
+  if (password.length < 12 || password.length > 256) { message(recoveryBg.length, true); return; }
+  await resetPassword(password);
+  form.reset();
+  form.hidden = true;
+  message(recoveryBg.updated);
+});
+document.querySelector('#recovery-logout').addEventListener('click', async event => {
+  event.currentTarget.disabled = true;
+  try { await logout(); }
+  catch (error) { message(authError(error), true); event.currentTarget.disabled = false; }
+});
 async function refresh() {
   const account = await loadAccount();
   document.querySelector('#signed-out').hidden = Boolean(account);
@@ -51,13 +66,24 @@ document.querySelector('#logout').addEventListener('click', async event => {
   catch(error) { message(authError(error), true); event.currentTarget.disabled = false; }
 });
 const callback = readAuthCallback(new URL(location.href));
+const recoveryRequested = isRecoveryRequested();
 try {
+  // A new callback cannot borrow a prior recovery UI hint if its exchange fails.
+  if (callback.present) clearRecoverySession();
   if (callback.hasError) history.replaceState(null, '', location.pathname);
-  const account = await refresh();
-  const notice = callbackNotice(callback, Boolean(account?.user.email_confirmed_at));
-  if (notice) message(callbackBg[notice], !account);
+  const recovery = !callback.hasError && await loadPasswordRecovery();
+  if (recovery) {
+    document.querySelector('#signed-out').hidden = true;
+    document.querySelector('#signed-in').hidden = true;
+    document.querySelector('#password-recovery').hidden = false;
+    message(recoveryBg.ready);
+  } else {
+    const account = await refresh();
+    const notice = callbackNotice(callback, Boolean(account?.user.email_confirmed_at));
+    if (notice) message(recoveryRequested ? recoveryBg.invalid : callbackBg[notice], recoveryRequested || !account);
+  }
 } catch(error) {
-  message(callback.present ? callbackBg.session : authError(error), true);
+  message(callback.present ? recoveryRequested ? recoveryBg.invalid : callbackBg.session : authError(error), true);
   // A disabled/broken account must still be able to end its local session.
   const { getClient } = await import('../services/supabase.js');
   try {

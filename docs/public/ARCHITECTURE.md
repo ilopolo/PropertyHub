@@ -1,5 +1,9 @@
 # Реализирана архитектура
 
+Password reset използва формата в `login.html` и recovery секция в `account.html`, без нов redirect адрес. `src/services/auth.js` извиква `resetPasswordForEmail`, проверява текущия потребител чрез `getUser` и извиква `updateUser` за собствената парола. SDK обработва PKCE; callback кодът се отстранява от URL след инициализация. Tab-local recovery marker пази само UI намерение при reload, не токени/пароли или авторизационни права. Supabase Auth налага валидната сесия и password policy; приложните роли остават в DB. Локалният browser contract тест не замества реалната SMTP доставка и recovery проверка.
+
+Текущ Auth резултат: custom SMTP/Brevo Free е доставил едно signup писмо, получено и потвърдено от тестовия получател. PKCE exchange е отказан с `flow_state_expired`, затова чист signup→session не е PASS. Последващи ordinary login/logout/relogin и SELECT/RPC с потребителската сесия доказват собствен pending профил, нула роли/организации/контексти и непроменени права. Реалният recovery callback/update/new-password login още предстои. Тестовият имейл, паролите и еднократните връзки не са част от публичния пакет.
+
 HTML/CSS/чист JavaScript/Bootstrap, Node/npm/Vite. Девет HTML входа: начало, dashboard, buildings, account, login, register, platform-admin, organization-admin и съвместимият admin навигационен индекс. Регистрация/вход и двата административни процеса имат отделни файлове. Общият ES module зарежда навигация, тема, BG ресурси и каталог. Контролерите в `src/pages` обработват формите; `src/ui` съдържа споделени UI операции, `src/services` извиква Supabase SDK/Auth/Data API. Няма React/Vue/TypeScript.
 
 ```mermaid

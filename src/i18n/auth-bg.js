@@ -14,7 +14,19 @@ export const callbackBg = Object.freeze({
   session: 'Автоматичното влизане не завърши. Ако имейлът вече е потвърден, влез с имейл и парола. Отваряй новите връзки в браузъра, в който ги поиска.',
   unknown: 'Тази връзка не може да бъде използвана. Ако вече потвърди имейла си, влез с имейл и парола. Ако още не е потвърден, поискай ново писмо.',
 });
+export const recoveryBg = Object.freeze({
+  requested: 'Ако адресът е допустим, ще получиш писмо за възстановяване. Отвори връзката в този браузър. Провери и папката за нежелана поща.',
+  ready: 'Връзката за възстановяване е проверена. Въведи нова парола.',
+  invalid: 'Възстановяването не завърши. Поискай ново писмо и отвори връзката в браузъра, в който го поиска.',
+  mismatch: 'Паролите не съвпадат.',
+  length: 'Паролата трябва да е между 12 и 256 знака.',
+  updated: 'Новата парола е запазена. Излез и влез отново с нея.',
+  weak: 'Паролата не отговаря на изискванията. Избери по-силна парола.',
+  same: 'Избери парола, различна от текущата.',
+});
 export function authError(error) {
+  if (error.code === 'weak_password') return recoveryBg.weak;
+  if (error.code === 'same_password') return recoveryBg.same;
   if (error.status === 429 || String(error.code).includes('rate_limit')) return authBg.rateLimit;
   if (error.message === 'Липсва конфигурация за връзката.' || error.message === 'Невалиден публичен ключ.') return error.message;
   if (['invalid_credentials', 'email_not_confirmed'].includes(error.code)) return authBg.credentials;

@@ -1,17 +1,38 @@
-import { getClient, unwrap } from './supabase.js';
+import { getClient, unwrap, isRecoverySession, clearRecoverySession, markRecoveryRequested } from './supabase.js';
 
 export const callbackUrl = () => new URL('pages/account.html', new URL(import.meta.env.BASE_URL, location.origin)).href;
 export async function register(email, password, displayName) {
+  clearRecoverySession();
   return unwrap(await getClient().auth.signUp({ email, password, options: { emailRedirectTo: callbackUrl(), data: { display_name: displayName } } }));
 }
 export async function login(email, password) {
+  clearRecoverySession();
   return unwrap(await getClient().auth.signInWithPassword({ email, password }));
 }
 export async function logout() {
   unwrap(await getClient().auth.signOut({ scope: 'local' }));
 }
 export async function resendConfirmation(email) {
+  clearRecoverySession();
   return unwrap(await getClient().auth.resend({ type: 'signup', email, options: { emailRedirectTo: callbackUrl() } }));
+}
+export async function requestPasswordReset(email) {
+  clearRecoverySession();
+  const result = unwrap(await getClient().auth.resetPasswordForEmail(email, { redirectTo: callbackUrl() }));
+  markRecoveryRequested();
+  return result;
+}
+export async function loadPasswordRecovery() {
+  const { session } = unwrap(await getClient().auth.getSession());
+  if (!session || !isRecoverySession(session.user.id)) return null;
+  const { user } = unwrap(await getClient().auth.getUser());
+  return user.email_confirmed_at && user.id === session.user.id ? user : null;
+}
+export async function resetPassword(password) {
+  if (typeof password !== 'string' || password.length < 12 || password.length > 256) throw new Error('Invalid password length');
+  if (!await loadPasswordRecovery()) throw new Error('Recovery session required');
+  unwrap(await getClient().auth.updateUser({ password }));
+  clearRecoverySession();
 }
 export async function loadAccount() {
   const { data: { session }, error } = await getClient().auth.getSession();

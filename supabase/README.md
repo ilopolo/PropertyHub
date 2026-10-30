@@ -1,97 +1,72 @@
-# Supabase
+# Supabase — setup, схема и проверки
 
-DB-A/B е приложено в съществуващия проект `qfybswnezdzzahmozikr`. Не създавай нов проект. Приложени версии:
+Установеният проект е qfybswnezdzzahmozikr. **12 приложени/committed SQL миграции;23 приложни таблици:19 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
 
-- `20261029205815_access_core.sql`: профили, организации, memberships, роли/каталог, audit, organization onboarding и затворен операторски bootstrap.
-- `20261029205824_registry_scope.sql`: сгради, входове, обхвати/назначения, обекти/периоди и контролирани RPC.
-- `20261029210354_access_indexes.sql`: FK индекси.
-- `20261029210914_access_identity_guards.sql`: текуща потвърдена Auth идентичност и защита при изтрит получател.
-- `20261029230135_explicit_scope_setup.sql`: отделно начално назначение с exact recipient/48h/приемане, затваряне на стария org-admin-only registry RPC и минимален преглед на назначенията в собствената организация.
-- `20261029230141_registry_provenance.sql`: типизирани източник, known_from, needs_review/verified и сървърни автор/време; отделна защитена verification операция.
-- `20261029230146_organization_request_lifecycle.sql`: корекция, оттегляне, отказ и activation review с revision/основание; creation audit само за новите заявки.
-- `20261029233202_provenance_calendar_date.sql`: known_from се сверява с календарната дата Europe/Sofia, независимо от UTC session timezone; отделна регресионна проверка след полунощ.
+## Миграционна история
 
-Четирите допълващи миграции са приложени на 29.10.2026 UTC (30.10 Europe/Sofia) и remote statements са сверени с локалните файлове. Общо 14 public приложни таблици, всички с RLS, плюс затворената private.bootstrap_state. Началната заявка е административно намерение и не дава действаща роля. Org admin посочва точен confirmed получател за manager/read_registry/manage_registry; само получателят може да приеме и да създаде нов физически scope. Сървърът отново проверява издателя/org/срока; scope и отделният manager grant се записват атомарно. Чист org admin не може да създава physical registry през стария RPC. Няма автоматично самоназначение, сливане по адрес или разширяване към финансови права.
+| Файл | Реализиран обхват |
+|---|---|
+| [20261029205815_access_core.sql](migrations/20261029205815_access_core.sql) | Profiles, organizations, memberships, роли/каталог, audit, onboarding, private bootstrap |
+| [20261029205824_registry_scope.sql](migrations/20261029205824_registry_scope.sql) | Buildings/entrances/scopes/assignments/units/periods и guarded RPC |
+| [20261029210354_access_indexes.sql](migrations/20261029210354_access_indexes.sql) | FK индекси |
+| [20261029210914_access_identity_guards.sql](migrations/20261029210914_access_identity_guards.sql) | Текущ confirmed/non-anonymous Auth actor |
+| [20261029230135_explicit_scope_setup.sql](migrations/20261029230135_explicit_scope_setup.sql) | Отделно manager предложение/приемане; затворен org-admin-only physical RPC; staff projection |
+| [20261029230141_registry_provenance.sql](migrations/20261029230141_registry_provenance.sql) | Typed provenance, author/time и review на DB-B |
+| [20261029230146_organization_request_lifecycle.sql](migrations/20261029230146_organization_request_lifecycle.sql) | Revision/correct/withdraw/reject/activate/audit |
+| [20261029233202_provenance_calendar_date.sql](migrations/20261029233202_provenance_calendar_date.sql) | known_from спрямо Europe/Sofia business date |
+| [20261030160838_scoped_persons.sql](migrations/20261030160838_scoped_persons.sql) | Scoped persons, field evidence, optimistic revision, private history |
+| [20261030194407_ownership_periods.sql](migrations/20261030194407_ownership_periods.sql) | Ownership periods, set reviews, private idempotent batches |
+| [20261030203754_occupancy_periods.sql](migrations/20261030203754_occupancy_periods.sql) | Individual/aggregate occupancy periods, set reviews, private batches |
+| [20261030205226_occupancy_subject_guard.sql](migrations/20261030205226_occupancy_subject_guard.sql) | Physical person/current revision guard и review invalidation |
 
-Минималният provenance пакет покрива въведените стойности на реда с един изричен източник. Непопълнена площ/етаж остава неизвестна и след проверка на наличните стойности. known_from е ограничение на известната история, не дата на покупка. Legacy редовете не получават измислен източник/дата. Field-level evidence за различни източници и исторически редакции е условие преди отваряне на такива редакции; финансов publish още няма. Локалният PostgreSQL набор е разширен до 22 групи; hosted потребителските проверки се отчитат отделно.
+Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички19 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 
-Файловете са създадени с официалния CLI; след прилагане чрез Supabase plugin имената са синхронизирани с действителните remote версии от `list_migrations`. Не прилагай същите SQL файлове отново върху този проект. За нова безопасна тестова база прилагай по ред, в транзакции. Миграциите изискват стандартните Supabase роли/Auth, PostgreSQL 15+ и btree_gist. Няма промени/тригери в управляваните auth/storage схеми; има FK към auth.users и разрешено сървърно четене на потвърждението. Локалната PGlite проверка имитира само нужния Auth договор, а не пълния Supabase stack. Docker/Supabase reset не е изпълняван.
+За отделна безопасна тестова Supabase база историята се прилага по ред/в транзакции след сверка на remote history. Нужни са стандартните Supabase Auth роли/схема, PostgreSQL15+ и btree_gist. Не се редактират произволно managed auth/storage схеми; има FK към auth.users и guarded read на потвърждението. Имената на CLI командите се проверяват с инсталирания CLI help преди операция. **Пълен Docker/Supabase clean reset и clean-checkout setup не са изпълнени**; PGlite rebuild проверява само нужния PostgreSQL/Auth договор.
 
-## Операторско създаване на RLS потребители
+## Клиентска и Auth конфигурация
 
-`scripts/create-rls-users.mjs` е отделен Node инструмент, извън frontend dependency graph. Подготви локален игнориран `.env.operator.local` с един ред `SUPABASE_OPERATOR_SECRET=`. В Dashboard на същия проект → Project Settings → API Keys → Secret keys копирай наличния secret key само след `=` в този файл. Не го изпращай в чат/лог и не използвай VITE име. Инструментът проверява ignored/untracked пътищата, изисква modern secret key и фиксира project URL.
+Копирай .env.example като .env.local и попълни VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY за установения проект. И двете са публични. Secret/service-role/DB пароли/SMTP ключове не се поставят във frontend, VITE_*, Git или логове. Local dev/preview командите са в README. Hosting env съдържа само публичните две стойности.
 
-1. `npm.cmd run setup:rls-users` проверява локалната готовност без създаване.
-2. `npm.cmd run setup:rls-users -- --create` създава точно A/B/PENDING с уникални `@propertyhub.invalid` адреси, случайни отделни пароли и `email_confirm: true`. Няма SMTP доставка, Supabase team membership или промяна на глобалния Confirm Email. Паролите се записват единствено в игнорирания `.env.rls.local`, а логът показва само A/B/PENDING и резултат. При частичен неуспех завършените записи се запазват локално и автоматично повторно създаване отказва; първо се инспектира състоянието.
-3. Премахни стойността на операторския ключ от локалния файл след setup. Не е необходим за `check:rls`. Административното потвърждение на синтетичен акаунт не доказва доставка или владение на имейл.
+Последната потвърдена конфигурация от30.10.2026 (не нова Dashboard проверка): Site URL https://propertyhub-ilopolo.netlify.app; точно три разрешени redirect адреса:
 
-Следват `check:rls -- --prepare`, преглед/операторско прилагане на генерирания fixture SQL и `check:rls` с обикновени password сесии. Скриптът проверява и реалното първо scope приемане, own-org staff projection, provenance и requester lifecycle. Не използва privileged ключ за assertions. Няма тестови credentials в публичния checkout.
+- https://propertyhub-ilopolo.netlify.app/pages/account.html
+- http://127.0.0.1:5173/pages/account.html
+- http://127.0.0.1:4173/pages/account.html
 
-## Текущи Auth настройки
+Email provider/signup и Confirm Email са включени; anonymous sign-ins/manual linking са изключени. **Custom SMTP с Brevo Free е настроен и реалната доставка на confirmation/reset е доказана**. Built-in SMTP ограничението вече не е текущ blocker и не изисква Supabase team membership за тестовите получатели. SMTP credentials са само в Dashboard. Няма маркетинг или бъдещи напомняния. За бизнес версията предстоят собствен удостоверен домейн и преглед на разходите според потреблението. Настоящата университетска конфигурация не е гаранция за бъдещи provider лимити или доставка.
 
-На 30.10.2026 всичките осем remote migration statements са сверени с локалните SQL (нормализирани нови редове), без повторно прилагане. След изрично потвърждение са записани Site URL `https://propertyhub-ilopolo.netlify.app` и точният HTTPS `/pages/account.html` redirect; двата локални 5173/4173 адреса са запазени. Списъкът и Site URL са проверени след reload. Live pending login/logout/relogin и отрицателни callback сценарии преминаха. Clean signup confirmation и recovery са доказани отделно чрез реално доставени писма, успешни PKCE exchanges и ordinary-session pending проверки; allowlist или operator-confirmed fixtures сами не са доказателство.
+Signup/recovery започват и завършват в същия браузърен профил и origin. Реални доставени писма, PKCE, confirmed pending session без роли, logout/relogin и recovery new-password login/old-password отказ са проверени с отделни акаунти. Историческият flow_state_expired не отменя последващия чист signup PASS. Password-reset интерфейсът и account password change са реализирани.
 
-Проверено на 29.10.2026: email provider включен, signup разрешен, Confirm email включено, anonymous sign-ins и manual linking изключени. Data API върна `PGRST106` за private и потвърди exposed schemas `public, graphql_public`. Остави private неизложена.
+Временна политика: server minimum8/no character requirements; UI8–256+поне една ASCII цифра. API допуска8 символа без цифра — UI не е server enforcement. Няма forced reset или допълнително uppercase/special изискване; existing login остава разрешен. Единна server политика предстои преди бизнес старт. Leaked-password protection е останала OFF при предходния преглед; не се заявява нова настройка или пълна business security готовност. Local signOut не означава незабавна невалидност на вече издаден JWT.
 
-Текущ Site URL: `https://propertyhub-ilopolo.netlify.app`. След reload са потвърдени точно три Redirect URLs:
+## Bootstrap и назначения
 
-- `http://127.0.0.1:5173/pages/account.html`
-- `http://127.0.0.1:4173/pages/account.html`
-- `https://propertyhub-ilopolo.netlify.app/pages/account.html`
+[Операторският bootstrap](operators/bootstrap-platform-admin.sql) е изпълнен еднократно за одобрения точен confirmed Auth UUID. Няма public wrapper/client EXECUTE; пази фиксиран target и audit, не избира първия signup. Не го изпълнявай повторно за друг акаунт. Личен UUID/парола не се публикуват. Новите потребители остават pending без роли.
 
-Приложението подава callback URL от действителния origin. PKCE потвърждението трябва да се отвори в същия браузър/профил и origin, в който е започнала регистрацията. Не изключвай потвърждението като обход на SMTP проблем.
+Platform admin активира проверена organization заявка; org admin управлява ограничени изрични назначения в своята org. Първият scope изисква точен confirmed manager recipient,48h предложение и лично приемане; записва отделен operational grant. Manager: read_registry/manage_registry; controller: read_registry. Няма operational inheritance от platform/org admin, fake firm за self_managed или auto claim на чужд адрес.
 
-Custom SMTP/Brevo Free е настроен за служебни Auth писма, без маркетинг. Реално доставени confirmation и recovery писма, успешни PKCE сесии, pending без роли и recovery new/old-password проверки са доказани с отделни тестови акаунти. Не се изисква членство в Supabase екипа за получателите. Вграденият изпращач остава ограничен според [официалната документация](https://supabase.com/docs/guides/auth/auth-smtp), но вече не се използва за този тест. SMTP credentials се въвеждат само в Supabase Dashboard, никога във frontend/VITE/Git. За бъдещата бизнес версия: собствен удостоверен домейн и преглед на разходите спрямо потреблението.
+Account-person links/owner portal, token invitations и cashier/finance workflow още липсват. Ownership/occupancy registry не ги създава автоматично. За следващия owner-link пакет остава изричният избор кой има право да проверява самоличността/връзката; не се предполага ново permission от съществуваща admin роля. Demo/reviewer достъпът е предстоящ и не използва личния platform admin или QA credentials.
 
-Read-only Dashboard сверка на 30.10.2026: Confirm Email ON; email provider ON, anonymous/manual linking OFF. Email OTP expiry3600s/length8; актуално server minimum password8 без character requirements, UI8 с поне една цифра (API приема8 без цифра; това е изрично приетото временно ограничение). Secure email change ON, secure password change/require current password OFF; leaked-password protection е OFF/Pro-only. Потребителят впоследствие записа minimum8/no character requirements, Confirm Email остана ON; actual signup/update API границите и непроменен existing login са проверени. Access token expiry3600s, refresh-token reuse interval10s; session time-box/inactivity0 (показани disabled). Email sending rate30/h и minimum interval/user60s. Другите показани rate стойности са refresh150, verification30, signup/signin30; UI пише requests/hour, а помощният текст посочва 5-minute interval/IP, затова точният ефективен прозорец не се извежда от противоречивия екран. Преди policy промяна уточни изискването; не увеличавай лимити и не отслабвай confirmation като обход. `signOut({scope:'local'})` приключва текущия клиентски login; не се твърди, че вече издаденият JWT веднага изтича.
+## Проверки и синтетични ресурси
 
-Локалният адрес е `http://127.0.0.1:5173/pages/account.html` при работещ `npm.cmd run dev`; production preview е на `http://127.0.0.1:4173/pages/account.html`. Потребителят лично се регистрира и потвърди login → pending без права → logout/reload → повторен login. Confirmation връзката показа грешка; DB и последващият вход потвърждават, че Auth имейлът е потвърден. Причината за конкретната callback грешка не е доказана а нов чист callback вече е проверен с отделен тестов акаунт. `check:auth-callback` проверява безопасната класификация на изтекли/използвани връзки, session проблеми и съществуваща потвърдена сесия. Не се иска ново писмо като единствен изход за вече потвърден акаунт. Личният акаунт и парола са създадени от потребителя; последващият операторски bootstrap е описан отделно. Вграденият callback е разрешен изрично, като всяка среда подава своя разрешен origin. Отваряй новите връзки в същия браузър/профил и origin, в който са поискани.
+Командите съществуват в package.json; тук не са преизпълнявани функционални тестове:
 
-## Първи platform admin
+| Команда | Среда и ограничения |
+|---|---|
+| npm.cmd run check:db | Всички локални миграции във временен PGlite PostgreSQL; Auth/JWT са fixtures, не hosted sessions |
+| npm.cmd run check:occupancy-db | Самостоятелен rebuild с целеви occupancy assertions |
+| npm.cmd run check:unit-shares-domain | Само pure synthetic проценти/периоди/basis; без DB/API/UI |
+| npm.cmd run check:rls | Hosted publishable key+ordinary A/B/pending sessions и вече проверен manifest; може да записва fixtures |
+| npm.cmd run check:persons | Съществуващи synthetic resources; записва идентифицирани QA лица |
+| npm.cmd run check:ownership | Ordinary-session atomic/history/isolation/concurrency/review проверки; запазени request keys |
+| npm.cmd run check:occupancy | Ordinary-session count/mode/history/isolation/concurrency/review проверки |
+| npm.cmd run check:occupancy-subject | Отделно synthetic scoped лице за type/revision guard; оставя го inactive, не създава Auth акаунт |
+| npm.cmd run check:ownership-browser / check:occupancy-browser | Edge върху preview; за live --read-only и правилен CHECK_BASE_URL; credentials/manifests не се публикуват |
 
-Създай/потвърди одобрения акаунт. В страницата Акаунт се показва точният Auth UUID. Операторът сверява UUID и потвърждението в доверена среда. `operators/bootstrap-platform-admin.sql` приема psql променлива `auth_user_id`; няма вградени credentials. Ако използваш Dashboard SQL Editor, след сверка изпълни само `select private.bootstrap_platform_admin('ТОЧНИЯТ_UUID'::uuid);` със заменена стойност, в транзакция.
+Синтетичните A/B/pending Auth акаунти и две организации вече са създадени; допълнителните QA scopes/лица/периоди остават за инспекция. **Не пресъздавай fixtures при retry.** Първо провери локалните journals и действителните записи; прекъсната заявка може вече да е завършила. QA env файловете и .local manifests липсват от публичния checkout по дизайн; тестовете не са универсален visitor setup.
 
-Функцията не е exposed RPC, anon/authenticated нямат EXECUTE. Един фиксиран target, идемпотентно повторение за същия UUID, отказ за друг, audit запис. Не избира първия signup. Bootstrap е изпълнен операторски на 29.10.2026 след личния pending тест и предоставен от потребителя точен Auth UUID. Преди изпълнение е сверена потвърдената неанонимна Auth идентичност и уникалната profile връзка. След изпълнение са проверени active профил, точно platform_admin/manage_platform, един bootstrap state и един съответстващ audit запис, без org membership/scope или други роли. Личният UUID не се включва в публичната документация. Довереният операторски достъп служи за setup и проверка на записите, не е доказателство за потребителски RLS. Промяна/възстановяване на platform/org admin и последен администратор изискват отделен recovery процес; няма публичен generic delete/demotion endpoint.
+Операторският [create-rls-users скрипт](../scripts/create-rls-users.mjs) използва Auth Admin API само за отделно разрешен setup; secret key е в игнориран .env.operator.local, никога в клиента. npm.cmd run setup:rls-users -- --create не е команда за повторение върху готовите ресурси. Administrative email_confirm доказва setup, не доставка. Реалните RLS assertions ползват ordinary sessions и publishable key, а не privileged ключ. Пароли и tokens не се извеждат. Глобалният Confirm Email не се изключва.
 
-Platform admin преглежда заявка за организация и активира нейния подател като първи org admin. Org admin предлага начално manager назначение към точен confirmed Auth UUID; само получателят приема и създава контекста атомарно с отделния grant. За действащ scope назначенията остават изрични. Manager получава read_registry/manage_registry, controller — read_registry. Назначението и собствеността са отделни. Административните роли не наследяват operational registry/finance права; org admin може изрично да назначи и себе си в допустимия обхват. Staff покани с токени, owner заявки/връзки, касиерски/финансови права и password reset UI още не са реализирани; зависимите функции не са временно отворени.
+Запазени са hosted2-org/pending allow/deny и revocation със същата сесия, реални browser API→SELECT проверки, persons/ownership/occupancy и реални email PKCE проверки. Локалните и hosted доказателства се отчитат отделно. Историческите числа22/30/9 са конкретни test checkpoints, не общ брой актуални тестове или таблици. Screenshots и отчети са игнорирани, не публични credentials.
 
-## Проверки
-
-След първоначалните API проверки са изпълнени и реални live UI scope request/revoke, exact-recipient acceptance, staff controller assign/revoke и unit create/verify. Всеки резултат е сверяван чрез SELECT с обикновена A сесия. Controller пакетът е само read_registry; отнемането му не отнема отделния manager grant. Сега fixtures са две synthetic организации, три scopes и четири units; допълнителният A scope е създаден чрез разрешения acceptance процес. Няма промяна на личната организационна заявка или pending тестовия профил. Скриптовете проверяват стабилните synthetic labels преди повторение; local manifests/screenshots са игнорирани.
-
-`npm.cmd run check:db` прилага всички миграции върху празен временен PostgreSQL и проверява 22 групи, включително реално записани/непроменени редове, 2-org изолация, grants, RLS, periods/FK, bootstrap и отнемане. Auth таблицата и JWT claim setting са локални fixtures: това НЕ са реални GoTrue сесии.
-
-За hosted потребителски проверки създай три отделни потвърдени синтетични акаунта без назначения. В игнориран `.env.rls.local` запиши `RLS_A_EMAIL`, `RLS_A_PASSWORD`, `RLS_B_EMAIL`, `RLS_B_PASSWORD`, `RLS_PENDING_EMAIL`, `RLS_PENDING_PASSWORD`. Скриптът приема само publishable ключ; не използва service-role за assertions.
-
-За операторските синтетични fixtures поддържан начин за тези fixtures е [Auth Admin API createUser](https://supabase.com/docs/reference/javascript/auth-admin-createuser), извикан само от доверена операторска/server среда. За всеки от трите изрично синтетични акаунта се задават уникален тестов имейл, отделна случайна парола и `email_confirm: true`. Административният secret/service-role ключ остава само в средата на setup процеса — никога във VITE_*, frontend, Git или чата. Не се променя глобалният Confirm Email, не се добавят тестовите потребители към Supabase организацията и не се записва директно в auth схемата. Всеки акаунт започва без приложни роли; след setup тестовете влизат с email/password и ползват обикновени JWT сесии и publishable ключ. Това доказва login/RLS, но не email delivery/владение на пощата. За реално тестване на confirmation писма към други адреси е нужен custom SMTP. Операторският setup е изпълнен: точно три синтетични confirmed акаунта, без промяна на глобалния Confirm Email. Стойността на локалния operator secret е премахната след setup.
-
-1. `npm.cmd run check:rls -- --prepare` влиза с реалните акаунти, създава минималните им pending профили и генерира `.local/rls-fixtures.sql` и `.local/rls-fixtures.json`. SQL не е приложен автоматично. Отказва акаунти с вече съществуващи роли или стар manifest.
-2. Прегледай и приложи fixture SQL през доверен операторски SQL достъп само в посочения проект. Създават се само две синтетични организации и org admin назначения за A/B, без platform bootstrap и без промени в auth. Scope и отделният manager пакет се създават после от действителните потребителски сесии чрез изрично начално назначение и приемане. Това е подготовка, не RLS доказателство.
-3. `npm.cmd run check:rls` проверява с реални сесии записите в двете org, чужди SELECT/INSERT/UPDATE/DELETE, забранено повишение чрез metadata, revocation със същата сесия, възстановяване по разрешения процес и logout. Fixture записите остават за инспекция; скриптът не ги изтрива и не ги публикува.
-
-Hosted резултат: 11 реално преминали групи с publishable ключ и три обикновени password сесии, плюс logout. Scope/manager приемането е изпълнено от потребителските сесии след отделния operator fixture setup за двете организации. Проверени са cross-org SELECT/INSERT/UPDATE/DELETE с реалните редове, pending/self-elevation, staff projection, provenance, requester revision/withdrawal и revocation със същата сесия. Двете синтетични организации/обекти остават за инспекция. Личната platform заявка остава pending и не е активирана. Чист първи email callback още не е проверен; административният synthetic setup не го заменя.
-
-Допълнително премина `npm.cmd run check:rls -- --calendar`: Bulgarian calendar known_from се записва през обикновената A сесия, следващата дата се отказва и няма записан ред. Това е целева проверка след календарната миграция, без повторение на целия набор. Отделен browser тест отказа ясно означена синтетична заявка; pending сесията потвърди rejected/revision=2/основание и липса на org/roles. Няма browser активация на организация. Проверени са също реалният platform екран и липсата на наследени org admin/registry форми; останалите записващи browser сценарии са отделни от преминалите API проверки.
-
-Audit/bootstrap таблиците умишлено нямат клиентски grants/policies; security advisor ги отбелязва с INFO `rls_enabled_no_policy`. Не добавяй отворена policy за премахване на известието. [Описание на проверката](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). FK предупрежденията са отстранени; unused indexes са очаквани върху празната схема.
-
-Service-role ключове, DB пароли, refresh/access tokens и тестови пароли не принадлежат във frontend, VITE_* или Git. Hosting/live работи; Storage остава предстоящ.
-
-DB-C/1: migration `20261030160838_scoped_persons.sql` adds staff-scoped persons, private revision snapshots, explicit field provenance and guarded create/replace/review RPCs. It does not add account-person links or ownership. Run `npm run check:db` for a clean disposable PostgreSQL rebuild; `node scripts/check-persons.mjs` tests the existing hosted synthetic resources with ordinary sessions. Do not recreate or reset fixtures to rerun a read.
-
-DB-C/2: `20261030194407_ownership_periods.sql` adds scoped ownership periods, explicit set reviews and private idempotent batch records. All ownership writes/reviews lock the unit; replacements/voids retain original facts. Ten migrations are now in the local history; the new hosted statement matches the local file after LF/trim normalization. No managed Supabase schema was edited. `check:db` rebuilds the migrations in disposable PostgreSQL; `check:ownership` tests actual ordinary-session isolation, exact shares, atomic correction/rollback, concurrent over-allocation and review invalidation.
-
-
-### Обитаване с периоди и произход
-
-В „Сгради“ разрешен служител въвежда обща декларация за имот или конкретни физически лица с деклариран статут: собственик, носител на право на ползване, наемател или друг обитател. Това е описателен регистър, а не доказателство за собственост или финансови разчетни единици. Периодите са [начало,край), в рамките на принадлежността на имота. Общият брой е цяло неотрицателно число или неизвестен; празното не е нула. Липса на запис, неизвестен брой, декларирана нула и изрично проверена нула се показват отделно.
-
-Сървърът не допуска обща декларация и конкретни лица за застъпващи се периоди, застъпващи се общи декларации или повторение на същото лице/имот независимо от статута. Различни scoped лица не се сливат по име/имейл. Конкретното лице е физическо и броят му е1. Броенето е за избрания имот и дата; няма глобално удостоверяване на самоличност или автоматично финансово изчисление.
-
-Атомарната група съдържа до20 промени за един имот и изричен произход, известно от, ограничения на историята и основание. Корекциите/оттеглянията запазват оригинала. Новите записи чакат преглед; отделната проверка на набора изисква известен брой и проверени приложими редове. Промяна на свързаното лице обезсилва проверката и изисква ново сведение. read_registry разрешава преглед; manage_registry разрешава запис и проверка чрез RPC. Direct writes са отказани.
-
-Записът не създава собственост, account-person връзка, портален достъп, начисления, законови освобождавания или пропорционално начисляване по дни. Потвърдена нула обитатели не означава нулево начисление.
-
-Миграции: 20261030203754_occupancy_periods.sql и 20261030205226_occupancy_subject_guard.sql. Предишната ownership миграция е 20261030194407_ownership_periods.sql; по-ранното193517 е име на непубликуван draft, не друга приложена версия.
-
-Целеви проверки: npm run check:occupancy-domain, npm run check:occupancy-db (самостоятелен временен PostgreSQL), npm run check:occupancy (съществуващи синтетични сесии), npm run check:occupancy-subject и npm run check:occupancy-browser. Hosted сценарии запазват request keys преди запис и откриват съществуващия QA ресурс при продължение. Subject тестът създава едно отделно scoped QA лице и го оставя неактивно, без нов Auth акаунт. Live browser режимът --read-only блокира записите. Артефакти/данни/credentials остават локални.
+Audit и private bootstrap/history/batch таблиците умишлено са затворени за пряк клиентски достъп; RLS-without-policy INFO не се премахва с отворена policy. Изложените registry таблици имат конкретни scope policies. Storage upload/download, owner projections, CSV import/export, signals, notifications и finance/reporting още не са реализирани. Идеалните части са domain-only. Виж публичната архитектура за съществуващите отношения и ограничения.

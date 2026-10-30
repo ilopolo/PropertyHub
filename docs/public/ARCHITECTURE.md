@@ -1,107 +1,128 @@
 # Реализирана архитектура
 
-## Идеални части: чист domain validator, без интеграция
+Актуализация:31.10.2026. Реализираният поднабор е Auth/admin/registry; целият университетски MVP остава незавършен. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
 
-`src/domain/unit-shares.js` експортира `percentageUnits`, `percentageText` и `assessUnitShares`. Процентните пунктове са decimal text с до8 знака, 0<value≤100; вътрешно са BigInt с мащаб100000000. NULL/undefined/празно е unknown, а0 е невалиден положителен дял. Излишна прецизност се отказва, без rounding/epsilon. Собственическите fractions не се използват като идеални части.
+## Стек и граници
 
-`assessUnitShares({basis,participants,rows,interval})` приема явна basis идентичност (key/revision/kind/building_id/entrance_id), отделен participant revision и unit_ids, доказаност на basis/състава и [valid_from,valid_to) периоди. Входният shape е документиран в JSDoc на функцията. Оценяват се всички промени на границите в подадения интервал. Current versions на едно unit не могат да се застъпват; граничещите периоди са допустими. Superseded/voided оригиналите не участват в сметката.
-
-Резултатът съдържа row validity/review, общ state, reason codes с row indexes и времеви segments с exact known_total/difference в процентни пунктове. Known subtotal не е заместител на липсващ процент. Състояния: conflict, wrong_basis, missing, unreviewed, partial, ready (в този приоритет); всички причини се запазват. Целият подаден snapshot се проверява консервативно: невалидни/непроверени текущи редове или припокривания извън интервала също могат да блокират общата готовност. За валиден поднабор за конкретен интервал бъдещият caller трябва да предостави правилния snapshot, без да скрива конфликти. Промяна на basis/participant revision оставя stale причина;100 само по себе си не доказва пълнота.
-
-Това е детерминистична оценка на предоставени assertions, без I/O или разрешения. `verified` и ревизиите не са доверени клиентски доказателства. Няма API/UI интеграция, DB16 таблици/миграция, persisted set review или финансово действие. Бъдещият server слой трябва да извлече и провери действителния състав, provenance, revisions, периода и правата. Чистият модул не избира правен знаменател. Проверка: `npm run check:unit-shares-domain`.
-
-DEV-03/1 използва съществуващите units/unit_scope_periods за read-only преглед по принадлежност към дата: valid_from ≤ date и (valid_to IS NULL или date < valid_to). Service филтърът се изпълнява през обикновената потребителска сесия и текущите RLS; изборът на дата не създава историческо право. Domain модулът валидира календарната дата и задава Europe/Sofia днес; отделният UI renderer показва provenance без HTML интерполация на данни. Controller generation check изключва стари асинхронни отговори при смяна на избора. Няма нови schema/permissions; current unit стойности и периодна принадлежност не се представят като исторически field snapshots.
-
-`npm.cmd run check:registry-snapshot` възпроизвежда целевите browser/API проверки върху localhost preview със съществуващите синтетични RLS credentials/fixture manifest. Не създава fixtures и не записва регистърни данни. Screenshots/JSON са само в ignored `.local/registry-snapshot-qa/`; автоматичният резултат изисква отделен действителен визуален преглед. Проверени са 4 комбинации 375/1440 light/dark, преди начало/включено начало и отказан чужд scope.
-
-Password reset използва формата в `login.html` и recovery секция в `account.html`, без нов redirect адрес. `src/services/auth.js` извиква `resetPasswordForEmail`, проверява текущия потребител чрез `getUser` и извиква `updateUser` за собствената парола. SDK обработва PKCE; callback кодът се отстранява от URL след инициализация. Tab-local recovery marker пази само UI намерение при reload, не токени/пароли или авторизационни права. Supabase Auth налага валидната сесия и password policy; приложните роли остават в DB. Локалният browser contract тест не замества реалната SMTP доставка и recovery проверка.
-
-Текущ Auth резултат: чист live signup с отделен нерегистриран адрес е PASS: доставено/лично отворено confirmation писмо, PKCE HTTP200, потвърден собствен pending профил, нула роли/организации/контексти и logout/relogin с действителни ordinary-session SELECT/RPC проверки. По-ранният signup flow_state_expired остава исторически FAIL. Отделният реален live recovery тест е PASS: Brevo Sent/Delivered и получено писмо, PKCE HTTP200, проверен Auth user, updateUser HTTP200, logout, new-password login и old-password invalid_credentials отказ. След възстановяването actual ordinary-session записи отново потвърждават pending без роли/организации/контексти. Тестовите имейли, паролите и еднократните връзки не са част от публичния пакет.
-
-HTML/CSS/чист JavaScript/Bootstrap, Node/npm/Vite. Девет HTML входа: начало, dashboard, buildings, account, login, register, platform-admin, organization-admin и съвместимият admin навигационен индекс. Регистрация/вход и двата административни процеса имат отделни файлове. Общият ES module зарежда навигация, тема, BG ресурси и каталог. Контролерите в `src/pages` обработват формите; `src/ui` съдържа споделени UI операции, `src/services` извиква Supabase SDK/Auth/Data API. Няма React/Vue/TypeScript.
+HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth през supabase-js и REST/RPC. Няма React/Vue/TypeScript. Девет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 
 ```mermaid
 flowchart LR
-  HTML[Отделни HTML страници] --> Controller[src/pages]
-  Controller --> UI[src/ui: навигация и тема]
-  Controller --> Catalog[src/domain: каталог]
-  Controller --> Services[src/services: Auth, access, registry]
-  Services --> Supabase[Supabase Auth / Data API]
-  Supabase --> RLS[Grants + RLS + проверени RPC]
+    Pages[HTML pages] --> Controllers[Page controllers]
+    Controllers --> UI[UI renderers]
+    Controllers --> Domain[Pure domain rules]
+    Controllers --> Services[Services]
+    Services --> Auth[Supabase Auth]
+    Services --> API[REST and public RPC]
+    API --> Guards[Grants RLS and guarded private functions]
+    Guards --> DB[Application tables]
 ```
 
-Тъмната тема използва Bootstrap `data-bs-theme` и `localStorage` ключ `propertyhub.theme` (само предпочитание, без лични данни). При забранен storage изборът работи в текущата страница. CSS tokens са в `src/styles/main.css`. Няма analytics.
+Статичният deployment публикува само dist. Public RPC са SECURITY INVOKER wrappers към минимално разрешени private SECURITY DEFINER функции с празен search_path и текуща Auth/permission проверка. private остава неизложена през Data API. Всички приложни public таблици имат RLS; няма anon grants за приложните данни/RPC. Direct writes са ограничени, а чувствителните операции са guarded RPC. user_metadata служи само за display name, никога за права.
 
-DB-A/B миграциите са приложени в установения Supabase проект. Има 14 приложни таблици в public и затворена private.bootstrap_state. Всички public таблици имат RLS. Няма anon grants за приложните таблици/RPC. Само колони за собствено име/предпочитания имат директен UPDATE; добавянето на регистър и административните промени минават през контролирани функции. Public RPC са SECURITY INVOKER обвивки към изрично разрешени, проверяващи текущата Auth идентичност SECURITY DEFINER функции в неизложената private схема, с фиксиран празен search_path. Bootstrap няма public обвивка или клиентски EXECUTE. Audit е append-only чрез доверените операции. [Миграции, setup и проверки](../../supabase/README.md).
+Platform admin няма подразбиращ се operational достъп. Org admin управлява ограничени назначения; първият scope изисква отделно изрично manager предложение и приемане от точния получател. Runtime правата проверяват актуални profile/member/org/assignment/role периоди. Самоуправление не изисква фиктивна фирма. Controller чете, manager пише регистъра само с конкретните permissions. Cashier/owner runtime процесите още не са реализирани.
 
-Профилът има собствен UUID и отделна уникална auth_user_id връзка. След потвърден вход ensure_profile създава pending профил без роля. Потвърден имейл не доказва собственост/служебно право. Единствено името за представяне може да се вземе от user_metadata; права не се извеждат от metadata. Първото platform назначение изисква доверен оператор, точен одобрен и потвърден Auth UUID и еднократно фиксиране в bootstrap_state. След личния pending тест и предоставен от потребителя UUID bootstrap е изпълнен на 29.10.2026: проверени са active профил, един platform_admin/manage_platform grant и съответстващи bootstrap/audit записи, без организационни или оперативни роли.
+## Действителна схема
 
-Platform admin активира проверена заявка за организация и първо org admin назначение. Org admin управлява разрешените manager/controller назначения в собствените активни org/scopes; няма автоматичен registry/finance достъп. Manager работи с изрични read_registry/manage_registry; controller чете. Проверяват се текущи profile/role/membership/org/management assignment/status/периоди при всяка заявка. Архивиране/редакция на регистъра, касиерски функции, покани с токени, owner links и финансови операции следват в отделни пакети.
+**12 миграции;23 приложни таблици —19 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
 
-Началният scope използва отделна административна заявка за manager пакет към точен confirmed акаунт, с 48h срок и преглед на текущото право на издателя. Само получателят приема: физическият контекст, членството и изричният manager grant се записват атомарно. Чист org admin не наследява оперативни права; старият `create_management_context` е затворен. Org staff projection показва минималните назначения в собствената организация, без глобален профилен каталог. Organization onboarding вече допуска корекция, оттегляне, отказ и активация с основание/exact revision; token invites и owner links остават затворени.
-
-Шестте DB-B таблици пазят typed source kind/reference, known_from, needs_review/verified, recorder/reviewer/time/note. При създаване стойностите са непроверени; липсваща площ остава неизвестна и след преглед на останалите стойности. Един source packet покрива въведените стойности на реда. Field-level evidence за смесени източници и исторически редакции трябва да предшества отварянето на такива операции. Verified ред не е финансова готовност; ownership периодите са реализирани в отделния DB-C/2 пакет по-долу; обитаване, идеални части и финанси предстоят.
+### Достъп и физически registry
 
 ```mermaid
 erDiagram
-    AUTH_USERS o|--o| PROFILES : authenticates
-    PROFILES ||--o{ ORGANIZATION_MEMBERSHIPS : joins
-    ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERSHIPS : has
-    ORGANIZATION_MEMBERSHIPS ||--o{ USER_ROLES : grants
-    PROFILES ||--o{ USER_ROLES : holds
-    ROLE_PERMISSIONS }o--o{ USER_ROLES : validates
-    BUILDINGS ||--o{ ENTRANCES : contains
-    BUILDINGS ||--o{ MANAGEMENT_UNITS : scopes
-    BUILDINGS ||--o{ UNITS : contains
-    MANAGEMENT_UNITS ||--o{ MANAGEMENT_ASSIGNMENTS : assigned
-    ORGANIZATIONS ||--o{ MANAGEMENT_ASSIGNMENTS : manages
-    MANAGEMENT_UNITS ||--o{ USER_ROLES : limits
-    MANAGEMENT_UNITS ||--o{ UNIT_SCOPE_PERIODS : includes
-    UNITS ||--o{ UNIT_SCOPE_PERIODS : belongs
-    PROFILES ||--o{ ACCESS_REQUESTS : requests
-    ORGANIZATIONS ||--o{ SCOPE_SETUP_REQUESTS : authorizes
-    PROFILES ||--o{ SCOPE_SETUP_REQUESTS : receives
-    MANAGEMENT_UNITS o|--o| SCOPE_SETUP_REQUESTS : fulfills
-    PROFILES o|--o{ AUDIT_EVENTS : acts
+    AUTH_USERS o|--o| PROFILES : auth_user_id
+    PROFILES ||--o{ ORGANIZATION_MEMBERSHIPS : profile_id
+    ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERSHIPS : organization_id
+    PROFILES ||--o{ USER_ROLES : profile_id
+    ORGANIZATION_MEMBERSHIPS o|--o{ USER_ROLES : membership_profile_fk
+    MANAGEMENT_UNITS o|--o{ USER_ROLES : scope_id
+    ORGANIZATIONS ||--o{ BUILDINGS : created_by_organization_id
+    BUILDINGS ||--o{ ENTRANCES : building_id
+    BUILDINGS ||--o{ MANAGEMENT_UNITS : building_id
+    ENTRANCES o|--o{ MANAGEMENT_UNITS : building_entrance_fk
+    BUILDINGS ||--o{ UNITS : building_id
+    ENTRANCES o|--o{ UNITS : building_entrance_fk
+    MANAGEMENT_UNITS ||--o{ MANAGEMENT_ASSIGNMENTS : scope_id
+    ORGANIZATIONS ||--o{ MANAGEMENT_ASSIGNMENTS : organization_id
+    MANAGEMENT_UNITS ||--o{ UNIT_SCOPE_PERIODS : scope_id
+    UNITS ||--o{ UNIT_SCOPE_PERIODS : unit_id
+    PROFILES ||--o{ ACCESS_REQUESTS : requester_profile_id
+    ORGANIZATIONS o|--o{ ACCESS_REQUESTS : organization_id
+    ORGANIZATIONS ||--o{ SCOPE_SETUP_REQUESTS : organization_id
+    PROFILES ||--o{ SCOPE_SETUP_REQUESTS : issuer_and_target
+    MANAGEMENT_UNITS o|--o| SCOPE_SETUP_REQUESTS : scope_id_unique
+    PROFILES o|--o{ AUDIT_EVENTS : actor_profile_id
+    ORGANIZATIONS o|--o{ AUDIT_EVENTS : organization_id
+    MANAGEMENT_UNITS o|--o{ AUDIT_EVENTS : scope_id
+    PROFILES ||--o| PRIVATE_BOOTSTRAP_STATE : profile_id
+    ROLE_PERMISSIONS {
+        text role_code PK
+        text permission_code PK
+    }
 ```
 
-Диаграмата показва основните отношения. ROLE_PERMISSIONS→USER_ROLES се валидира с trigger/контролирана функция, а не с масивен FK. Composite FK пазят entrance/building и membership/profile съвместимост; trigger валидира unit/scope; exclusion constraints забраняват припокрити membership/management/unit-scope периоди. Няма автоматично сливане по адрес или прехвърляне на чуждо управление.
+ROLE_PERMISSIONS е каталог, а не FK от permissions масива; валидността на назначенията се налага с trigger/функции. SCOPE_SETUP_REQUESTS има отделни issuer/target profile FK, показани събрано. Lifecycle-ът на organization requests включва revision, correction/withdraw/reject/activate и audit. Bootstrap е затворена операторска операция, не public RPC. Адресът не дава права и не слива физически записи.
 
-Преминали са 22 локални PostgreSQL групи с тестови Auth fixtures; те не са live Auth сесии. Потребителят потвърди реални login, pending без административни/registry права, logout/reload и повторен login преди bootstrap. Confirmation връзката е върнала грешка, въпреки че акаунтът е потвърден. Обработката вече различава изтекла/използвана връзка, session проблем и доказана текуща confirmed сесия, без да твърди конкретна причина за историческия случай или да отразява token/error_description. Чист нов signup callback вече е проверен с реално доставено писмо и PKCE сесия. Bootstrap записите са проверени операторски. След отделен Auth Admin setup са изпълнени 11 hosted групи с три обикновени password сесии и publishable ключ, плюс logout: първо scope/manager приемане, действителни unit/period записи, cross-org SELECT/INSERT/UPDATE/DELETE откази, pending/metadata/self-elevation, staff projection, provenance, requester lifecycle и revocation със същата сесия. Operator fixture SQL създава само двете синтетични организации/org admin основания и не служи за RLS доказателство. Fixtures остават за инспекция. Чист email callback и recovery вече са проверени; Storage предстои в DEV-04.
+### Scoped лица, собственост и обитаване
 
-`vite build` включва само изричните HTML входове и техните зависимости. Планиращият пакет е игнориран от Git; достъпът до него през dev сървъра е забранен. За hosting се използва само `dist/`. Development и preview се обвързват към loopback, не към LAN.
+```mermaid
+erDiagram
+    MANAGEMENT_UNITS ||--o{ PERSONS : scope_id
+    PERSONS ||--o{ PRIVATE_PERSON_REVISIONS : person_id
+    MANAGEMENT_UNITS ||--o{ OWNERSHIP_PERIODS : scope_id
+    UNITS ||--o{ OWNERSHIP_PERIODS : unit_id
+    UNIT_SCOPE_PERIODS ||--o{ OWNERSHIP_PERIODS : scope_period_fk
+    PERSONS ||--o{ OWNERSHIP_PERIODS : scope_person_fk
+    OWNERSHIP_PERIODS o|--o| OWNERSHIP_PERIODS : replaces_id_unique
+    UNITS ||--o{ OWNERSHIP_SET_REVIEWS : unit_id
+    MANAGEMENT_UNITS ||--o{ OWNERSHIP_SET_REVIEWS : scope_id
+    UNITS ||--o{ PRIVATE_OWNERSHIP_BATCHES : unit_id
+    MANAGEMENT_UNITS ||--o{ PRIVATE_OWNERSHIP_BATCHES : scope_id
+    MANAGEMENT_UNITS ||--o{ OCCUPANCY_PERIODS : scope_id
+    UNITS ||--o{ OCCUPANCY_PERIODS : unit_id
+    UNIT_SCOPE_PERIODS ||--o{ OCCUPANCY_PERIODS : scope_period_fk
+    PERSONS o|--o{ OCCUPANCY_PERIODS : nullable_scope_person_fk
+    OCCUPANCY_PERIODS o|--o| OCCUPANCY_PERIODS : replaces_id_unique
+    UNITS ||--o{ OCCUPANCY_SET_REVIEWS : unit_id
+    MANAGEMENT_UNITS ||--o{ OCCUPANCY_SET_REVIEWS : scope_id
+    UNITS ||--o{ PRIVATE_OCCUPANCY_BATCHES : unit_id
+    MANAGEMENT_UNITS ||--o{ PRIVATE_OCCUPANCY_BATCHES : scope_id
+    PROFILES ||--o{ PERSONS : recorded_by
+    PROFILES ||--o{ OWNERSHIP_PERIODS : recorded_by
+    PROFILES ||--o{ OCCUPANCY_PERIODS : recorded_by
+    PROFILES ||--o{ OWNERSHIP_SET_REVIEWS : reviewed_by
+    PROFILES ||--o{ OCCUPANCY_SET_REVIEWS : reviewed_by
+    PROFILES ||--o{ PRIVATE_OWNERSHIP_BATCHES : actor_id
+    PROFILES ||--o{ PRIVATE_OCCUPANCY_BATCHES : actor_id
+```
 
-Допълнително са преминали 18 реални Playwright/Edge случая за org/registry: две ширини, две теми, разрешен/pending достъп, own-org опции, навигация/reload и browser errors. Всички snapshots са действително прегледани; danger outline contrast е поправен и целево проверен при четирите комбинации (6.05:1 light, 8.54:1 dark). UI scope request/revoke и unit create/verify са проверени с реалните записи през ordinary A сесия; неизвестната площ остава NULL. Последващият live appointments набор проверява UI scope приемане/staff assign/revoke; clean email callback вече е проверен с отделна реална signup сесия.
+Person/period composite FK включват scope и не позволяват чуждо scoped лице. Ownership/occupancy записите се отнасят към конкретен unit_scope_period; trigger проверява unit и съдържане на периода. Неизобразените nullable verifier/retirer FK сочат PROFILES. Review record_ids са UUID масиви, не FK към всеки period; функцията ги проверява и пази fingerprint. PRIVATE_PERSON_REVISIONS пази JSON snapshot, а private batch таблиците — idempotent request payload/result. И четирите private таблици имат RLS и нямат пряк клиентски достъп.
 
-Ранният Netlify production deploy вече е на https://propertyhub-ilopolo.netlify.app. Изрично свързан е съществуващият GitHub `ilopolo/PropertyHub`/main с build `npm run build`/publish `dist`. CSP и останалите security headers са проверени върху live responses; автоматичният hosting badge е изключен за отстраняване на CSP violations. Live 18-case org/registry матрицата е повторена и всичките снимки са прегледани. Отделни 11 smoke групи проверяват деветте HTML входа с reload/themes/headers, pending login/logout/relogin и отрицателните callbacks. Site URL и точният HTTPS account redirect са записани и проверени след reload; локалните redirects са запазени. Последващият live UI appointments набор премина exact-recipient scope acceptance с отделен manager grant и controller assignment/revocation само с read_registry; действителните редове са проверени с ordinary A сесия. Четирите inbox screenshots са прегледани; 8 целеви A retests са PASS. Положителните live signup/confirmation/PKCE и recovery сценарии също са проверени с реалните сесии и записи.
+Няма account_person_links, unit_share_versions, Storage metadata, work_items, finance или notifications таблици. Не се рисуват бъдещи отношения като вече създадени.
 
-### DB-C/1 scoped persons
+## Поведение на registry
 
-`persons` is partitioned by immutable management scope. RLS requires current `read_registry`; all client writes are revoked. Public security-invoker RPCs delegate to private guarded save/verify functions requiring current `manage_registry`. Org/platform administration gives no operational inheritance. There is no name/email uniqueness, automatic identity merge, Auth link or ownership grant.
+- Принадлежност на имота към избрана дата: strict ISO business dates, [начало,край), today Europe/Sofia; това е филтър със сегашните права/полета, не historical field snapshot.
+- DB-B metadata: source kind/reference, known_from, author/time, needs_review/verified. Липсваща площ остава неизвестна. Един source packet обосновава целия минимален ред; mixed-source partial editor предстои.
+- Scoped persons: optional contacts, отделна verification, expected revision, private history. Equal name/email не слива записи. Person е различен от Auth profile; не е нужен акаунт за всеки собственик.
+- Ownership: fraction>0≤1, numeric(12,10), exact decimal text; partial set е разрешен,>1 и overlap на person/unit са отказани. Exact1+all rows verified+explicit set review е отделна проверка; без нормализация или auto owner access.
+- Occupancy: individual physical person=1 или aggregate whole-unit declaration с nullable whole count≥0. Owner-resident, right-of-use resident, tenant-resident и other са отделни декларирани статути. Unknown, declared0 и verified0 се различават. Mixed aggregate/individual overlap и same-person/unit overlap са отказани. Parent person revision/kind промяна обезсилва проверката до fresh correction.
+- Ownership/occupancy corrections: atomic≤20 changes/unit, lock, request key, fresh source/history limitation/reason; оригиналите остават immutable с retirement evidence. Отделни row/set reviews и fingerprint invalidation. RLS read_registry; RPC manage_registry; без direct client writes.
 
-The minimal editor reasserts the entire record from one declaration/document source packet. Server-generated per-field evidence covers each supplied non-null field. An optimistic revision check prevents stale replacement/review; replacement preserves a private snapshot and resets verification. Mixed-source partial editing and public historical-person projections remain outside this step. Audit payloads contain revision IDs, not contacts. Blank contacts stay unknown; verified does not imply a complete registry or financial readiness.
+Периодът known_from не е дата на придобиване. Няма фиктивна предходна история, automatic debt transfer, законови exemption правила или начисляване по дни. Verified означава служебен преглед, не държавна/правна заверка или финансова готовност.
 
-Password validation is shared by registration and both password-update paths, excluded from login. The accepted temporary hosted minimum is 8 without character classes; UI additionally requires a digit. Hosted Management API enumerates policies and does not expose digit-only requirements. This is an explicit API/UI difference, to resolve before business launch; no private hook or paid mechanism is introduced.
+## Domain-only идеални части
 
-### DB-C/2 ownership periods
+src/domain/unit-shares.js експортира percentageUnits, percentageText, assessUnitShares. Процентни пунктове, decimal text с≤8 знака, BigInt scale100000000; missing≠invalid0,0<value≤100. Идеалните части на имота не са ownership fractions на съсобствениците.
 
-Migration `20261030194407_ownership_periods.sql` adds `ownership_periods`, `ownership_set_reviews` and closed `private.ownership_batches`. Current read_registry governs RLS/reads; guarded private functions behind public invoker RPCs require manage_registry for writes/reviews. Direct client writes and anonymous access are revoked. Composite person/scope and unit-scope-period references prevent cross-scope linking; the ownership interval must fit a recorded unit scope period. No account-person or financial tables are modified.
+assessUnitShares приема basis (key/revision/kind/building_id/entrance_id/verified), participants (basis/revision/unit_ids/verified/period), current rows и интервал. JSDoc е точният input/output договор. Резултатът съдържа valid/reviewed rows, причини и сегменти с exact known_total/difference; known subtotal не замества липсващо число. Състоянията са conflict/wrong_basis/missing/unreviewed/partial/ready. Няма rounding/epsilon, скрито допълване или ребазиране на building проценти към entrance. Целият предоставен current snapshot се проверява консервативно; retired originals не участват.
 
-Each request changes one unit atomically, locks that unit and uses a persistent request key/payload/actor check. Immutable original facts remain after replacement or void, with retirement actor/time/reason/evidence. New rows carry a person-name/revision snapshot, source packet, known-from date and history limitation. Fraction input is validated as decimal text before numeric(12,10) conversion; reads return strings. Every relevant interval start is checked for total<=1, including future segments; coowners may overlap, the same person/unit may not. No normalization or debt transfer occurs.
+**Без API/UI/DDL интеграция.** ready оценява supplied assertions, не установява истинността на verified, правна приложимост или достъп и не записва set review. Бъдещият server слой трябва да установи реалните права/доказателства/състав/ревизии. SQL basis representation още е отворен въпрос.
 
-Row verification is separate from explicit set review for a date. A reviewed set needs total=1 and all applicable rows verified. A fingerprint of those facts/reviews makes changed sets unreviewed while retaining old review records. This is staff evidence of registry completeness, not legal certification or financial readiness. Historical corrections do not fabricate earlier facts or retarget financial parties. The UI stages a batch before one submit and waits for the selected scope/unit to finish loading before enabling edits.
+## Auth, live и доказателства
 
+Brevo Free custom SMTP обслужва само Auth confirmation/reset при Confirm Email ON. Реалните отделни signup и recovery PKCE сценарии са преминали; стар flow_state_expired е исторически неуспех, не текущ blocker. UI password8–256+ASCII digit; hosted minimum8 без character requirements допуска API парола без цифра. Единна server политика предстои преди бизнес старт. Login на съществуващи потребители не е принудително променян.
 
-### Обитаване с периоди и произход
+Запазени са ordinary-session2-org/pending RLS allow/deny, local PostgreSQL rebuild, domain boundary/concurrency проверки и реални Edge local/live screenshot/reload/theme проверки. Domain-only shares има17 synthetic групи; occupancy —9 local DB и9 hosted API групи плюс subject guard. Тези са резултати от съответните feature checkpoints, не нови тестове при документационна редакция. PGlite Auth fixtures и операторски setup не са доказателство за hosted Auth/RLS. QA artifacts и credentials остават локални.
 
-В „Сгради“ разрешен служител въвежда обща декларация за имот или конкретни физически лица с деклариран статут: собственик, носител на право на ползване, наемател или друг обитател. Това е описателен регистър, а не доказателство за собственост или финансови разчетни единици. Периодите са [начало,край), в рамките на принадлежността на имота. Общият брой е цяло неотрицателно число или неизвестен; празното не е нула. Липса на запис, неизвестен брой, декларирана нула и изрично проверена нула се показват отделно.
-
-Сървърът не допуска обща декларация и конкретни лица за застъпващи се периоди, застъпващи се общи декларации или повторение на същото лице/имот независимо от статута. Различни scoped лица не се сливат по име/имейл. Конкретното лице е физическо и броят му е1. Броенето е за избрания имот и дата; няма глобално удостоверяване на самоличност или автоматично финансово изчисление.
-
-Атомарната група съдържа до20 промени за един имот и изричен произход, известно от, ограничения на историята и основание. Корекциите/оттеглянията запазват оригинала. Новите записи чакат преглед; отделната проверка на набора изисква известен брой и проверени приложими редове. Промяна на свързаното лице обезсилва проверката и изисква ново сведение. read_registry разрешава преглед; manage_registry разрешава запис и проверка чрез RPC. Direct writes са отказани.
-
-Записът не създава собственост, account-person връзка, портален достъп, начисления, законови освобождавания или пропорционално начисляване по дни. Потвърдена нула обитатели не означава нулево начисление.
-
-Миграции: 20261030203754_occupancy_periods.sql и 20261030205226_occupancy_subject_guard.sql. Предишната ownership миграция е 20261030194407_ownership_periods.sql; по-ранното193517 е име на непубликуван draft, не друга приложена версия.
-
-Целеви проверки: npm run check:occupancy-domain, npm run check:occupancy-db (самостоятелен временен PostgreSQL), npm run check:occupancy (съществуващи синтетични сесии), npm run check:occupancy-subject и npm run check:occupancy-browser. Hosted сценарии запазват request keys преди запис и откриват съществуващия QA ресурс при продължение. Subject тестът създава едно отделно scoped QA лице и го оставя неактивно, без нов Auth акаунт. Live browser режимът --read-only блокира записите. Артефакти/данни/credentials остават локални.
+Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Owner links/portal, Storage/signals, import/export, finance/reports и in-app notifications предстоят; demo достъпът още не е подготвен. Не се използва личният platform admin за demo.

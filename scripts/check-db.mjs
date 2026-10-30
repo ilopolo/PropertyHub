@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
+import { testOwnership } from './test-ownership-db.mjs';
 
 process.on('uncaughtException', error => { console.error(`FAILED: ${error.code || ''} ${error.message}`); process.exit(1); });
 
@@ -209,6 +210,7 @@ await ok('person revision: review resets on full replacement; stale edit/review 
  await denied(()=>as('managerA',"select public.verify_scoped_person($1,$2,1,'Stale')",[scope.A,person.A]));
  assert.equal((await db.query('select count(*)::int n from private.person_revisions where person_id=$1',[person.A])).rows[0].n,1);
 });
+await testOwnership({db,as,ok,denied,scope,unit,person});
 await ok('delegated read-only controller cannot write',async()=>{
  await as('orgA','select public.assign_staff_role($1,$2,$3,$4,$5)',[org.A,ids.pending,scope.A,'controller',['read_registry']]);
  assert.equal((await as('pending','select * from public.units')).rows.length,1);
@@ -216,6 +218,8 @@ await ok('delegated read-only controller cannot write',async()=>{
  assert.equal((await as('pending','select * from public.persons')).rows.length,2);
  await denied(()=>as('pending',savePersonSQL,[scope.A,person.A,2,'Read-only denied',null]));
  await denied(()=>as('pending',"select public.verify_scoped_person($1,$2,2,'Read-only denied')",[scope.A,person.A]));
+ assert.ok((await as('pending','select * from public.ownership_periods')).rows.length>0);
+ await denied(()=>as('pending',"select public.review_ownership($1,$2,null,current_date,'Read only denied')",[scope.A,unit.A]));
 });
 await ok('revocation uses current DB grant with same session identity',async()=>{
  await as('orgA','select public.revoke_staff_role($1)',[role.A]);

@@ -8,6 +8,7 @@ import { authError } from '../i18n/auth-bg.js';
 import { registryToday, calendarLabel } from '../domain/registry.js';
 import { unitDetails } from '../ui/registry.js';
 import { showPersons } from './scoped-persons.js';
+import { showOwnership } from './ownership.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -18,6 +19,9 @@ document.querySelector('#setup-provenance').innerHTML = provenanceFields('setup'
 document.querySelector('#create-unit').lastElementChild.insertAdjacentHTML('beforebegin', provenanceFields('unit'));
 async function showUnits() {
   const revision = ++loadRevision;
+  scopeSelect.disabled = true;
+  document.querySelector('#ownership').hidden = true;
+  try {
   const scope = scopeSelect.value;
   const date = asOf.value;
   const context = account.contexts.find(c => c.scope_id === scopeSelect.value);
@@ -36,6 +40,8 @@ async function showUnits() {
   }
   if (revision !== loadRevision) return;
   list.replaceChildren();
+  await showOwnership(scope,units,date,Boolean(context?.can_manage_registry));
+  if (revision !== loadRevision) return;
   document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
   if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';
   const types = { apartment:'Апартамент',shop:'Магазин',office:'Офис',garage:'Гараж',other:'Обект' };
@@ -55,6 +61,7 @@ async function showUnits() {
     list.append(li);
     if (li.querySelector('form')) bindForm(`#verify-${unit.id}`, async data => { await verifyRegistryRecord(context.scope_id, 'unit', unit.id, String(data.get('note')).trim()); await showUnits(); message('Проверката е записана. Липсващите стойности остават неизвестни; това не удостоверява финансова готовност.'); });
   }
+  } finally { if (revision === loadRevision) scopeSelect.disabled = false; }
 }
 scopeSelect.addEventListener('change', () => showUnits().catch(error => message(authError(error),true)));
 bindForm('#registry-filter', async () => { await showUnits(); message('Прегледът към избраната дата е зареден.'); });

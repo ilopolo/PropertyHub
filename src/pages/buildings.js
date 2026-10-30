@@ -5,25 +5,44 @@ import { listScopeSetups, completeScopeSetup } from '../services/access.js';
 import { provenanceFields, readProvenance } from '../ui/provenance.js';
 import { bindForm, message, option } from '../ui/forms.js';
 import { authError } from '../i18n/auth-bg.js';
+import { registryToday, calendarLabel } from '../domain/registry.js';
+import { unitDetails } from '../ui/registry.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
+const asOf = document.querySelector('#registry-date');
+asOf.value = registryToday();
+let loadRevision = 0;
 document.querySelector('#setup-provenance').innerHTML = provenanceFields('setup');
 document.querySelector('#create-unit').lastElementChild.insertAdjacentHTML('beforebegin', provenanceFields('unit'));
 async function showUnits() {
+  const revision = ++loadRevision;
+  const scope = scopeSelect.value;
+  const date = asOf.value;
   const context = account.contexts.find(c => c.scope_id === scopeSelect.value);
-  document.querySelector('#unit-create').hidden = !context?.can_manage_registry;
+  const canManage = context?.can_manage_registry && date === registryToday();
+  document.querySelector('#unit-create').hidden = !canManage;
   const list = document.querySelector('#units'); list.textContent = 'Зареждане…';
-  const units = await listUnits(scopeSelect.value);
+  document.querySelector('#registry-count').textContent = '';
+  let units;
+  try { units = await listUnits(scope, date); }
+  catch (error) {
+    if (revision !== loadRevision) return;
+    list.textContent = 'Прегледът не е зареден. Избери обхват и валидна дата и опитай отново.';
+    throw error;
+  }
+  if (revision !== loadRevision) return;
   list.replaceChildren();
-  if (!units.length) list.textContent = 'Няма записани обекти или нямаш право за преглед.';
+  document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
+  if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';
   const types = { apartment:'Апартамент',shop:'Магазин',office:'Офис',garage:'Гараж',other:'Обект' };
   for (const unit of units) {
     const li = document.createElement('li'); li.className = 'list-group-item text-break';
     const text = document.createElement('p');
     text.textContent = `${types[unit.unit_type]} ${unit.unit_number} · ${unit.floor ? `етаж ${unit.floor}` : 'етаж неизвестен'} · ${unit.area == null ? 'площ неизвестна' : `${unit.area} m²`} · ${unit.verification_status === 'verified' ? 'проверени въведени стойности' : 'нужен преглед'} · Известно от: ${unit.known_from || 'неустановена дата'} · ${unit.source_reference || 'неустановен източник'}`;
-    li.append(text);
-    if (context?.can_manage_registry && unit.verification_status !== 'verified') {
+    li.dataset.unitId = unit.id;
+    li.append(text, unitDetails(unit));
+    if (canManage && unit.verification_status !== 'verified') {
       const form = document.createElement('form'); form.className = 'mb-3'; form.id = `verify-${unit.id}`;
       const label = document.createElement('label'); label.className = 'form-label'; label.htmlFor = `note-${unit.id}`; label.textContent = 'Основание за проверката на въведените стойности';
       const note = document.createElement('input'); note.id = label.htmlFor; note.name = 'note'; note.required = true; note.maxLength = 300; note.className = 'form-control mb-2';
@@ -35,6 +54,7 @@ async function showUnits() {
   }
 }
 scopeSelect.addEventListener('change', () => showUnits().catch(error => message(authError(error),true)));
+bindForm('#registry-filter', async () => { await showUnits(); message('Прегледът към избраната дата е зареден.'); });
 bindForm('#create-unit', async (data,form) => {
   await createUnit(scopeSelect.value,String(data.get('number')).trim(),String(data.get('type')),String(data.get('floor')).trim(),String(data.get('area')),readProvenance(data));
   form.reset(); await showUnits(); message('Обектът и принадлежността му към обхвата са записани.');

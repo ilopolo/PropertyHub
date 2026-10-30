@@ -2,6 +2,8 @@
 [data-bs-theme="light"] { --bs-body-bg: #f5f7f8; --bs-body-color: #243746; --bs-link-color: #155a46; }
 [data-bs-theme="dark"] { --ph-accent: #8cdec0; --bs-body-bg: #141e27; --bs-body-color: #e3edf3; --bs-link-color: #9be4cb; }
 [data-bs-theme="dark"] .btn-outline-secondary { --bs-btn-color: #c5d0d8; --bs-btn-border-color: #8796a4; }
+[data-bs-theme="light"] .btn-outline-danger { --bs-btn-color: #b02a37; --bs-btn-border-color: #b02a37; }
+[data-bs-theme="dark"] .btn-outline-danger { --bs-btn-color: #ff9da7; --bs-btn-border-color: #ff9da7; }
 body { min-width: 280px; }
 .container { max-width: var(--ph-content); }
 main { padding-top: 3rem; padding-bottom: 4rem; }

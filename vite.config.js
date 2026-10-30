@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   server: {
+    watch: { ignored: ['**/.local/**', '**/.netlify/**'] },
     // Internal planning materials must not be served by the development server.
     fs: { deny: ['.env', '.env.*', '**/.git/**', '**/docs/**', '**/assignment/**', '**/references/**', '**/history/**', '**/START_HERE.md', '**/FILE_MANIFEST.sha256', '**/.local/**'] },
   },

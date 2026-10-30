@@ -14,7 +14,10 @@
     "check:db": "node scripts/check-db.mjs",
     "check:rls": "node scripts/check-rls.mjs",
     "check:public-api": "node scripts/check-public-api.mjs",
-    "check:auth-callback": "node scripts/check-auth-callback.mjs"
+    "check:auth-callback": "node scripts/check-auth-callback.mjs",
+    "check:browser": "node scripts/check-browser.mjs",
+    "check:public-package": "node scripts/check-public-package.mjs",
+    "setup:rls-users": "node scripts/create-rls-users.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.13",
+    "playwright": "1.64.1",
     "supabase": "2.122.0",
     "vite": "^8.3.5"
   }

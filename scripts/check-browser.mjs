@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 for (const file of ['.env.local', '.env.rls.local']) { try { loadEnvFile(file); } catch {} }
 const base = process.env.QA_BASE_URL || 'http://127.0.0.1:4173';
 const output = base.startsWith('https://') ? '.local/browser-qa-live' : '.local/browser-qa';
-const reportPath = `${output}/${process.argv.includes('--contrast') ? 'contrast-report' : 'report'}.json`;
+const reportPath = `${output}/${process.argv.includes('--contrast') ? 'contrast-report' : process.argv.includes('--organization-a') ? 'organization-a-report' : 'report'}.json`;
 const fixtures = JSON.parse(await readFile('.local/rls-fixtures.json', 'utf8'));
 await mkdir(output, { recursive: true });
 const results = [];
@@ -15,7 +15,7 @@ let phase = 'launch';
 let browser;
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  for (const role of process.argv.includes('--contrast') ? ['A'] : ['A', 'PENDING', 'B']) {
+  for (const role of process.argv.some(arg => ['--contrast', '--organization-a'].includes(arg)) ? ['A'] : ['A', 'PENDING', 'B']) {
     phase = `login ${role}`;
     const email = process.env[`RLS_${role}_EMAIL`];
     const password = process.env[`RLS_${role}_PASSWORD`];
@@ -52,7 +52,8 @@ try {
           assert.equal(await gate.isVisible(), role !== 'PENDING', 'Role gate mismatch');
           if (role !== 'PENDING') {
             const options = await page.locator(orgPage ? '#organization option' : '#scope option').evaluateAll(nodes => nodes.map(n => n.value));
-            assert.deepEqual(options, [orgPage ? fixtures.org[role] : fixtures.scope[role]], 'Foreign or missing context');
+            const expected = orgPage ? [fixtures.org[role]] : [fixtures.scope[role], ...(fixtures.extraScopes?.[role] || [])];
+            assert.deepEqual([...options].sort(), [...expected].sort(), 'Foreign or missing context');
             if (!orgPage) assert.equal(await page.locator('#unit-create').isVisible(), true);
           } else {
             assert.equal(await page.locator(orgPage ? '#scope-setup' : '#create-unit').isVisible(), false);

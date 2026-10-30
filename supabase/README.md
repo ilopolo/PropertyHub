@@ -55,6 +55,8 @@ Platform admin преглежда заявка за организация и а
 
 ## Проверки
 
+След първоначалните API проверки са изпълнени и реални live UI scope request/revoke, exact-recipient acceptance, staff controller assign/revoke и unit create/verify. Всеки резултат е сверяван чрез SELECT с обикновена A сесия. Controller пакетът е само read_registry; отнемането му не отнема отделния manager grant. Сега fixtures са две synthetic организации, три scopes и четири units; допълнителният A scope е създаден чрез разрешения acceptance процес. Няма промяна на личната организационна заявка или pending тестовия профил. Скриптовете проверяват стабилните synthetic labels преди повторение; local manifests/screenshots са игнорирани.
+
 `npm.cmd run check:db` прилага всички миграции върху празен временен PostgreSQL и проверява 22 групи, включително реално записани/непроменени редове, 2-org изолация, grants, RLS, periods/FK, bootstrap и отнемане. Auth таблицата и JWT claim setting са локални fixtures: това НЕ са реални GoTrue сесии.
 
 За hosted потребителски проверки създай три отделни потвърдени синтетични акаунта без назначения. В игнориран `.env.rls.local` запиши `RLS_A_EMAIL`, `RLS_A_PASSWORD`, `RLS_B_EMAIL`, `RLS_B_PASSWORD`, `RLS_PENDING_EMAIL`, `RLS_PENDING_PASSWORD`. Скриптът приема само publishable ключ; не използва service-role за assertions.

@@ -34,7 +34,8 @@
     "check:occupancy-db": "node scripts/check-occupancy-db.mjs",
     "check:occupancy": "node scripts/check-occupancy-api.mjs",
     "check:occupancy-subject": "node scripts/check-occupancy-subject.mjs",
-    "check:occupancy-browser": "node scripts/check-occupancy-browser.mjs"
+    "check:occupancy-browser": "node scripts/check-occupancy-browser.mjs",
+    "check:unit-shares-domain": "node scripts/check-unit-shares-domain.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

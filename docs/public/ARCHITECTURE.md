@@ -80,3 +80,18 @@ Migration `20261030194407_ownership_periods.sql` adds `ownership_periods`, `owne
 Each request changes one unit atomically, locks that unit and uses a persistent request key/payload/actor check. Immutable original facts remain after replacement or void, with retirement actor/time/reason/evidence. New rows carry a person-name/revision snapshot, source packet, known-from date and history limitation. Fraction input is validated as decimal text before numeric(12,10) conversion; reads return strings. Every relevant interval start is checked for total<=1, including future segments; coowners may overlap, the same person/unit may not. No normalization or debt transfer occurs.
 
 Row verification is separate from explicit set review for a date. A reviewed set needs total=1 and all applicable rows verified. A fingerprint of those facts/reviews makes changed sets unreviewed while retaining old review records. This is staff evidence of registry completeness, not legal certification or financial readiness. Historical corrections do not fabricate earlier facts or retarget financial parties. The UI stages a batch before one submit and waits for the selected scope/unit to finish loading before enabling edits.
+
+
+### Обитаване с периоди и произход
+
+В „Сгради“ разрешен служител въвежда обща декларация за имот или конкретни физически лица с деклариран статут: собственик, носител на право на ползване, наемател или друг обитател. Това е описателен регистър, а не доказателство за собственост или финансови разчетни единици. Периодите са [начало,край), в рамките на принадлежността на имота. Общият брой е цяло неотрицателно число или неизвестен; празното не е нула. Липса на запис, неизвестен брой, декларирана нула и изрично проверена нула се показват отделно.
+
+Сървърът не допуска обща декларация и конкретни лица за застъпващи се периоди, застъпващи се общи декларации или повторение на същото лице/имот независимо от статута. Различни scoped лица не се сливат по име/имейл. Конкретното лице е физическо и броят му е1. Броенето е за избрания имот и дата; няма глобално удостоверяване на самоличност или автоматично финансово изчисление.
+
+Атомарната група съдържа до20 промени за един имот и изричен произход, известно от, ограничения на историята и основание. Корекциите/оттеглянията запазват оригинала. Новите записи чакат преглед; отделната проверка на набора изисква известен брой и проверени приложими редове. Промяна на свързаното лице обезсилва проверката и изисква ново сведение. read_registry разрешава преглед; manage_registry разрешава запис и проверка чрез RPC. Direct writes са отказани.
+
+Записът не създава собственост, account-person връзка, портален достъп, начисления, законови освобождавания или пропорционално начисляване по дни. Потвърдена нула обитатели не означава нулево начисление.
+
+Миграции: 20261030203754_occupancy_periods.sql и 20261030205226_occupancy_subject_guard.sql. Предишната ownership миграция е 20261030194407_ownership_periods.sql; по-ранното193517 е име на непубликуван draft, не друга приложена версия.
+
+Целеви проверки: npm run check:occupancy-domain, npm run check:occupancy-db (самостоятелен временен PostgreSQL), npm run check:occupancy (съществуващи синтетични сесии), npm run check:occupancy-subject и npm run check:occupancy-browser. Hosted сценарии запазват request keys преди запис и откриват съществуващия QA ресурс при продължение. Subject тестът създава едно отделно scoped QA лице и го оставя неактивно, без нов Auth акаунт. Live browser режимът --read-only блокира записите. Артефакти/данни/credentials остават локални.

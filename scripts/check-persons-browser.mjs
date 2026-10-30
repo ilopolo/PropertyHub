@@ -17,7 +17,7 @@ try{
   const request=route.request(),path=new URL(request.url()).pathname;
   // A fail-closed transport guard independently prevents all registry writes.
   // Only these existing read/provision-own-profile RPCs are used by page initialization.
-  const allowedReadRPC=['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/read_ownership'];
+  const allowedReadRPC=['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/read_ownership','/rest/v1/rpc/read_occupancy'];
   if(!['GET','HEAD','OPTIONS'].includes(request.method()) && !allowedReadRPC.includes(path)){
    errors.push('blocked-write-in-read-only');await route.abort();return;
   }
@@ -54,7 +54,8 @@ try{
   await page.locator('#person-save').waitFor();await page.locator('#scope').selectOption(fixtures.scope.A);await page.locator(`[data-person-id="${fixtures.persons.A[0]}"]`).waitFor();
   assert.equal(await page.locator('html').getAttribute('data-bs-theme'),theme);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Horizontal overflow');
-  assert.equal(await page.locator('#person-list > li').count(),2);
+  let auxiliaryCount=0;try{const subject=JSON.parse(await readFile('.local/occupancy-qa/subject-state.json','utf8'));if(subject.person)auxiliaryCount=1;}catch(error){if(error.code!=='ENOENT')throw error;}
+  assert.equal(await page.locator('#person-list > li').count(),2+auxiliaryCount);
   const image=`${output}/persons-${width}-${theme}.png`;await page.locator('#persons').screenshot({path:image});results.push({width,theme,screenshot:image,role:'manager',status:'automated PASS; visual pending'});
  }
  phase='scope/date isolation';await page.locator('#scope').selectOption(fixtures.scope.extraA);await page.locator(`[data-person-id="${fixtures.persons.extraA[0]}"]`).waitFor();

@@ -29,7 +29,12 @@
     "check:browser": "node scripts/check-browser.mjs",
     "check:live": "node scripts/check-live.mjs",
     "check:public-package": "node scripts/check-public-package.mjs",
-    "setup:rls-users": "node scripts/create-rls-users.mjs"
+    "setup:rls-users": "node scripts/create-rls-users.mjs",
+    "check:occupancy-domain": "node scripts/check-occupancy-domain.mjs",
+    "check:occupancy-db": "node scripts/check-occupancy-db.mjs",
+    "check:occupancy": "node scripts/check-occupancy-api.mjs",
+    "check:occupancy-subject": "node scripts/check-occupancy-subject.mjs",
+    "check:occupancy-browser": "node scripts/check-occupancy-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

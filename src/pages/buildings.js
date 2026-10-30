@@ -9,6 +9,7 @@ import { registryToday, calendarLabel } from '../domain/registry.js';
 import { unitDetails } from '../ui/registry.js';
 import { showPersons } from './scoped-persons.js';
 import { showOwnership } from './ownership.js';
+import { showOccupancy } from './occupancy.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -21,6 +22,7 @@ async function showUnits() {
   const revision = ++loadRevision;
   scopeSelect.disabled = true;
   document.querySelector('#ownership').hidden = true;
+  document.querySelector('#occupancy').hidden = true;
   try {
   const scope = scopeSelect.value;
   const date = asOf.value;
@@ -41,6 +43,8 @@ async function showUnits() {
   if (revision !== loadRevision) return;
   list.replaceChildren();
   await showOwnership(scope,units,date,Boolean(context?.can_manage_registry));
+  if (revision !== loadRevision) return;
+  await showOccupancy(scope,units,date,Boolean(context?.can_manage_registry));
   if (revision !== loadRevision) return;
   document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
   if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';

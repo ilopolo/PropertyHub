@@ -25,7 +25,7 @@ try{
   page.on('response',async r=>{if(r.status()>=400)errors.push('http-error');if(new URL(r.url()).pathname==='/rest/v1/rpc/read_ownership'&&r.status()===200)data=await r.json();});
   if(readOnly)await context.route('**/rest/v1/**',async route=>{
    const request=route.request(),path=new URL(request.url()).pathname;
-   if(!['GET','HEAD','OPTIONS'].includes(request.method())&&!['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/read_ownership'].includes(path)){errors.push('blocked-write');await route.abort();return;}await route.continue();
+   if(!['GET','HEAD','OPTIONS'].includes(request.method())&&!['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/read_ownership','/rest/v1/rpc/read_occupancy'].includes(path)){errors.push('blocked-write');await route.abort();return;}await route.continue();
   });
   else await context.route('**/rest/v1/rpc/apply_ownership_changes',async route=>{
    // Save the exact synthetic request before sending it, for recovery after interruption.

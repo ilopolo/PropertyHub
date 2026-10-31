@@ -20,11 +20,11 @@ flowchart LR
 
 Статичният deployment публикува само dist. Public RPC са SECURITY INVOKER wrappers към минимално разрешени private SECURITY DEFINER функции с празен search_path и текуща Auth/permission проверка. private остава неизложена през Data API. Всички приложни public таблици имат RLS; няма anon grants за приложните данни/RPC. Direct writes са ограничени, а чувствителните операции са guarded RPC. user_metadata служи само за display name, никога за права.
 
-Platform admin няма подразбиращ се operational достъп. Org admin управлява ограничени назначения; първият scope изисква отделно изрично manager предложение и приемане от точния получател. Runtime правата проверяват актуални profile/member/org/assignment/role периоди. Самоуправление не изисква фиктивна фирма. Controller чете, manager пише регистъра само с конкретните permissions. Cashier/owner runtime процесите още не са реализирани.
+Platform admin няма подразбиращ се operational достъп. Org admin управлява ограничени назначения; първият scope изисква отделно изрично manager предложение и приемане от точния получател. Runtime правата проверяват актуални profile/member/org/assignment/role периоди. Самоуправление не изисква фиктивна фирма. Controller чете, manager пише регистъра само с конкретните permissions. Cashier и пълният финансов/исторически owner портал още не са реализирани; минималният current owner изглед е описан по-долу.
 
 ## Действителна схема
 
-**12 миграции;23 приложни таблици —19 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
+**14 миграции;24 приложни таблици —20 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
 
 ### Достъп и физически registry
 
@@ -68,6 +68,11 @@ ROLE_PERMISSIONS е каталог, а не FK от permissions масива; в
 ```mermaid
 erDiagram
     MANAGEMENT_UNITS ||--o{ PERSONS : scope_id
+    MANAGEMENT_UNITS ||--o{ ACCOUNT_PERSON_LINKS : scope_id
+    PERSONS ||--o{ ACCOUNT_PERSON_LINKS : scope_person_fk
+    PROFILES ||--o{ ACCOUNT_PERSON_LINKS : profile_id
+    PROFILES ||--o{ ACCOUNT_PERSON_LINKS : verified_by
+    PROFILES o|--o{ ACCOUNT_PERSON_LINKS : revoked_by
     PERSONS ||--o{ PRIVATE_PERSON_REVISIONS : person_id
     MANAGEMENT_UNITS ||--o{ OWNERSHIP_PERIODS : scope_id
     UNITS ||--o{ OWNERSHIP_PERIODS : unit_id
@@ -98,7 +103,7 @@ erDiagram
 
 Person/period composite FK включват scope и не позволяват чуждо scoped лице. Ownership/occupancy записите се отнасят към конкретен unit_scope_period; trigger проверява unit и съдържане на периода. Неизобразените nullable verifier/retirer FK сочат PROFILES. Review record_ids са UUID масиви, не FK към всеки period; функцията ги проверява и пази fingerprint. PRIVATE_PERSON_REVISIONS пази JSON snapshot, а private batch таблиците — idempotent request payload/result. И четирите private таблици имат RLS и нямат пряк клиентски достъп.
 
-Няма account_person_links, unit_share_versions, Storage metadata, work_items, finance или notifications таблици. Не се рисуват бъдещи отношения като вече създадени.
+Има account_person_links за проверена самоличност. Няма unit_share_versions, Storage metadata, work_items, finance или notifications таблици. Не се рисуват бъдещи отношения като вече създадени.
 
 ## Поведение на registry
 
@@ -125,4 +130,12 @@ Brevo Free custom SMTP обслужва само Auth confirmation/reset при 
 
 Запазени са ordinary-session2-org/pending RLS allow/deny, local PostgreSQL rebuild, domain boundary/concurrency проверки и реални Edge local/live screenshot/reload/theme проверки. Domain-only shares има17 synthetic групи; occupancy —9 local DB и9 hosted API групи плюс subject guard. Тези са резултати от съответните feature checkpoints, не нови тестове при документационна редакция. PGlite Auth fixtures и операторски setup не са доказателство за hosted Auth/RLS. QA artifacts и credentials остават локални.
 
-Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Owner links/portal, Storage/signals, import/export, finance/reports и in-app notifications предстоят; demo достъпът още не е подготвен. Не се използва личният platform admin за demo.
+Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Пълният финансов/исторически owner портал, Storage/signals, import/export, finance/reports и in-app notifications предстоят; demo достъпът още не е подготвен. Не се използва личният platform admin за demo.
+
+## Минимален current owner projection
+
+account_person_links пази exact profile/scoped person, person_revision, verified actor/time, evidence/note/request_key и еднократно revocation evidence/actor/time. Unique active person link, immutable originals, direct writes denied; base SELECT само за current verifier. my_owned_units извежда actor от потвърдената Auth сесия и връща unit ID/number/type и building/entrance/scope labels. Active link, active verified current person revision, verified current ownership и unit_scope/management periods се проверяват при всяко четене. Няма caller-supplied profile, base-table owner grants, чужди контакти/дялове, finance/history или operational permission от link. Pending target може да стане active след проверката, без служебни назначения.
+
+verify_owner_access е optional manager permission с read_registry. Org admin на управляващата scope org го включва на друг existing manager чрез set_owner_verifier с основание/audit; generic staff INSERT не го дава. Верификаторът не потвърждава собствен profile или вече свързаната си идентичност. manage_registry, manage_members и platform_admin не го наследяват. Прекратена проверяваща роля спира следващо confirm/revoke, но не отменя автоматично независимо вече проверена самоличност. Link revocation или изтекла ownership връзка спират следващия owner query със същия JWT; показаният вече текст не може да бъде физически изтрит от устройството. UI прави нов read при обновяване/focus и не използва стар async response.
+
+Каноничното име е verify_owner_access от първоначалния onboarding модел; няма второ сходно право. Минималният UI е в Account/Buildings/Organization admin, без нов сайт. Чистите PostgreSQL, ordinary-session API и реалните локални Edge проверки са отделни доказателства; пълният owner портал остава бъдещ зависим пакет.

@@ -4,6 +4,7 @@ import { requestScopeSetup, listScopeSetups, revokeScopeSetup, organizationStaff
 import { bindForm, message, option } from '../ui/forms.js';
 import { dateTime } from '../ui/provenance.js';
 import { authError } from '../i18n/auth-bg.js';
+import {setOwnerVerifier} from '../services/owner-access.js';
 
 let account;
 const organization = document.querySelector('#organization');
@@ -23,6 +24,10 @@ async function showOrganization() {
     const active = Date.parse(role.valid_from) <= Date.now() && (!role.valid_to || Date.now() < Date.parse(role.valid_to));
     text.textContent = `${role.display_name} · ${role.role_code} · ${active ? 'текущ период' : 'извън текущ период'} · ${role.permissions.join(', ')} · Обхват: ${role.scope_id || 'организация'} · Назначение: ${role.role_id} · Профил: ${role.profile_id}`;
     card.append(text);
+    card.dataset.staffRole=role.role_id;
+    if(active&&role.role_code==='manager'&&role.profile_id!==account.profile.id){
+      const form=document.createElement('form');form.className='mb-3';const label=document.createElement('label');label.className='form-label';label.htmlFor=`verifier-${role.role_id}`;label.textContent='Основание за отделното право за проверка на собственически достъп';const input=document.createElement('input');input.id=label.htmlFor;input.name='note';input.className='form-control mb-2';input.required=true;input.maxLength=300;const button=document.createElement('button');button.className='btn btn-outline-secondary';const enabled=!role.permissions.includes('verify_owner_access');button.textContent=enabled?'Разреши проверка на собственически достъп':'Отнеми правото за проверка на собственически достъп';form.append(label,input,button);form.addEventListener('submit',async event=>{event.preventDefault();button.disabled=true;try{await setOwnerVerifier(role.role_id,enabled,input.value.trim());await refresh();message('Отделното verification право е променено с основание.');}catch(error){message(authError(error),true);button.disabled=false;}});card.append(form);
+    }
     if (active && ['manager', 'controller'].includes(role.role_code)) {
       const button = document.createElement('button'); button.className = 'btn btn-outline-danger align-self-start'; button.textContent = 'Отнеми това служебно назначение';
       button.addEventListener('click', async () => { button.disabled = true; try { await revokeStaff(role.role_id); await refresh(); message('Назначението е прекратено.'); } catch (e) { message(authError(e), true); button.disabled = false; } }); card.append(button);

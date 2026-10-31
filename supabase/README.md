@@ -101,3 +101,42 @@ npm.cmd run check:unit-file-domain; npm.cmd run check:unit-file-db; npm.cmd run 
 
 
 Verified-owner история: действителната приложена/committed версия е20261031092207_verified_owner_access.sql;20261031091247 е била неприлагана CLI чернова. Local/committed/saved applied statement hash е e3a12961f10c23ebc1a50baad74d6075 (LF/trim). Номерът на черновата в стар списък не е основание за rename или reapply.
+
+### Подготвен hosted Storage harness — още НЕ е изпълнен
+
+[check-unit-file-hosted.mjs](../scripts/check-unit-file-hosted.mjs) има безопасен **offline plan** по подразбиране: не зарежда env, не влиза в Auth и не изпраща HTTP. Целта е фиксирана към qfybswnezdzzahmozikr — същият споделен проект с live версията, **не изолиран staging**. Скриптът никога не прилага миграции или създава Auth акаунти. [Локалната preparation проверка](../scripts/check-unit-file-hosted-preparation.mjs) проверява execution/project/path guards, собствеността на journal ресурсите, guarded membership SQL и синтетичен валиден PDF с точни5MiB/5MiB+1 размери. Това не е managed Storage runtime тест.
+
+```powershell
+npm.cmd run check:unit-file-hosted
+npm.cmd run check:unit-file-hosted-preparation
+```
+
+За бъдещо отделно разрешено изпълнение са нужни игнорирани fixture/journal под .local/storage-hosted-qa. Fixture форматът е project,org,scope,unit,foreignScope,foreignUnit,person:{id,revision},auth:{A,B,OWNER},profiles:{A,B,OWNER}; всички ID са UUID на предварително проверени синтетични ресурси. Точните IDs не се публикуват. В локалната работна среда има подготвен fixture от предишния owner journal и read-only inventory; не го пресъздавай с нови акаунти/организации. Преди execute свери IDs/current grants/person revision/ownership и заетия file slot.
+
+Credentials се четат само в execute режим от игнорираните .env.local, .env.rls.local, .env.password-policy.local и optional .env.storage-qa.local:
+
+| Променливи | Предназначение |
+|---|---|
+| VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY | Точният project URL и само publishable key; не privileged key |
+| RLS_A_EMAIL, RLS_A_PASSWORD | Съществуващ synthetic A: org admin за назначенията, без файлово наследяване |
+| RLS_B_EMAIL, RLS_B_PASSWORD | Съществуващ synthetic B: временно файлово/verifier назначение в A; след revoke отново само чужд scope B |
+| PASSWORD_QA_EMAIL, PASSWORD_QA_PASSWORD | Вече съществуващият изолиран owner QA акаунт, без нова парола/reset |
+| STORAGE_QA_MANAGEMENT_TOKEN | Optional Management API token с database write достъп за конкретния проект; **само за точния membership cleanup**, не за access assertions. Не е Project Secret/service-role. Алтернативата е existing operator connector с генерирания guarded SQL |
+
+Не въвеждай пароли/token в CLI аргументи, VITE_ променливи за операторски ключове, чат, screenshots или Git. Изходът не съдържа credentials, еднократни URL или API response bodies. Sessions са ordinary, без persistence/auto-refresh; same-JWT сравненията остават само в RAM. Global Confirm Email и личните акаунти не се променят. Pending QA акаунтът не се използва, за да остане pending.
+
+След отделно разрешен read-only preflight и apply на миграцията, **НЕ като част от настоящата подготовка**:
+
+```powershell
+npm.cmd run check:unit-file-hosted -- --phase setup --execute --project qfybswnezdzzahmozikr --external-membership-cleanup
+npm.cmd run check:unit-file-hosted -- --phase assertions --execute --project qfybswnezdzzahmozikr
+npm.cmd run check:unit-file-hosted -- --phase cleanup --execute --project qfybswnezdzzahmozikr
+```
+
+- **setup:** проверява ordinary identities, baseline role/membership IDs, наличен document RPC/capability, person/ownership и свободния slot. Missing RPC/schema е preflight failure, никога успешен deny. A дава на B нов manager subset read_registry/manage_documents и отделно verify_owner_access; после B създава точно маркирана owner връзка. Не се изменят старите A/B назначения.
+- **assertions:** реални SDK upload/download SHA256 на малък staff-only и точен5MiB owner PDF; default privacy; anonymous/public/signed отказ; raw MIME/size откази и incomplete pending/complete refusal; чужди scope/unit IDs. B role се отнема, а **owner positive control още сваля същите bytes** — така foreign refusal не се бърка с липсващ файл. Втори изричен временен B grant възстановява само test setup за owner-link revoke/cleanup. Проверява се действително отнемане на owner bytes/metadata при същия JWT и проследим tombstone→Storage API remove→finish. Няма SQL DELETE на storage.objects.
+- **cleanup:** само journal IDs и filename marker storage-qa-<run>-<kind>.pdf, с проверка на uploader/scope/unit и link evidence. Запазва document/link/role/audit историята; не изтрива Auth/person/unit/org или baseline grants. Новият B membership в A се деактивира само по exact ID/profile/org и при липса на активни роли. Default operator вариантът генерира <journal>.membership-cleanup.sql; изпълни го през съществуващия connector след преглед и повтори само cleanup. Дотогава cleanup не е PASS. Optional token използва [Management API query](https://supabase.com/docs/reference/api/v1-run-a-query), beta endpoint; ако той е недостъпен/променен, остани на reviewed SQL през connector, без заобикаляне на права. Привилегированият cleanup не е RLS доказателство.
+
+setup отказва върху съществуващ journal. Assertions не се повтарят върху interrupted/completed run; първо cleanup/сверка, после нов journal path. Lock предпазва от паралелен writer. При pending role/link/prepare intention, неочаквано позволен negative write или stale lock: първо установи крайния server result по точните ID/marker и journal/.tmp, после документирано поправи състоянието; не изтривай lock и не повтаряй setup на сляпо. Completed cleanup се отчита RETAIN, не нов hosted PASS. Възможни многотранзакционни Storage races и provider operation mapping остават отделни hosted gates.
+
+Проверено в тази подготовка: syntax/offline guards/fixture ownership/PDF boundaries, **0 HTTP от preparation теста**. Read-only connector inventory потвърди14 миграции, неприложена Storage миграция, липсващи bucket/documents, наличен helper и подходящите стари synthetic данни. Няма изпълнени hosted setup/assertions/cleanup и няма нов Storage PASS. Продуктовите SQL/policies/service са само прегледани, без промяна.

@@ -10,6 +10,7 @@ import { unitDetails } from '../ui/registry.js';
 import { showPersons } from './scoped-persons.js';
 import { showOwnership } from './ownership.js';
 import { showOccupancy } from './occupancy.js';
+import {showOwnerVerification,hideOwnerVerification} from './owner-access.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -21,6 +22,7 @@ document.querySelector('#create-unit').lastElementChild.insertAdjacentHTML('befo
 async function showUnits() {
   const revision = ++loadRevision;
   scopeSelect.disabled = true;
+  hideOwnerVerification();
   document.querySelector('#ownership').hidden = true;
   document.querySelector('#occupancy').hidden = true;
   try {
@@ -45,6 +47,8 @@ async function showUnits() {
   await showOwnership(scope,units,date,Boolean(context?.can_manage_registry));
   if (revision !== loadRevision) return;
   await showOccupancy(scope,units,date,Boolean(context?.can_manage_registry));
+  if (revision !== loadRevision) return;
+  await showOwnerVerification(scope,account);
   if (revision !== loadRevision) return;
   document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
   if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';

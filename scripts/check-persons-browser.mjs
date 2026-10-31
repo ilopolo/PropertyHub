@@ -17,7 +17,7 @@ try{
   const request=route.request(),path=new URL(request.url()).pathname;
   // A fail-closed transport guard independently prevents all registry writes.
   // Only these existing read/provision-own-profile RPCs are used by page initialization.
-  const allowedReadRPC=['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/read_ownership','/rest/v1/rpc/read_occupancy'];
+  const allowedReadRPC=['/rest/v1/rpc/ensure_profile','/rest/v1/rpc/my_contexts','/rest/v1/rpc/my_owned_units','/rest/v1/rpc/owner_access_records','/rest/v1/rpc/read_ownership','/rest/v1/rpc/read_occupancy'];
   if(!['GET','HEAD','OPTIONS'].includes(request.method()) && !allowedReadRPC.includes(path)){
    errors.push('blocked-write-in-read-only');await route.abort();return;
   }

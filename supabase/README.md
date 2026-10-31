@@ -1,6 +1,6 @@
 # Supabase — setup, схема и проверки
 
-Установеният проект е qfybswnezdzzahmozikr. **12 приложени/committed SQL миграции;23 приложни таблици:19 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
+Установеният проект е qfybswnezdzzahmozikr. **14 приложени/committed SQL миграции;24 приложни таблици:20 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
 
 ## Миграционна история
 
@@ -19,7 +19,10 @@
 | [20261030203754_occupancy_periods.sql](migrations/20261030203754_occupancy_periods.sql) | Individual/aggregate occupancy periods, set reviews, private batches |
 | [20261030205226_occupancy_subject_guard.sql](migrations/20261030205226_occupancy_subject_guard.sql) | Physical person/current revision guard и review invalidation |
 
-Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички19 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
+| [20261031092207_verified_owner_access.sql](migrations/20261031092207_verified_owner_access.sql) | Explicit verifier делегация, account-person history и минимален current owner projection |
+| [20261031092951_owner_verifier_explicit_delegation.sql](migrations/20261031092951_owner_verifier_explicit_delegation.sql) | Само отделният verifier setter може да включи правото с основание; generic INSERT отказ |
+
+Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички20 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 
 За отделна безопасна тестова Supabase база историята се прилага по ред/в транзакции след сверка на remote history. Нужни са стандартните Supabase Auth роли/схема, PostgreSQL15+ и btree_gist. Не се редактират произволно managed auth/storage схеми; има FK към auth.users и guarded read на потвърждението. Имената на CLI командите се проверяват с инсталирания CLI help преди операция. **Пълен Docker/Supabase clean reset и clean-checkout setup не са изпълнени**; PGlite rebuild проверява само нужния PostgreSQL/Auth договор.
 
@@ -45,7 +48,7 @@ Signup/recovery започват и завършват в същия брауз�
 
 Platform admin активира проверена organization заявка; org admin управлява ограничени изрични назначения в своята org. Първият scope изисква точен confirmed manager recipient,48h предложение и лично приемане; записва отделен operational grant. Manager: read_registry/manage_registry; controller: read_registry. Няма operational inheritance от platform/org admin, fake firm за self_managed или auto claim на чужд адрес.
 
-Account-person links/owner portal, token invitations и cashier/finance workflow още липсват. Ownership/occupancy registry не ги създава автоматично. За следващия owner-link пакет остава изричният избор кой има право да проверява самоличността/връзката; не се предполага ново permission от съществуваща admin роля. Demo/reviewer достъпът е предстоящ и не използва личния platform admin или QA credentials.
+Проверени account-person links и минимален current owner projection са реализирани; пълният финансов/исторически owner портал, token invitations и cashier/finance workflow още липсват. Ownership/occupancy registry не ги създава автоматично. verify_owner_access е отделно optional manager право, изрично назначавано от org admin на друг current manager в собствен managed scope чрез set_owner_verifier с основание. Потвърждаване/оттегляне изискват това право и read_registry; няма самопотвърждение или auto admin inheritance. Demo/reviewer достъпът е предстоящ и не използва личния platform admin или QA credentials.
 
 ## Проверки и синтетични ресурси
 
@@ -69,4 +72,6 @@ Account-person links/owner portal, token invitations и cashier/finance workflow
 
 Запазени са hosted2-org/pending allow/deny и revocation със същата сесия, реални browser API→SELECT проверки, persons/ownership/occupancy и реални email PKCE проверки. Локалните и hosted доказателства се отчитат отделно. Историческите числа22/30/9 са конкретни test checkpoints, не общ брой актуални тестове или таблици. Screenshots и отчети са игнорирани, не публични credentials.
 
-Audit и private bootstrap/history/batch таблиците умишлено са затворени за пряк клиентски достъп; RLS-without-policy INFO не се премахва с отворена policy. Изложените registry таблици имат конкретни scope policies. Storage upload/download, owner projections, CSV import/export, signals, notifications и finance/reporting още не са реализирани. Идеалните части са domain-only. Виж публичната архитектура за съществуващите отношения и ограничения.
+Audit и private bootstrap/history/batch таблиците умишлено са затворени за пряк клиентски достъп; RLS-without-policy INFO не се премахва с отворена policy. Изложените registry таблици имат конкретни scope policies. Storage upload/download, финансови/исторически owner projections, CSV import/export, signals, notifications и finance/reporting още не са реализирани. Идеалните части са domain-only. Виж публичната архитектура за съществуващите отношения и ограничения.
+
+Owner-access checks: npm.cmd run check:owner-access-db (временен PostgreSQL); npm.cmd run check:owner-access-api (existing ordinary A/B/OWNER/PENDING sessions, publishable key, без нов Auth); npm.cmd run check:owner-access-browser (реални local Edge действия/снимки). State и request journals са ignored .local/owner-access-qa; не се публикуват и не се пресъздават след неизвестен резултат. Миграциите са additive спрямо предишния live backend; старите RPC signatures/default grants са непроменени.

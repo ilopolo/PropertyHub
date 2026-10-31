@@ -6,6 +6,8 @@ import { readAuthCallback, callbackNotice } from '../domain/auth-callback.js';
 import { bindForm, message } from '../ui/forms.js';
 import { clearRecoverySession, isRecoveryRequested } from '../services/supabase.js';
 import { validNewPassword } from '../domain/password.js';
+import {initializeOwnedUnits,refreshOwnedUnits} from './owner-access.js';
+initializeOwnedUnits();
 
 const field = (data, name) => String(data.get(name) || '').trim();
 let pendingRequest;
@@ -36,6 +38,7 @@ async function refresh() {
   document.querySelector('#signed-out').hidden = Boolean(account);
   document.querySelector('#signed-in').hidden = !account;
   if (!account) return null;
+  await refreshOwnedUnits();
   document.querySelector('#account-name').textContent = account.profile.display_name;
   document.querySelector('#account-uuid').textContent = account.user.id;
   document.querySelector('#profile-name').value = account.profile.display_name;

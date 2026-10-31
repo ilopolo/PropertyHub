@@ -35,7 +35,10 @@
     "check:occupancy": "node scripts/check-occupancy-api.mjs",
     "check:occupancy-subject": "node scripts/check-occupancy-subject.mjs",
     "check:occupancy-browser": "node scripts/check-occupancy-browser.mjs",
-    "check:unit-shares-domain": "node scripts/check-unit-shares-domain.mjs"
+    "check:unit-shares-domain": "node scripts/check-unit-shares-domain.mjs",
+    "check:owner-access-db": "node scripts/check-owner-access-db.mjs",
+    "check:owner-access-api": "node scripts/check-owner-access-api.mjs",
+    "check:owner-access-browser": "node scripts/check-owner-access-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

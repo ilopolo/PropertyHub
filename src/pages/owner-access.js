@@ -4,11 +4,12 @@ import {ownedUnitsList,ownerVerificationForm,ownerLinkRecord} from '../ui/owner-
 import {ownerAccessBg as bg} from '../i18n/owner-access-bg.js';
 import {bindForm,message,option} from '../ui/forms.js';
 import {authError} from '../i18n/auth-bg.js';
+import {showUnitFiles} from './unit-files.js';
 let generation=0,ownedGeneration=0;
 export async function refreshOwnedUnits(){
  const root=document.querySelector('#owner-home');if(!root)return;
  const version=++ownedGeneration;root.dataset.ready='false';const list=root.querySelector('ul');list.replaceChildren();
- try{const units=await myOwnedUnits();if(version!==ownedGeneration)return;ownedUnitsList(list,units);root.dataset.count=String(units.length);root.dataset.ready='true';}
+ try{const units=await myOwnedUnits();if(version!==ownedGeneration)return;ownedUnitsList(list,units);for(const [index,unit] of units.entries()){if(version!==ownedGeneration)return;await showUnitFiles(list.children[index],unit.scope_id,unit.unit_id);}if(version!==ownedGeneration)return;root.dataset.count=String(units.length);root.dataset.ready='true';}
  catch(error){if(version===ownedGeneration){message(authError(error),true);root.dataset.ready='error';}}
 }
 export function initializeOwnedUnits(){

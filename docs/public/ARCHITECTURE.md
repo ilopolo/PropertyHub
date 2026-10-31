@@ -139,3 +139,18 @@ account_person_links пази exact profile/scoped person, person_revision, veri
 verify_owner_access е optional manager permission с read_registry. Org admin на управляващата scope org го включва на друг existing manager чрез set_owner_verifier с основание/audit; generic staff INSERT не го дава. Верификаторът не потвърждава собствен profile или вече свързаната си идентичност. manage_registry, manage_members и platform_admin не го наследяват. Прекратена проверяваща роля спира следващо confirm/revoke, но не отменя автоматично независимо вече проверена самоличност. Link revocation или изтекла ownership връзка спират следващия owner query със същия JWT; показаният вече текст не може да бъде физически изтрит от устройството. UI прави нов read при обновяване/focus и не използва стар async response.
 
 Каноничното име е verify_owner_access от първоначалния onboarding модел; няма второ сходно право. Минималният UI е в Account/Buildings/Organization admin, без нов сайт. Чистите PostgreSQL, ordinary-session API и реалните локални Edge проверки са отделни доказателства; пълният owner портал остава бъдещ зависим пакет.
+
+
+## Подготвен private-file компонент — локален кандидат, НЕ hosted схема
+
+HEAD добавя една неприлагана миграция и public.documents:15 SQL файла /25 приложни таблици след бъдещо прилагане (21public+4private), отделно от потвърдения live baseline14/24. Typed unit FK е минималната едноцелна конкретизация на документ; multi-target document_links, версии и сигнали не се създават преждевременно. [Договор, ограничения и release gate](../../supabase/README.md#private-файл-към-имот--локално-проверен-кандидат-още-без-hosted-release).
+
+```mermaid
+erDiagram
+    MANAGEMENT_UNITS ||--o{ DOCUMENTS : scope_id
+    UNITS ||--o{ DOCUMENTS : unit_id
+    PROFILES ||--o{ DOCUMENTS : uploader_id
+    PROFILES o|--o{ DOCUMENTS : removed_by
+```
+
+UI controller unit-files → service unit-files → guarded document RPC +authenticated Storage download/upload/remove. Чистият domain валидира filename/MIME/size и SHA256; BG ресурси и DOM renderer са отделни. Private bucket/policies използват същия current scope/ownership договор като metadata. Owner audience е изрична и default staff; няма подписани/публични URL или owner upload. Supabase managed schema/operation helper са release prerequisites, не локално пресъздадени production структури. Локалният QA transport е само test helper, не backend на продукта.

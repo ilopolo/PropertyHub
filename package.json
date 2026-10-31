@@ -38,7 +38,10 @@
     "check:unit-shares-domain": "node scripts/check-unit-shares-domain.mjs",
     "check:owner-access-db": "node scripts/check-owner-access-db.mjs",
     "check:owner-access-api": "node scripts/check-owner-access-api.mjs",
-    "check:owner-access-browser": "node scripts/check-owner-access-browser.mjs"
+    "check:owner-access-browser": "node scripts/check-owner-access-browser.mjs",
+    "check:unit-file-domain": "node scripts/check-unit-file-domain.mjs",
+    "check:unit-file-db": "node scripts/check-unit-file-db.mjs",
+    "check:unit-file-browser": "node scripts/check-unit-file-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

@@ -1,6 +1,6 @@
 # Supabase — setup, схема и проверки
 
-Установеният проект е qfybswnezdzzahmozikr. **14 приложени/committed SQL миграции;24 приложни таблици:20 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
+Установеният проект е qfybswnezdzzahmozikr. **Hosted baseline:14 приложени SQL миграции;24 приложни таблици:20 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
 
 ## Миграционна история
 
@@ -75,3 +75,29 @@ Platform admin активира проверена organization заявка; or
 Audit и private bootstrap/history/batch таблиците умишлено са затворени за пряк клиентски достъп; RLS-without-policy INFO не се премахва с отворена policy. Изложените registry таблици имат конкретни scope policies. Storage upload/download, финансови/исторически owner projections, CSV import/export, signals, notifications и finance/reporting още не са реализирани. Идеалните части са domain-only. Виж публичната архитектура за съществуващите отношения и ограничения.
 
 Owner-access checks: npm.cmd run check:owner-access-db (временен PostgreSQL); npm.cmd run check:owner-access-api (existing ordinary A/B/OWNER/PENDING sessions, publishable key, без нов Auth); npm.cmd run check:owner-access-browser (реални local Edge действия/снимки). State и request journals са ignored .local/owner-access-qa; не се публикуват и не се пресъздават след неизвестен резултат. Миграциите са additive спрямо предишния live backend; старите RPC signatures/default grants са непроменени.
+
+
+## Private файл към имот — локално проверен кандидат, още без hosted release
+
+Този branch съдържа [20261031113950_private_unit_file.sql](migrations/20261031113950_private_unit_file.sql), **НЕПРИЛОЖЕНА** миграция. Hosted baseline остава14 миграции /24 приложни таблици (20public+4private); branch след прилагане би бил15 /25 (21public+4private). Без managed-schema DDL: добавя private bucket unit-private-files и ограничени policies върху storage.objects; не редактира Supabase таблици/функции. Bucket name collision или липсващ storage.allow_only_operation(text) спират миграцията, вместо да променят наличното.
+
+- Съществуващото планирано manage_documents е optional manager permission +read_registry, изрично назначавано в собствен managed scope от org admin през assign_staff_role. В UI пакетът „Файлове“ означава manager с точно тези две права, без manage_registry. Няма автоматична промяна на стари роли или inheritance от platform/org admin. Existing manager с друг permission пакет се прекратява и се назначава изрично подходящият subset през съществуващия lifecycle; няма тихо добавяне към старата роля.
+- Един активен файл на scope/unit; само PDF, application/pdf,1..5242880bytes (5MiB). Генериран immutable path scope/unit/document.pdf; без upsert/copy/versions. Клиентски SHA-256 се сравнява с реално свалени bytes при upload и download; това не е server content attestation, проверка за malware или удостоверяване на PDF. Bucket налага MIME/размер, не доказва съдържание. Няма inline preview.
+- Default visibility=staff. Само изрично избраното owners допуска текущ проверен собственик чрез fresh my_owned_units projection. Собственикът чете ready файла, няма upload/delete/оперативни права. Няма общо право върху всички документи към имота. Metadata и bytes проверяват същите scope/visibility/current rights; owner projection не издава uploader/history.
+- prepare_unit_document→pending15min; upload през Storage API, без upsert; authenticated download +SHA256 check; complete_unit_document проверява actual object size/MIME, тогава ready. Недовършено/изтекло качване не е owner-visible. Manager го отменя и качва отново; няма автоматично доизмисляне/публикуване.
+- remove_unit_document първо записва tombstone/actor/reason и спира download. Storage API remove изтрива bytes; finish_unit_document_removal потвърждава липсващ object и запазва история. При прекъсване UI предлага довършване; SQL DELETE на storage.objects не е приложен метод за физическо изтриване. Current right revocation спира новите metadata/byte заявки; вече свален файл не може да бъде отнет.
+- Само authenticated get. SELECT е operation-specific; signed URL, signed upload, list/copy и UPDATE/upsert не се предоставят. Restrictive guards ограничават и бъдещи broad permissive policies за този bucket, без да променят другите buckets. Download използва cache:no-store и upload cacheControl:0.
+
+### Локални проверки и граници
+
+npm.cmd run check:unit-file-domain; npm.cmd run check:unit-file-db; npm.cmd run check:unit-file-browser. Първите проверки са pure domain и временен PGlite PostgreSQL с изрична Storage schema/helper fixture. Browser runner използва действителен Edge, действителния frontend/SDK и real HTTP upload/download bytes върху локален Node QA transport +SQL/RLS; **НЕ е Supabase Storage/Auth runtime**, не чете env credentials и блокира hosted заявки. Browser screenshots/отчети са ignored. Тези доказателства не са hosted Storage PASS или пълен local Supabase stack PASS.
+
+### Оставащ release gate — без автоматично изпълнение
+
+1. Read-only свери hosted history14 и hash на baseline, operation helper/Storage API version, managed grants/RLS, bucket name absence и наличните policies. Feature клон не изолира Supabase. При несъвпадение спри и отчети; не пресъздавай fixtures/миграции.
+2. След отделно разрешен release прозорец приложи точно новата additive миграция транзакционно преди новия frontend. Старият live b088cfb остава съвместим: старите RPC signatures/default grants не са изменени, новата capability не е дадена на никого автоматично. При failure не merge-вай UI.
+3. С existing synthetic ordinary sessions и минимално изрично file grant (без лични акаунти) докажи реалния Storage API: private/public/sign отказ, MIME и5MiB граница, interrupted pending/cleanup, upload→download actual bytes+SHA256; anonymous/foreign scope отказ, default staff-only/explicit owner audience и same-session revocation. Свери actual metadata/object записи и физически bytes, после оттегли точно временните synthetic grants/links и премахни само новите synthetic files чрез Storage API. Не използвай operator ключ за RLS доказателство. Hosted helper/operation mapping и multi-transaction races остават непроверени локално.
+4. Само след тези gates обедини проверени промени в разрешен merge към main/една production публикация с бюджетен резерв; после targeted live navigation/download/revoke. Настоящият PR НЕ се merge-ва и няма production deployment. При rollback на frontend остави additive DB и отказаните pending/removed записи за контролиран cleanup; не drop-вай/преименувай историята.
+
+
+Verified-owner история: действителната приложена/committed версия е20261031092207_verified_owner_access.sql;20261031091247 е била неприлагана CLI чернова. Local/committed/saved applied statement hash е e3a12961f10c23ebc1a50baad74d6075 (LF/trim). Номерът на черновата в стар списък не е основание за rename или reapply.

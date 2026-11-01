@@ -1,8 +1,80 @@
 # Supabase — setup, схема и проверки
 
+## Минимално приложение към сигнал — hosted backend PASS, frontend в draft PR
+
+Зависимост: PR #5, `feature/owner-signals`/`4a6b10f`. Child PR #6/`feature/ticket-attachment` се предлага към родителския клон, не към main. **Минималното целево hosted приемане на attachment backend премина**; frontend още е в draft PR, main/live остава2e1b8f3. Exact `20261101195615_ticket_attachment.sql` е приложена еднократно след single-pending dry-run, LF-SHA256 `30a14088710f2bcf1a53bbb57c9dbf666e32b8a18d86f0c813341528fd2b2090`. Текущо: **21 приложени миграции /28 application tables (24public+4private)** и21локалниSQLфайла. Старите20SQL не са редактирани. Само новият `download-ticket-file` е deployed ACTIVEv1/verify_jwt=true; съществуващият unit handler остава непромененv1. Петте server secrets са използвани повторно, без secret write или нов ключ.
+
+Един активен pending/ready файл към сигнал: PNG (`image/png`), JPEG (`image/jpeg`) или PDF (`application/pdf`),1..5242880bytes, безопасно basename до120Unicode символа с правилно разширение. Private `ticket-private-files`, immutable server key `scope/item/document.ext`, no upsert. Upload/read само текущият проверен подател или изрично scoped `manage_tickets`. Owner reporter премахва само собствен upload; staff може всеки разрешен файл с причина. Друг съсобственик, `manage_documents`, registry-only, platform/org admin не наследяват достъп. Status на сигнала не се променя от файла. Няма нова capability или разширяване на имотните документи.
+
+`ticket_attachments` е минимален typed document target с composite scope/item FK, uploader/time/type/size/SHA,15min pending lease и ready/removed/bytes-deleted история. Create idempotence изисква същия request UUID и payload. Incomplete/expired upload се показва за изрично прекратяване; не се изтрива мълчаливо. Tombstone→Storage API remove→finish запазва причината/audit и позволява довършване след прекъсване. Без SQL DELETE на `storage.objects`. Complete проверява обект/размер/MIME; SHA/signature се проверяват при всяко защитено четене. Няма antivirus/full image decoding/EXIF обработка или гаранция за достоверност на съдържанието.
+
+Нов `download-ticket-file`: само `{document_id}`→`auth.getUser`→caller-identity `authorize_ticket_file_download` с текущи права и session existence→fixed exact-key S3 GetObject→bounded size/SHA256/PNG-JPEG-PDF signature→повторна caller RPC→no-store attachment. Общият транспорт е `_shared/private-file-download.js`; unit adapter запазва строгия си unit/PDF договор. Новият handler връща `application/octet-stream`+attachment/nosniff за коректен Blob през installed functions-js, а trusted metadata/S3 запазват конкретния MIME. Direct Storage bytes/sign/list/info/copy/user-S3 не са download пътища; restrictive SELECT е само за разрешено delete/delete_many. Няма URL fallback. След отнемане новата заявка трябва да откаже със същия JWT; вече получени bytes не могат да се отнемат.
+
+Локални проверки без credentials/hosted requests:
+
+```powershell
+npm.cmd run check:ticket-file-db
+npm.cmd run check:ticket-file-download
+npm.cmd run check:ticket-file-service
+npm.cmd run check:ticket-file-browser
+npm.cmd run check:unit-file-download
+npm.cmd run build
+```
+
+DB проверките ползват disposable PGlite с изрични Auth/Storage fixtures. Service/browser ползват реален supabase-js/HTTP, application JS и handler с локални Auth/S3 adapters. Те доказват локалните contracts/policies/bytes, **не реалния provider/CDN/Storage runtime**. Browser е истински Edge,375/1440px, две теми, навигация/reload; screenshot QA артефактите са локални и игнорирани. Test credentials са генерирани само в RAM за `.invalid` фиктивни акаунти; не се създават hosted users.
+
+### Действително hosted приемане и cleanup
+
+Реалните assertions са с обикновени съществуващи синтетични сесии. Операторският CLI token е използван само за exact migration/deploy и presence-only secrets проверка; не е RLS доказателство.
+
+| Gate | Резултат |
+|---|---|
+| PDF/PNG/JPEG | Реален upload, pending verification/ready download, bytes/SHA256 съвпадат; PNG/JPEG са генерирани синтетични изображения |
+| Размер/брой | Точно5MiB upload/read PASS;5MiB+1byte StorageHTTP413; един active pending/ready ред, втори prepare отказва; metadata0/over-limit/wrong extension/type отказват |
+| Ticket права | Current reporter и explicit scoped manage_tickets staff upload/read; same-unit чужд reporter, чужд scoped staff, anonymous и подменени signal/document IDs отказват; registry/document/org права не заместват ticket правото |
+| Премахване | Reporter премахва собствен upload, но получава42501 за staff upload; staff премахва разрешен файл с audit причина и запазена история |
+| Same-JWT role/link | Positive download→committed role revocation→нова заявка отказва със същия JWT; отделно същият процес за owner-link. Няма refresh/cache-busting |
+| Byte bypass/cache | Direct Storage URL/authenticated/public/info/HEAD/replay/sign/sign-many/list/copy и S3 user-token откази; positive Edge control; success/error no-store headers |
+| Incomplete/integrity | Без object complete отказва; explicit cancel/remove/finish работи. Declared PDF с неподходяща signature се качва към Storage, но Edge отказва502; това е контролиран integrity отказ, не authorization PASS |
+| Реален frontend | Local Vite→hosted upload/download/SHA/staff remove;2 screenshots owner375/light и staff1440/dark действително разгледани, без console/page errors/overflow |
+| Засегнат unit transport | Един положителен съществуващ unit-file pending/ready PDF download и exact cleanup; без unit redeploy/пълен повторен пакет |
+
+MIME refusal е действителен **HTTP415**. Първият run спря заради непълен QA status allowlist; след проверка на [официалния Storage error mapping](https://github.com/supabase/storage/blob/master/src/internal/errors/codes.ts) са изпълнени само останалите проверки. Няма app/policy поправка, допълнителна миграция или redeploy за този harness проблем; историческият резултат е запазен.
+
+**Граници на валидирането:** UI проверява име/extension/declared MIME/size/signature преди prepare, но може да бъде заобиколен с директен клиент. Bucket налага max size и declared MIME allowlist, не full content sniffing. RPC complete сверява object metadata size/MIME; Edge проверява actual byte count/SHA/signature при всяко четене. Няма server hash attestation при complete, full file decoder/AV или правна достоверност на документа. Hosted15min wall-clock expiry не е изчакан, а controlled mid-fetch revoke не е инжектиран: тези predicates/двойна авторизация са проверени локално и deployed unchanged; hosted same-JWT доказателството е за нова заявка след committed revoke.
+
+**Cleanup е потвърден от действителните записи:**0ticketStorageobjects/0activeattachments;13нови attachment history реда removed/bytes_deleted и46audit записа;1нов unit-file history ред removed/bytes_deleted,0неговиobjects;8временниroles/5linksотнети;3собствениmembershipsinactive;0от10новиQAсесии. Auth users остават7. Защитените profiles/roles/requests/persons/ownership и всички signal/status/event записи имат непроменени fingerprints. Не са създавани нови сигнали, Auth акаунти или променяни личният admin/request/pending. Предходните синтетични сигнали остават с историята си. QA IDs/journals/screenshots са само в игнорираната локална документация, без публични credentials/demo достъп.
+
+Временният CLI token е изчистен. Съществуващите server-only `UNIT_FILES_PUBLIC_KEY`, `UNIT_FILES_S3_ENDPOINT`, `UNIT_FILES_S3_REGION`, `UNIT_FILES_S3_ACCESS_KEY_ID`, `UNIT_FILES_S3_SECRET_ACCESS_KEY` остават работни и се ползват от двата отделни handler-а. `SUPABASE_URL` се предоставя от платформата. S3 ключът не е оттеглен; последваща ротация е отделна контролирана операция с presence/config и positive byte проверка, не frontend настройка.
+
+### Оставащ release и безопасно продължаване
+
+1. Не повтаряй apply/setup/deploy: migration21 и newEdgev1 вече са действителни. При прекъсване първо history/function/marked-resource reconciliation. Additive backend е съвместим с current main/live и parent signal frontend; unit права/capabilities не са разширявани.
+2. PR #5 и child PR #6 остават OPEN/DRAFT/unmerged. След отделно release решение: parent integration/review, child retarget към main при запазена проследимост и review само на добавката. Обединена frontend публикация се планира отделно; няма разрешение за merge/Netlify trigger в този пакет.
+3. След бъдещото публикуване: тесен live smoke с подходящ маркиран synthetic context и exact cleanup, без нови лични права. Не е нов пълен Auth/Storage/signal suite. Няма бюджетна проверка или hosting промяна.
+4. Local tooling за бъдеща реализация/deploy ползва pinned CLI и `supabase functions deploy download-ticket-file --project-ref qfybswnezdzzahmozikr --use-api`, **само след отделно възлагане и установена необходимост**. Verify JWT остава true; не prune/не deploy на всички функции. Не се искат нови server keys при работна конфигурация. Никога VITE_* за secrets или signed URL fallback.
+
+Официална основа: [bucket type/size restrictions](https://supabase.com/docs/guides/storage/buckets/creating-buckets), [operation-specific Storage helpers](https://supabase.com/docs/guides/storage/schema/helper-functions). Локалните доказателства се пазят отделно от действителните hosted резултати.
+
+## Минимален сигнал: hosted приемане PASS, frontend в draft PR
+
+Exact [20261101141944_owner_signals.sql](migrations/20261101141944_owner_signals.sql) и [20261101180527_ticket_revision_conflict.sql](migrations/20261101180527_ticket_revision_conflict.sql) са приложени еднократно с точните версии след single-pending CLI dry-run/hash gates. Родителският пакет приключи с **20 приложени миграции /27 таблици (23public+4private)**; attachment добавката по-горе е текущата21/28 схема. Последната миграция променя само stale conflict кода на private status функцията; няма нова таблица, роля или frontend логика. Приложените SQL файлове не са редактирани.
+
+Предишните hosted ordinary-session проверки доказват current owner create/own-author read, same-unit co-owner privacy, foreign scope, forged/direct DML откази, lifecycle/history и отделни same-JWT role/link revoke. Local frontend→hosted UI е проверен. Последният blocker е затворен с **един тесен real-browser тест**: current revision6→HTTP204/revision7; stale6→**HTTP409/PT409 за109ms**, actual row/events unchanged; actual page reload→current7→HTTP204/revision8. Няма останали retry заявки. Това съответства на [PostgREST custom HTTP errors](https://docs.postgrest.org/en/stable/references/errors.html#raise-errors-with-http-status-codes) и отстранява [проблема с40001/PostgREST14 retries](https://supabase.com/kb/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions).
+
+Cleanup е действително потвърден: новите временни роли ended, новата membership inactive, нови QA сесии0; по-старите synthetic сесии и personal/pending fingerprints са запазени, Auth акаунти7. Няма нов signal/person/unit/ownership/ownerlink или Storage ресурс в коригиращия тест. Запазени са същите3completed marked сигнала; първият вече еrevision8, общо16events/16signal audit реда. По-ранното изрично одобрено synthetic person verification остава audited fixture промяна; новият тест не я променя. CLI token е изчистен. Две QA подготовителни грешки са поправени преди status заявките; stale заявката не е преизпълнявана.
+
+Owner създава само за текущ разрешен собствен имот; author/scope/new са server-derived. Собственият прочит изисква авторство и текуща проверена собственост. Нов собственик не наследява чужди сигнали; историческият нефинансов достъп предстои. Org admin назначава explicit scoped manage_tickets; platform/org/registry/document права не го наследяват. Статуси: new→accepted→in_progress→completed, reopen completed→in_progress с причина. Direct client DML е отказан; събитията са append-only.
+
+Локалните команди check:tickets, check:tickets-api, check:tickets-browser и check:ticket-revision са описани в package.json; disposable PostgreSQL/симулираният Auth transport сами по себе си не са hosted доказателство. Коригиращият пакет не повтаря тези завършени набори: използва запазеното локално доказателство и новия narrow hosted тест. Hosted PASS тук е само за минималния сигнален договор, **не за целия REQ009/DB-G/MVP**.
+
+Следва отделно разрешен release review на PR #5; той остава draft/unmerged. Main/live2e1b8f3 не съдържа signal UI. Backend е съвместим с текущия main и не изисква повторен apply, нов server secret или Auth/hosting настройка при бъдещ frontend release. Не е правен merge/production deployment или бюджетна проверка в acceptance пакета.
+
+Файл към сигнал, категория/отговорник, прости задачи, известия и отчети са отделни приети MVP стъпки. Ticket attachment изисква собствен договор за target, owner upload, type/size, audience, отнемане, incomplete upload и проследимо премахване. Staff-managed unit PDF не предоставя това право. Няма промяна на неговите bucket/policies/Edge download.
+
 ## Hosted Storage приемане — PASS, 01.11.2026
 
-Проект **qfybswnezdzzahmozikr**, **18 приложени миграции / 25 приложни таблици (21 public + 4 private)**. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Този код обединява Storage PR #2 и theme fix PR #3 в един release; production се публикува само от main. Git/общият release PR установяват конкретния публикуван commit и ready резултат.**
+Исторически checkpoint на Storage release в проект **qfybswnezdzzahmozikr**: **18 приложени миграции /25 таблици**; текущият signal checkpoint е20/27, описан по-горе. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Този код обединява Storage PR #2 и theme fix PR #3 в един release; production се публикува само от main. Git/общият release PR установяват конкретния публикуван commit и ready резултат.**
 
 | Реално проверено с обикновени синтетични сесии | Резултат |
 |---|---|
@@ -101,8 +173,10 @@ Setup проверява реални RPC/handler/key readiness преди grant
 | [20261101081203_unit_file_authenticated_info.sql](migrations/20261101081203_unit_file_authenticated_info.sql) | Историческа info preflight диагностика |
 | [20261101082303_unit_file_uncached_download.sql](migrations/20261101082303_unit_file_uncached_download.sql) | Исторически fail-closed read attempt; immutable SQL |
 | [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) | Current authorization/session RPC и handler-only client read policies |
+| [20261101141944_owner_signals.sql](migrations/20261101141944_owner_signals.sql) | Приложен minimal signal schema/RPC/RLS; първоначалният stale код е коригиран от следващата миграция |
+| [20261101180527_ticket_revision_conflict.sql](migrations/20261101180527_ticket_revision_conflict.sql) | Приложена exact корекция40001→PT409; current/staleHTTP409/reload и cleanup HOSTED PASS |
 
-Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички21 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
+Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички23 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 
 За отделна безопасна тестова Supabase база историята се прилага по ред/в транзакции след сверка на remote history. Нужни са стандартните Supabase Auth роли/схема, PostgreSQL15+ и btree_gist. Не се редактират произволно managed auth/storage схеми; има FK към auth.users и guarded read на потвърждението. Имената на CLI командите се проверяват с инсталирания CLI help преди операция. **Пълен Docker/Supabase clean reset и clean-checkout setup не са изпълнени**; PGlite rebuild проверява само нужния PostgreSQL/Auth договор.
 

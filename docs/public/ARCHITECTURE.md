@@ -30,11 +30,11 @@ Platform admin няма подразбиращ се operational достъп. Or
 
 ## Действителна схема
 
-### Минимални сигнали: приложен backend, частично hosted приемане
+### Минимални сигнали: hosted приемане PASS, frontend в PR
 
-В този feature клон има десети HTML вход `pages/tickets.html`: отделни domain/tickets, services/tickets, ui/tickets и page controller. Service извиква guarded RPC; не приема client author/scope/status при create. Canonical `manage_tickets` се назначава изрично на scoped manager; registry/document/platform/org права не го заместват. Owner list е пресечението от собствено авторство и текущата my_owned_units проекция. Real hosted role/link revocation със същия JWT, own/foreign-author/scope isolation и local browser→hosted UI са проверени; frontend не е в main/live. Пълното приемане остава блокирано от stale revision40001/PostgREST14 retry loop; отделна локална PT409 migration е неприложена.
+В този feature клон има десети HTML вход `pages/tickets.html`: отделни domain/tickets, services/tickets, ui/tickets и page controller. Service извиква guarded RPC; не приема client author/scope/status при create. Canonical `manage_tickets` се назначава изрично на scoped manager; registry/document/platform/org права не го заместват. Owner list е пресечението от собствено авторство и текущата my_owned_units проекция. Real hosted role/link revocation със същия JWT, own/foreign-author/scope isolation и local browser→hosted UI са проверени; frontend не е в main/live. Минималното hosted приемане е затворено: exactPT409корекцията е приложена и един real-browser current/staleHTTP409/reload тест премина, с unchangedrow/events при отказ и точенcleanup. Целият REQ009/MVP не е завършен.
 
-Приложената20261101141944 добавя две таблици (27hosted), с RLS, SELECT само върху разрешени записи, без client DML grants, private guarded операции и invoker wrappers. Row lock/expected_revision защитават status update, събитията са append-only. Неприложената20261101180527 променя само кода за stale conflict, без нови таблици/права. Категория/отговорник/задачи/прикачвания/известия не са реализирани от тази ограничена стъпка. Исторически нефинансов owner достъп остава отделен договор.
+Приложената20261101141944 добавя две таблици (27hosted), с RLS, SELECT само върху разрешени записи, без client DML grants, private guarded операции и invoker wrappers. Row lock/expected_revision защитават status update, събитията са append-only. Приложената20261101180527 променя само кода за stale conflict, без нови таблици/права. Категория/отговорник/задачи/прикачвания/известия не са реализирани от тази ограничена стъпка. Исторически нефинансов owner достъп остава отделен договор.
 
 ```mermaid
 erDiagram
@@ -48,7 +48,7 @@ erDiagram
 
 Диаграмата по-горе описва двете signal таблици; диаграмите по-долу описват останалите25 таблици. Събитията имат composite scope/item FK. Този пакет не променя unit-file Storage правата и не добавя owner upload.
 
-**19 приложени миграции;27 приложни таблици —23 в public и4 в private**. Има20локалниSQLфайла, като последният е неприложена function correction, без нова таблица. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
+**20 приложени миграции;27 приложни таблици —23 в public и4 в private**. Всички20локалниSQLфайла са приложени; последният коригира private функция без нова таблица. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
 
 ### Достъп и физически registry
 
@@ -167,7 +167,7 @@ verify_owner_access е optional manager permission с read_registry. Org admin �
 
 ## Подготвен private-file компонент — локален кандидат, НЕ hosted схема
 
-Историческият първи unit-file подетап добави public.documents като15-а миграция; следващите Storage correction/Edge и signal миграции водят до текущите19приложени/27таблици, описани по-горе. Typed unit FK остава минималната едноцелна конкретизация на документ; multi-target document_links и версии не са реализирани. Сигналите не наследяват owner upload право. [Договор за private файл](../../supabase/README.md#договор-за-private-файл).
+Историческият първи unit-file подетап добави public.documents като15-а миграция; следващите Storage correction/Edge и signal миграции водят до текущите20приложени/27таблици, описани по-горе. Typed unit FK остава минималната едноцелна конкретизация на документ; multi-target document_links и версии не са реализирани. Сигналите не наследяват owner upload право. [Договор за private файл](../../supabase/README.md#договор-за-private-файл).
 
 ```mermaid
 erDiagram

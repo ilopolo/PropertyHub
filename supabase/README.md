@@ -1,6 +1,22 @@
 # Supabase — setup, схема и проверки
 
-Установеният проект е qfybswnezdzzahmozikr. **Hosted baseline:14 приложени SQL миграции;24 приложни таблици:20 public +4 private.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
+## 01.11.2026 — hosted приемане НЕ е преминало; release hold
+
+**17 приложени миграции /25 приложни таблици (21public+4private), но private-file компонентът НЕ е готов за merge/production.** Main/live остава b088cfb. Миграцията20261031113950 е приложена точно с нейния timestamp и MD5bd03fcf5e724fb3512501640c5265f19; не я прилагай повторно. Следват две отделни applied policy corrections, които запазват историята:
+
+| Файл | Действителен резултат |
+|---|---|
+| [20261101081203_unit_file_authenticated_info.sql](migrations/20261101081203_unit_file_authenticated_info.sql) | Позволи authenticated metadata preflight при същия document predicate; byte download заработи, но cached authorization наруши same-session revoke критерия |
+| [20261101082303_unit_file_uncached_download.sql](migrations/20261101082303_unit_file_uncached_download.sql) | Върна fail-closed отказа на CDN info/head preflight; не е работещ цялостен download fix. Explicit authenticated route също минава през preflight |
+
+Hosted Storage1.80.2 доказателства: реални621byte и5MiB PDF bytes/SHA256; staff-only default иowners opt-in; anonymous/public/sign/foreign scope-unit откази; server MIME иsize enforcement, pending иtombstone/API-delete lifecycle. **FAIL:** след отнемане на B роля същиятJWT още свали същитеbytes по defaultSDKURL, включително no-store, докато metadataRPC вече отказва. Nonce отказът не се отчита като защита; client не може да наложи fresh server authorization на всички replay URL. Подробните [Storage serving](https://supabase.com/docs/guides/storage/serving/downloads) и [operation definitions](https://github.com/supabase/storage/blob/v1.80.2/src/http/routes/operations.ts) не заменят реалния runtime тест.
+
+**Блокер преди следващ hosted run:** нужна е приета контролирана download граница с fresh server authorization или потвърдена provider настройка за изключване на този authorization cache. Нов server/Edge proxy не е реализиран в този пакет. Не отслабвай критерия до nonce/TTL и не включвай signed/public URL тихомълком. Current fail-closed policy отказва нужния metadata preflight и при разрешен download; това е безопасен release hold, не PASS.
+
+Всички ресурси на двата маркирани run-а са почистени:0objects/activefile roles/active test links,2newmembershipinactive;3documenthistoryреда иrole/link/audit история са запазени. Authaccounts7непроменени, pendingпрофилpending, личната заявкаpending. CLI token е изчистен. Hosted owner-link same-JWT byte revoke assertion не е достигнат; cleanup не се представя като негов заместител. Няма нов live/browser Storage PASS, merge илиproduction deployment. PR#3/theme остава отделен. Старите локални tests и примерните executeкоманди по-долу са подготвени/исторически; **не пускай нов setup/assertions преди разрешаване на блокера и fresh inventory**.
+
+
+Установеният проект е qfybswnezdzzahmozikr. **Текуща hosted схема:17 приложени SQL миграции;25 приложни таблици:21 public +4 private. Private-file release е блокиран — виж текущия резултат по-долу.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
 
 ## Миграционна история
 
@@ -22,7 +38,7 @@
 | [20261031092207_verified_owner_access.sql](migrations/20261031092207_verified_owner_access.sql) | Explicit verifier делегация, account-person history и минимален current owner projection |
 | [20261031092951_owner_verifier_explicit_delegation.sql](migrations/20261031092951_owner_verifier_explicit_delegation.sql) | Само отделният verifier setter може да включи правото с основание; generic INSERT отказ |
 
-Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички20 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
+Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички21 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 
 За отделна безопасна тестова Supabase база историята се прилага по ред/в транзакции след сверка на remote history. Нужни са стандартните Supabase Auth роли/схема, PostgreSQL15+ и btree_gist. Не се редактират произволно managed auth/storage схеми; има FK към auth.users и guarded read на потвърждението. Имената на CLI командите се проверяват с инсталирания CLI help преди операция. **Пълен Docker/Supabase clean reset и clean-checkout setup не са изпълнени**; PGlite rebuild проверява само нужния PostgreSQL/Auth договор.
 
@@ -79,7 +95,7 @@ Owner-access checks: npm.cmd run check:owner-access-db (временен Postgre
 
 ## Private файл към имот — локално проверен кандидат, още без hosted release
 
-Този branch съдържа [20261031113950_private_unit_file.sql](migrations/20261031113950_private_unit_file.sql), **НЕПРИЛОЖЕНА** миграция. Hosted baseline остава14 миграции /24 приложни таблици (20public+4private); branch след прилагане би бил15 /25 (21public+4private). Без managed-schema DDL: добавя private bucket unit-private-files и ограничени policies върху storage.objects; не редактира Supabase таблици/функции. Bucket name collision или липсващ storage.allow_only_operation(text) спират миграцията, вместо да променят наличното.
+Този branch съдържа [20261031113950_private_unit_file.sql](migrations/20261031113950_private_unit_file.sql), **Приложена на01.11 с точния timestamp**. Следващите baseline14/candidate15 бележки са първоначалният rollout контекст; текущият статус17/25 иruntimeFAIL е в началото на документа. Без managed-schema DDL: добавя private bucket unit-private-files и ограничени policies върху storage.objects; не редактира Supabase таблици/функции. Bucket name collision или липсващ storage.allow_only_operation(text) спират миграцията, вместо да променят наличното.
 
 - Съществуващото планирано manage_documents е optional manager permission +read_registry, изрично назначавано в собствен managed scope от org admin през assign_staff_role. В UI пакетът „Файлове“ означава manager с точно тези две права, без manage_registry. Няма автоматична промяна на стари роли или inheritance от platform/org admin. Existing manager с друг permission пакет се прекратява и се назначава изрично подходящият subset през съществуващия lifecycle; няма тихо добавяне към старата роля.
 - Един активен файл на scope/unit; само PDF, application/pdf,1..5242880bytes (5MiB). Генериран immutable path scope/unit/document.pdf; без upsert/copy/versions. Клиентски SHA-256 се сравнява с реално свалени bytes при upload и download; това не е server content attestation, проверка за malware или удостоверяване на PDF. Bucket налага MIME/размер, не доказва съдържание. Няма inline preview.
@@ -102,7 +118,7 @@ npm.cmd run check:unit-file-domain; npm.cmd run check:unit-file-db; npm.cmd run 
 
 Verified-owner история: действителната приложена/committed версия е20261031092207_verified_owner_access.sql;20261031091247 е била неприлагана CLI чернова. Local/committed/saved applied statement hash е e3a12961f10c23ebc1a50baad74d6075 (LF/trim). Номерът на черновата в стар списък не е основание за rename или reapply.
 
-### Подготвен hosted Storage harness — още НЕ е изпълнен
+### Hosted Storage harness — изпълнен частично; текущият FAIL/cleanup е описан в началото
 
 [check-unit-file-hosted.mjs](../scripts/check-unit-file-hosted.mjs) има безопасен **offline plan** по подразбиране: не зарежда env, не влиза в Auth и не изпраща HTTP. Целта е фиксирана към qfybswnezdzzahmozikr — същият споделен проект с live версията, **не изолиран staging**. Скриптът никога не прилага миграции или създава Auth акаунти. [Локалната preparation проверка](../scripts/check-unit-file-hosted-preparation.mjs) проверява execution/project/path guards, собствеността на journal ресурсите, guarded membership SQL и синтетичен валиден PDF с точни5MiB/5MiB+1 размери. Това не е managed Storage runtime тест.
 
@@ -139,4 +155,4 @@ npm.cmd run check:unit-file-hosted -- --phase cleanup --execute --project qfybsw
 
 setup отказва върху съществуващ journal. Assertions не се повтарят върху interrupted/completed run; първо cleanup/сверка, после нов journal path. Lock предпазва от паралелен writer. При pending role/link/prepare intention, неочаквано позволен negative write или stale lock: първо установи крайния server result по точните ID/marker и journal/.tmp, после документирано поправи състоянието; не изтривай lock и не повтаряй setup на сляпо. Completed cleanup се отчита RETAIN, не нов hosted PASS. Възможни многотранзакционни Storage races и provider operation mapping остават отделни hosted gates.
 
-Проверено в тази подготовка: syntax/offline guards/fixture ownership/PDF boundaries, **0 HTTP от preparation теста**. Read-only connector inventory потвърди14 миграции, неприложена Storage миграция, липсващи bucket/documents, наличен helper и подходящите стари synthetic данни. Няма изпълнени hosted setup/assertions/cleanup и няма нов Storage PASS. Продуктовите SQL/policies/service са само прегледани, без промяна.
+Историческа preparation проверка: syntax/offline guards/fixture ownership/PDF boundaries, **0 HTTP от preparation теста**. Read-only connector inventory потвърди14 миграции, неприложена Storage миграция, липсващи bucket/documents, наличен helper и подходящите стари synthetic данни. Това е статусът на подготовката от31.10; за действителните01.11 runs води текущият FAIL/cleanup отчет в началото. Продуктовите SQL/policies/service са само прегледани, без промяна.

@@ -24,7 +24,7 @@ Platform admin няма подразбиращ се operational достъп. Or
 
 ## Действителна схема
 
-**14 миграции;24 приложни таблици —20 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
+**17 миграции;25 приложни таблици —21 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
 
 ### Достъп и физически registry
 
@@ -154,3 +154,8 @@ erDiagram
 ```
 
 UI controller unit-files → service unit-files → guarded document RPC +authenticated Storage download/upload/remove. Чистият domain валидира filename/MIME/size и SHA256; BG ресурси и DOM renderer са отделни. Private bucket/policies използват същия current scope/ownership договор като metadata. Owner audience е изрична и default staff; няма подписани/публични URL или owner upload. Supabase managed schema/operation helper са release prerequisites, не локално пресъздадени production структури. Локалният QA transport е само test helper, не backend на продукта.
+
+
+## Private-file hosted status —01.11.2026
+
+Трите Storage миграции са applied(20261031113950,20261101081203,20261101082303). Последните две са тясна runtime diagnosis/policy история; първоначалният SQL не е редактиран. Реалниbytes/SHA256/visibility/type-size/cleanup са доказани, но cached authorization наруши same-session отнемането; финалният readpredicate е fail-closed заCDNpreflight ицелият download не е приет. Няма нов server proxy или реализирана алтернативна архитектура. Виж текущия [Storage резултат и blocker](../../supabase/README.md). По-старият candidate/unapplied статус е заменен от този applied-but-blocked резултат; диаграматаDOCUMENTS описва вече съществуващата таблица. Productionmainb088cfb още няма файловия UI.

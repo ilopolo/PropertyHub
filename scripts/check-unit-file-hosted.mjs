@@ -131,7 +131,7 @@ export async function main(args=process.argv.slice(2)){
    }
    j.phase='cleaned-history-retained';await save();console.log('PASS: cleanup; only journal-owned resources affected, history retained');
   }
- }catch(error){if(j){j.lastFailurePhase=o.phase;await mkdir(dirname(o.journal),{recursive:true});await writeFile(o.journal+'.failure.json',JSON.stringify({phase:o.phase,run:j.run,status:'FAIL; inspect journal, do not blindly retry'},null,2));}throw error;}
+ }catch(error){if(j){j.lastFailurePhase=o.phase;await mkdir(dirname(o.journal),{recursive:true});await writeFile(o.journal+'.failure.json',JSON.stringify({phase:o.phase,run:j.run,status:'FAIL; inspect journal, do not blindly retry',errorType:error.name,operator:error.operator,scriptFrames:String(error.stack||'').split('\n').filter(line=>line.includes('check-unit-file-hosted.mjs:'))},null,2));}throw error;}
  finally{for(const c of Object.values(clients))try{await c.auth.signOut({scope:'local'});}catch{/* No tokens/errors logged. */}if(lock){await lock.close();await unlink(o.journal+'.lock');}}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{console.error('FAIL: hosted Storage preparation/run stopped; sensitive details suppressed. Inspect the ignored journal and documented recovery gates.');process.exitCode=1;});

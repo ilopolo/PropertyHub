@@ -1,0 +1,6 @@
+project_id = "propertyhub"
+
+[functions.download-unit-file]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/download-unit-file/index.js"

@@ -2,9 +2,10 @@
 // Never imported by application code or used as evidence for the provider's runtime.
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
+import {createDownloadHandler} from '../../supabase/functions/download-unit-file/handler.js';
 export async function startUnitFileQaServer(f,qaPassword){
  const objects=new Map(),sessions=new Map(),transfers={uploads:0,downloads:0,deletes:0},failures=[];let queue=Promise.resolve();
- const user=label=>({id:f.auth[label],email:`${label.toLowerCase()}@propertyhub.invalid`,email_confirmed_at:new Date().toISOString(),aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{display_name:'Synthetic '+label}});
+ const user=label=>({id:f.auth[label],email:`${label.toLowerCase()}@propertyhub.invalid`,email_confirmed_at:new Date().toISOString(),is_anonymous:false,aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{display_name:'Synthetic '+label}});
  const server=createServer((req,res)=>{queue=queue.then(async()=>{
   const url=new URL(req.url,'http://127.0.0.1'),chunks=[];for await(const chunk of req)chunks.push(chunk);const body=Buffer.concat(chunks);
   res.setHeader('Access-Control-Allow-Origin','http://127.0.0.1:5173');res.setHeader('Access-Control-Allow-Headers','*');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS');res.setHeader('Cache-Control','no-store');
@@ -37,6 +38,13 @@ export async function startUnitFileQaServer(f,qaPassword){
     // PostgREST serializes PostgreSQL DATE as YYYY-MM-DD; PGlite returns JS Date.
     for(const field of result.fields||[])if(field.dataTypeID===1082)for(const row of result.rows)if(row[field.name] instanceof Date)row[field.name]=row[field.name].toISOString().slice(0,10);
     return json(req.headers.accept?.includes('application/vnd.pgrst.object')?result.rows[0]:result.rows);
+   }
+   if(url.pathname==='/functions/v1/download-unit-file'&&req.method==='POST'){
+    const handler=createDownloadHandler({authenticate:async()=>label==='anon'?null:user(label),
+     authorize:async(_token,id)=>(await f.as(label,'select * from public.authorize_unit_file_download($1)',[id])).rows[0]||null,
+     fetchObject:async d=>{const content=objects.get(d.storage_path);if(!content)throw Error('Synthetic object absent');transfers.downloads++;return{body:(async function*(){yield content;})(),contentType:'application/pdf',contentLength:content.length};}});
+    const response=await handler(new Request('http://local/functions/v1/download-unit-file',{method:'POST',headers:req.headers,body}));
+    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;
    }
    const match=url.pathname.match(/^\/storage\/v1\/object\/(authenticated\/)?unit-private-files(?:\/(.+))?$/);
    if(match){

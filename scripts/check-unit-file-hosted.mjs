@@ -8,7 +8,7 @@ import {createClient} from '@supabase/supabase-js';
 import {PROJECT,URL,BUCKET,MAX_BYTES,options,validateFixture,validateJournal,membershipCleanupSql,sha,syntheticPdf,PLAN} from './helpers/unit-file-hosted.mjs';
 const active=r=>Date.parse(r.valid_from)<=Date.now()&&(!r.valid_to||Date.now()<Date.parse(r.valid_to));
 const ok=result=>{if(result.error)throw Error('API refusal or transport failure');return result.data;};
-const refused=(r,codes)=>{assert.ok(r.error,'Expected refusal');if(codes)assert.ok(codes.includes(r.error.code),'Unexpected refusal category');else assert.ok([400,401,403,404,409,413].includes(Number(r.error.status||r.error.statusCode)),'Unexpected Storage/transport failure');};
+const refused=(r,codes)=>{assert.ok(r.error,'Expected refusal');if(codes)assert.ok(codes.includes(r.error.code),'Unexpected refusal category');else assert.ok([400,401,403,404,409,413].includes(Number(r.error.status||r.error.statusCode||r.error.context?.status)),'Unexpected Storage/transport failure');};
 export async function main(args=process.argv.slice(2)){
  const o=options(args);if(o.phase==='plan'){console.log(JSON.stringify(PLAN,null,2));return;}
  const f=validateFixture(JSON.parse(await readFile(o.fixture,'utf8'))),fixtureHash=sha(Buffer.from(JSON.stringify(f)));
@@ -34,6 +34,7 @@ export async function main(args=process.argv.slice(2)){
   const rpc=async(c,name,args)=>ok(await c.rpc(name,args));
   const roles=async()=>ok(await B.from('user_roles').select('id,membership_id,scope_id,role_code,permissions,valid_from,valid_to'));
   const documents=()=>rpc(B,'unit_documents',{scope:f.scope,unit:f.unit});
+  const readFileBytes=(c,doc)=>c.functions.invoke('download-unit-file',{body:{document_id:doc.id}});
   const check=async(name,fn)=>{j.inFlight=name;await save();await fn();report.push(name);j.passed=[...report];j.inFlight=null;await save();console.log('PASS: '+name);};
   async function grant(){
    assert.ok(!j.roleIntention,'Uncertain role creation: operator reconciliation required; do not retry blindly');
@@ -63,6 +64,8 @@ export async function main(args=process.argv.slice(2)){
   if(o.phase==='setup'){
    // Missing/unapplied RPCs are setup failures, NEVER a successful access denial.
    assert.deepEqual(await rpc(B,'unit_documents',{scope:f.scope,unit:f.unit}),[]);
+   assert.deepEqual(await rpc(B,'authorize_unit_file_download',{document_id:randomUUID()}),[]);
+   const boundary=await readFileBytes(B,{id:randomUUID()});assert.equal(boundary.error?.context?.status,404,'Download handler must be configured/authenticated before setup');
    const catalog=ok(await A.from('role_permissions').select('role_code,permission_code').eq('permission_code','manage_documents'));assert.ok(catalog.some(r=>r.role_code==='manager'));
    const admin=ok(await A.from('user_roles').select('role_code,membership_id,permissions,valid_from,valid_to')).filter(r=>active(r)&&r.role_code==='org_admin'&&r.permissions.includes('manage_members'));
    const memberships=ok(await A.from('organization_memberships').select('id,organization_id,status,valid_from,valid_to'));assert.ok(admin.some(r=>memberships.some(m=>m.id===r.membership_id&&m.organization_id===f.org&&m.status==='active'&&active(m))));
@@ -82,7 +85,7 @@ export async function main(args=process.argv.slice(2)){
     const id=randomUUID(),doc={id,kind,filename:`storage-qa-${j.run}-${kind}.pdf`,path:`${f.scope}/${f.unit}/${id}.pdf`,prepareIntention:true};j.documents.push(doc);await save();
     assert.equal(await rpc(B,'prepare_unit_document',{scope:f.scope,unit:f.unit,filename:doc.filename,mime:'application/pdf',bytes:bytes.length,digest:sha(bytes),audience,request_key:id}),id);doc.prepareIntention=false;await save();return doc;
    }
-   const download=async(c,doc,bytes)=>{const blob=ok(await c.storage.from(BUCKET).download(doc.path,{}, {cache:'no-store'}));assert.equal(sha(Buffer.from(await blob.arrayBuffer())),sha(bytes));};
+   const download=async(c,doc,bytes)=>{const blob=ok(await readFileBytes(c,doc));assert.equal(sha(Buffer.from(await blob.arrayBuffer())),sha(bytes));};
    async function deniedPrepare(args,code){
     const probe={id:args.request_key,scope:args.scope,unit:args.unit,filename:args.filename,state:'pending'};j.probes??=[];j.probes.push(probe);await save();
     const response=await B.rpc('prepare_unit_document',args);if(response.error?.code===code)probe.state='refused';await save();refused(response,[code]);
@@ -95,21 +98,21 @@ export async function main(args=process.argv.slice(2)){
    });
    await check('real staff-only PDF bytes/hash; anonymous/public/signed and unentitled owner denied',async()=>{
     ok(await B.storage.from(BUCKET).upload(staff.path,small,{contentType:'application/pdf',upsert:false,cacheControl:'0'}));await download(B,staff,small);await rpc(B,'complete_unit_document',{document:staff.id});
-    assert.equal((await documents()).find(d=>d.id===staff.id).visibility,'staff');refused(await OWNER.storage.from(BUCKET).download(staff.path));refused(await anon.storage.from(BUCKET).download(staff.path));refused(await anon.rpc('unit_documents',{scope:f.scope,unit:f.unit}),['42501']);refused(await B.storage.from(BUCKET).createSignedUrl(staff.path,1));
+    assert.equal((await documents()).find(d=>d.id===staff.id).visibility,'staff');refused(await readFileBytes(OWNER,staff));refused(await readFileBytes(anon,staff));refused(await B.storage.from(BUCKET).download(staff.path));refused(await OWNER.storage.from(BUCKET).download(staff.path));refused(await anon.storage.from(BUCKET).download(staff.path));refused(await anon.rpc('unit_documents',{scope:f.scope,unit:f.unit}),['42501']);refused(await B.storage.from(BUCKET).createSignedUrl(staff.path,1));
     const response=await guardedFetch(`${URL}/storage/v1/object/public/${BUCKET}/${staff.path}`,{headers:{apikey:process.env.VITE_SUPABASE_PUBLISHABLE_KEY}});assert.ok([400,403,404].includes(response.status));
-    await rpc(B,'remove_unit_document',{document:staff.id,note:marker});refused(await B.rpc('finish_unit_document_removal',{document:staff.id}),['23514']);refused(await B.storage.from(BUCKET).download(staff.path));await remove(staff);
+    await rpc(B,'remove_unit_document',{document:staff.id,note:marker});refused(await B.rpc('finish_unit_document_removal',{document:staff.id}),['23514']);refused(await readFileBytes(B,staff));refused(await B.storage.from(BUCKET).download(staff.path));await remove(staff);
    });
    await check('explicit current owner; exact5MiB bytes/hash; owner cannot remove',async()=>{
-    owners=await prepare('owners','owners',large);ok(await B.storage.from(BUCKET).upload(owners.path,large,{contentType:'application/pdf',upsert:false,cacheControl:'0'}));refused(await OWNER.storage.from(BUCKET).download(owners.path));await download(B,owners,large);await rpc(B,'complete_unit_document',{document:owners.id});await download(OWNER,owners,large);
-    assert.ok((await rpc(OWNER,'unit_documents',{scope:f.scope,unit:f.unit})).some(d=>d.id===owners.id));refused(await OWNER.rpc('remove_unit_document',{document:owners.id,note:marker}),['42501']);refused(await A.storage.from(BUCKET).download(owners.path));
+    owners=await prepare('owners','owners',large);ok(await B.storage.from(BUCKET).upload(owners.path,large,{contentType:'application/pdf',upsert:false,cacheControl:'0'}));refused(await readFileBytes(OWNER,owners));refused(await OWNER.storage.from(BUCKET).download(owners.path));await download(B,owners,large);await rpc(B,'complete_unit_document',{document:owners.id});await download(OWNER,owners,large);
+    assert.ok((await rpc(OWNER,'unit_documents',{scope:f.scope,unit:f.unit})).some(d=>d.id===owners.id));refused(await OWNER.rpc('remove_unit_document',{document:owners.id,note:marker}),['42501']);refused(await readFileBytes(A,owners));refused(await A.storage.from(BUCKET).download(owners.path));
     for(const [scope,unit]of [[f.foreignScope,f.unit],[f.scope,f.foreignUnit]])await deniedPrepare({scope,unit,filename:owners.filename,mime:'application/pdf',bytes:small.length,digest:sha(small),audience:'staff',request_key:randomUUID()},'42501');
    });
    await check('same B JWT becomes foreign-only after role revocation; existing bytes still readable by owner',async()=>{
-    const role=await ownRole();await rpc(A,'set_owner_verifier',{role_id:role.id,enabled:false,note:marker});await rpc(A,'revoke_staff_role',{role_id:role.id});refused(await B.storage.from(BUCKET).download(owners.path));assert.deepEqual(await documents(),[]);await download(OWNER,owners,large);
+    const role=await ownRole();await rpc(A,'set_owner_verifier',{role_id:role.id,enabled:false,note:marker});await rpc(A,'revoke_staff_role',{role_id:role.id});refused(await readFileBytes(B,owners));assert.equal(ok(await B.auth.getSession()).session.access_token,claims.B,'Session unexpectedly changed');refused(await B.storage.from(BUCKET).download(owners.path));assert.deepEqual(await documents(),[]);await download(OWNER,owners,large);
     assert.ok(ok(await B.auth.getSession()).session.access_token===claims.B,'Session unexpectedly changed');await grant();
    });
    await check('same owner JWT loses actual bytes and metadata after exact link revocation',async()=>{
-    await revokeLink();refused(await OWNER.storage.from(BUCKET).download(owners.path));assert.deepEqual(await rpc(OWNER,'unit_documents',{scope:f.scope,unit:f.unit}),[]);assert.ok(ok(await OWNER.auth.getSession()).session.access_token===claims.OWNER,'Session unexpectedly changed');await download(B,owners,large);await remove(owners);
+    await revokeLink();refused(await readFileBytes(OWNER,owners));refused(await OWNER.storage.from(BUCKET).download(owners.path));assert.deepEqual(await rpc(OWNER,'unit_documents',{scope:f.scope,unit:f.unit}),[]);assert.ok(ok(await OWNER.auth.getSession()).session.access_token===claims.OWNER,'Session unexpectedly changed');await download(B,owners,large);await remove(owners);
     const pending=await prepare('incomplete');refused(await B.rpc('complete_unit_document',{document:pending.id}),['23514']);await remove(pending);
    });
    j.phase='assertions-pass-cleanup-pending';await save();console.log('PASS: assertions; cleanup is still REQUIRED');

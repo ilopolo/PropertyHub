@@ -12,6 +12,7 @@ const list=label=>as(label,'select * from public.unit_documents($1,$2)',[scope.A
 const path=id=>`${scope.A}/${unit.A}/${id}.pdf`;
 const upload=(id,label='doc',size=bytes.length,mime='application/pdf',op='storage.object.upload')=>as(label,"insert into storage.objects(bucket_id,name,metadata) values('unit-private-files',$1,$2)",[path(id),{size,mimetype:mime}],op);
 const read=(id,label='owner',op='storage.object.get_authenticated')=>as(label,"select * from storage.objects where bucket_id='unit-private-files' and name=$1",[path(id)],op);
+const authorize=(id,label='owner')=>as(label,'select * from public.authorize_unit_file_download($1)',[id]);
 const remove=id=>as('doc',"select public.remove_unit_document($1,'Synthetic removal')",[id]);
 const finish=id=>as('doc','select public.finish_unit_document_removal($1)',[id]);
 const erase=id=>as('doc',"delete from storage.objects where bucket_id='unit-private-files' and name=$1 returning id",[path(id)],'storage.object.delete_many');
@@ -44,19 +45,19 @@ try{
   const expired=(await prepare()).rows[0].id;await db.query("update public.documents set upload_expires_at=now()-interval '1 second' where id=$1",[expired]);await deny(()=>upload(expired));await deny(()=>as('doc','select public.complete_unit_document($1)',[expired]));await remove(expired);await finish(expired);
  });
  await check('staff-only ready file never becomes owner-readable; no signed/list/copy/upsert',async()=>{
-  id=(await prepare()).rows[0].id;await upload(id);await as('doc','select public.complete_unit_document($1)',[id]);assert.equal((await read(id,'doc')).rows.length,1);assert.equal((await read(id)).rows.length,0);assert.equal((await list('owner')).rows.length,0);
+  id=(await prepare()).rows[0].id;await upload(id);await as('doc','select public.complete_unit_document($1)',[id]);assert.equal((await authorize(id,'doc')).rows.length,1);assert.equal((await read(id,'doc')).rows.length,0);assert.equal((await read(id)).rows.length,0);assert.equal((await list('owner')).rows.length,0);
   for(const op of ['storage.object.sign','storage.object.sign_many','storage.object.list','storage.object.copy',''])assert.equal((await read(id,'doc',op)).rows.length,0);
   await deny(()=>upload(id));assert.equal((await as('doc',"update storage.objects set metadata='{}' where name=$1 returning id",[path(id)],'storage.object.upload_update')).rows.length,0);
   await remove(id);await erase(id);await finish(id);
  });
  await check('explicit owner audience and matching scope; metadata projection has no actor/history',async()=>{
   id=(await prepare('doc',scope.A,unit.A,{audience:'owners'})).rows[0].id;await upload(id);assert.equal((await read(id)).rows.length,0);await as('doc','select public.complete_unit_document($1)',[id]);
-  assert.equal((await read(id)).rows.length,1);const rows=(await list('owner')).rows;assert.equal(rows.length,1);assert.equal(Object.hasOwn(rows[0],'uploader_id'),false);assert.equal((await as('owner','select * from public.documents')).rows.length,0);
+  assert.equal((await authorize(id)).rows.length,1);assert.equal((await read(id)).rows.length,0);const rows=(await list('owner')).rows;assert.equal(rows.length,1);assert.equal(Object.hasOwn(rows[0],'uploader_id'),false);assert.equal((await as('owner','select * from public.documents')).rows.length,0);
   for(const label of ['anon','B','A','orgA','platform','pending'])assert.equal((await read(id,label)).rows.length,0);
   assert.equal((await list('B')).rows.length,0);await deny(()=>as('owner','select public.remove_unit_document($1,$2)',[id,'Unauthorized']));
  });
- await check('same identity loses bytes and metadata immediately after owner link revoke',async()=>{
-  await as('A',"select public.revoke_owner_link($1,$2,'Synthetic evidence','Synthetic revoke')",[scope.A,f.link]);assert.equal((await read(id)).rows.length,0);assert.equal((await list('owner')).rows.length,0);
+ await check('same identity loses handler authorization and metadata after owner link revoke',async()=>{
+  await as('A',"select public.revoke_owner_link($1,$2,'Synthetic evidence','Synthetic revoke')",[scope.A,f.link]);assert.equal((await authorize(id)).rows.length,0);assert.equal((await read(id)).rows.length,0);assert.equal((await list('owner')).rows.length,0);
  });
  await check('tombstone precedes physical cleanup, retry preserves audit and allows new slot',async()=>{
   await remove(id);assert.equal((await read(id,'doc')).rows.length,0);await deny(()=>finish(id));assert.equal((await erase(id)).rows.length,1);await finish(id);await finish(id);await remove(id);

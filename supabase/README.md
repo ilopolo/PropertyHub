@@ -1,5 +1,54 @@
 # Supabase — setup, схема и проверки
 
+## Защитен download — локална реализация, без hosted приемане
+
+Приетата граница вече е реализирана **само локално в PR #2**: [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е нова, **НЕПРИЛОЖЕНА** additive миграция. Предишните17 миграции са неизменени. Candidate18 миграции/25 приложни таблици; hosted остава17/25. Един [JavaScript Edge handler](functions/download-unit-file/index.js), отделен проверим transport core и двата service read пътя; няма нов UI. Hosted разрешеният download още е блокиран от последната приложена policy. Няма доказан hosted fix/CDN bypass.
+
+Поток: `functions.invoke('download-unit-file', {body:{document_id}})` → Auth getUser с Bearer JWT → текущ caller-scoped RPC/session проверка → точен DB object key → server-only S3 GetObject → bounded size/SHA256 → втора caller RPC проверка → attachment с no-store headers. Pending uploader integrity използва същия handler; complete идва след нея. Клиентът не подава bucket/path/URL. Няма fallback, signed/public URL или общ Storage SELECT. DELETE SELECT exception остава само за разрешено отстраняване на tombstoned файл. Default staff и explicit current-owner правила не се разширяват.
+
+Локални команди (без hosted credentials):
+
+```powershell
+npm ci
+npm run check:unit-file-download
+npm run check:unit-file-download-db
+npm run check:unit-file-download-integration
+npm run check:unit-file-db
+npm run check:unit-file-hosted-preparation
+npm run build
+# Deno 2.9.6; runtime тестът прихваща fetch, а реалната мрежа е забранена.
+deno run --allow-env --allow-sys=osRelease --deny-net --config supabase/functions/download-unit-file/deno.json scripts/check-unit-file-download-runtime.mjs
+```
+
+Pinned server imports/lock: Supabase JS2.118.0, AWS S3 SDK3.1161.0, Smithy FetchHttpHandler5.8.0. Те не са frontend зависимости. Deno lockfile е във function каталога. Deno check/adapter execution не са Supabase Edge sandbox/deploy проверка. Auth/S3 в локалните тестове са fixtures/intercepted fetch; PGlite операциите са истински PostgreSQL/RLS с изрично моделирани managed schema/operation helper. Не доказват истинските Storage operation names, CDN headers, runtime privileges или hosted same-JWT поведение. Не е повтарян пълен Auth/PKCE/browser пакет. Няма нов visual PASS; UI не е променян.
+
+### Бъдещ server setup — само след отделно разрешение
+
+1. Свеж read-only preflight към **qfybswnezdzzahmozikr**:17-те applied версии/съдържание, единствената pending20261101094452 и нейният hash; private bucket/guards; текущ object/signing inventory. Не се replay-ват стари QA journals или migration drafts. Проверява се, че owner на private RPC може да чете auth.sessions; няма нов grant/DDL в auth schema. Старите кешируеми object keys не се reuse-ват и origin policy не се представя като ретроактивен purge.
+2. С отделно разрешение се създава generated S3 key в Storage S3 configuration и се копират endpoint/region от същия проект. **Ключът е project-wide, всички S3 операции/all buckets/bypass RLS**; ограничението до точния разрешен GetObject се налага в handler кода, не чрез измислен readonly scope. За authorization винаги се използва caller JWT, не S3/service role.
+3. Бъдещ игнориран локален `.env.edge.local` съдържа само: `UNIT_FILES_PUBLIC_KEY` (съществуващият sb_publishable ключ), `UNIT_FILES_S3_ACCESS_KEY_ID`, `UNIT_FILES_S3_SECRET_ACCESS_KEY`, `UNIT_FILES_S3_ENDPOINT` (точно `https://qfybswnezdzzahmozikr.storage.supabase.co/storage/v1/s3`), `UNIT_FILES_S3_REGION` (действителната region). `SUPABASE_URL` се предоставя от Edge runtime и трябва да е точният project URL. Файлът НЕ е създаван/попълван с реални ключове в локалния пакет. Нищо от S3 конфигурацията не е VITE_, Netlify environment или Git. Не се подават секрети като CLI аргументи и не се запазва debug output.
+4. След pre-apply checkpoint/hash: exact-version CLI dry-run с **една** pending миграция → apply само20261101094452 → actual history/content/guards сверка. При timeout първо действителното състояние. Не се използва автоматично генерирана друга версия и не се преименува файлът. Не се преизпълнява base bucket setup. Това затваря client byte пътищата; main b088cfb няма Storage UI и старите registry/Auth endpoints са запазени.
+5. Само след разрешение, CLI2.122.0 с проверени help flags:
+
+```powershell
+npx --no-install supabase secrets set --project-ref qfybswnezdzzahmozikr --env-file .env.edge.local
+npx --no-install supabase functions deploy download-unit-file --project-ref qfybswnezdzzahmozikr --use-api
+```
+
+Не използвай `--prune` или `--no-verify-jwt`. Config задава explicit JS entrypoint и verify_jwt=true; handler допълнително валидира потребителя чрез Auth. Реалната gateway/JWT/JS bundle съвместимост и gateway-generated error headers са hosted gates, не локален PASS. При401/неподдържан runtime се диагностицира конкретният проблем; Auth проверката не се изключва на сляпо. S3 fetch ползва explicit FetchHttpHandler с no-store/redirect:error и общ25s abort, без REST CDN fallback. Не се обещава непрекъсваем in-flight revoke след вече върнати bytes.
+
+### Бъдещи hosted проверки и cleanup
+
+След успешна server конфигурация и read-only fixture inventory се използват съществуващите A/B/OWNER ordinary sessions. Обновеният `check-unit-file-hosted` изпълнява положителните byte/hash и same-JWT откази през handler-а; директният SDK download остава negative case. Setup вече проверява новия RPC и конфигуриран handler **преди** временни grants/links. Default остава offline plan; изпълнение само с отделно разрешение, точен `--project`, нов маркиран journal и прегледан cleanup. Старите cleaned journals не се отварят за нов run.
+
+Приемане: истински малък/5MiB PDF upload→pending handler integrity→complete→download SHA256; staff default отказ за owner, explicit owners разрешение, anonymous/foreign отказ. Prime→committed role revoke→същия JWT/същата handler заявка отказ, положителен owner control; отделно owner-link revoke със същия JWT. Допълнителни задължителни probes преди hosted PASS: всички директни REST/authenticated/info/head/list/render/range/sign/sign_many/copy пътища и S3 user-token GetObject отказват дори на легитимен handler caller; S3 RLS probe изисква поддържан legacy anon key, не невалиден publishable key. Този пълен bypass/header/trace набор още не е автоматизиран в hosted harness и не се отчита като минал. Реални backend endpoint/cache headers и нула S3 fetch при първоначален authorization отказ се проверяват със безопасни trace данни; без tokens/URLs/лични данни в логове.
+
+Cleanup: само новите journal-owned files/roles/links/memberships; tombstone→Storage API remove→finish, revoke grants/links, exact guarded membership cleanup при нужда, audit остава. След грешка/timeout първо сверка на собствените IDs, не blind retry. Няма нови Auth акаунти, промени по pending/личен admin/request или общи fixtures. Операторският CLI token и локалното копие на S3 secrets се изчистват след разрешеното използване; Edge secrets остават нужни на работещия handler. При провален setup се отменя само newly-owned key/function setup след съгласуван cleanup, без чужди ресурси. След реален PASS отделно release решение; този пакет няма merge/main/production/manual preview или Netlify бюджетна проверка.
+
+Официални механизми: [private caching KB](https://supabase.com/kb/troubleshooting/storage-private-bucket-files-still-accessible-after-remove-access-or-logout), [S3 authentication](https://supabase.com/docs/guides/storage/s3/authentication), [Edge auth](https://supabase.com/docs/guides/functions/auth), [JavaScript entrypoints](https://supabase.com/docs/guides/functions/function-configuration). Free plan invocations/uncached egress и реалният SDK memory/CPU разход остават ограничения; не е измерено текущо потребление или отчитането на двата хопа.
+
+Следващият раздел запазва **историческия hosted резултат преди новия локален handler**; не е доказателство, че новият договор вече е deployed.
+
 ## 01.11.2026 — hosted приемане НЕ е преминало; release hold
 
 **17 приложени миграции /25 приложни таблици (21public+4private), но private-file компонентът НЕ е готов за merge/production.** Main/live остава b088cfb. Миграцията20261031113950 е приложена точно с нейния timestamp и MD5bd03fcf5e724fb3512501640c5265f19; не я прилагай повторно. Следват две отделни applied policy corrections, които запазват историята:

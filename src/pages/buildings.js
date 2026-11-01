@@ -11,6 +11,7 @@ import { showPersons } from './scoped-persons.js';
 import { showOwnership } from './ownership.js';
 import { showOccupancy } from './occupancy.js';
 import {showOwnerVerification,hideOwnerVerification} from './owner-access.js';
+import {showUnitFiles,canManageFiles} from './unit-files.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -67,6 +68,8 @@ async function showUnits() {
       form.append(label, note, button); li.append(form);
     }
     list.append(li);
+    if (date === registryToday() && canManageFiles(account,scope)) await showUnitFiles(li,scope,unit.id,true);
+    if (revision !== loadRevision) return;
     if (li.querySelector('form')) bindForm(`#verify-${unit.id}`, async data => { await verifyRegistryRecord(context.scope_id, 'unit', unit.id, String(data.get('note')).trim()); await showUnits(); message('Проверката е записана. Липсващите стойности остават неизвестни; това не удостоверява финансова готовност.'); });
   }
   } finally { if (revision === loadRevision) scopeSelect.disabled = false; }

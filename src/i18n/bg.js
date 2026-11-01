@@ -4,6 +4,7 @@ export const bg = Object.freeze({
   dashboard: 'Табло',
   buildings: 'Сгради',
   theme: 'Тъмна тема',
+  lightTheme: 'Светла тема',
   unavailable: 'Предстои',
   foundation: 'Начална версия',
 });

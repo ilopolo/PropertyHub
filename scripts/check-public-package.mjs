@@ -7,7 +7,7 @@ const git = args => execFileSync('git', args, { encoding: 'utf8' });
 const files = git(['ls-files', '-z']).split('\0').filter(Boolean);
 const patterns = [/sb_secret_[A-Za-z0-9_-]{15,}/, /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, /postgres(?:ql)?:\/\/[^\s:]+:[^\s@]+@/, /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/];
 const localSecrets=[];
-for(const path of ['.env.rls.local','.env.operator.local','.env.auth-qa.local','.env.auth-qa-secrets.local','.env.auth-signup.local','.env.auth-signup-secrets.local','.env.password-policy.local']) {
+for(const path of ['.env.rls.local','.env.operator.local','.env.auth-qa.local','.env.auth-qa-secrets.local','.env.auth-signup.local','.env.auth-signup-secrets.local','.env.password-policy.local','.env.storage-qa.local','.env.migration.local']) {
   try { localSecrets.push(...Object.values(parseEnv(await readFile(path,'utf8'))).filter(v=>v.length>=8)); }
   catch(e) { if(e.code!=='ENOENT') throw e; }
 }
@@ -30,7 +30,7 @@ async function inspectBuild(path) {
   }
 }
 await inspectBuild('dist');
-for (const file of ['.env.local', '.env.rls.local', '.env.operator.local', '.env.auth-qa.local', '.env.auth-qa-secrets.local', '.env.auth-signup.local', '.env.auth-signup-secrets.local', '.env.password-policy.local']) {
+for (const file of ['.env.local', '.env.rls.local', '.env.operator.local', '.env.auth-qa.local', '.env.auth-qa-secrets.local', '.env.auth-signup.local', '.env.auth-signup-secrets.local', '.env.password-policy.local', '.env.storage-qa.local', '.env.migration.local']) {
   assert.equal(git(['ls-files', '--', file]).trim(), '', `Credential path tracked: ${file}`);
   execFileSync('git', ['check-ignore', '--quiet', file]);
 }

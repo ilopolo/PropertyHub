@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {PROJECT,MAX_BYTES,options,validateFixture,validateJournal,membershipCleanupSql,sha,syntheticPdf} from './helpers/unit-file-hosted.mjs';
+import {main} from './check-unit-file-hosted.mjs';
+const f={project:PROJECT,org:randomUUID(),scope:randomUUID(),unit:randomUUID(),foreignScope:randomUUID(),foreignUnit:randomUUID(),person:{id:randomUUID(),revision:3},auth:{A:randomUUID(),B:randomUUID(),OWNER:randomUUID()},profiles:{A:randomUUID(),B:randomUUID(),OWNER:randomUUID()}};
+assert.equal(options([]).phase,'plan');for(const args of [['--phase','setup'],['--execute','--phase','assertions'],['--phase','cleanup','--execute','--project','wrong'],['--phase','typo'],['--journal','outside.json'],['--unknown']])assert.throws(()=>options(args));
+validateFixture(f);assert.throws(()=>validateFixture({...f,org:"x';delete from public.profiles;--"}));
+const j={project:PROJECT,run:randomUUID(),fixtureHash:sha(Buffer.from(JSON.stringify(f))),roles:[],documents:[],baseline:{memberships:[],roles:[]},membership:randomUUID(),membershipOwned:true};validateJournal(j,f);
+const sql=membershipCleanupSql(j,f);assert.ok(sql.startsWith('update public.organization_memberships'));for(const clause of ['m.id=','m.profile_id=','m.organization_id=','not exists','public.user_roles','status=\'inactive\''])assert.ok(sql.includes(clause));assert.ok(!sql.includes('delete from'));assert.throws(()=>membershipCleanupSql({...j,baseline:{memberships:[{id:j.membership}]}},f));assert.throws(()=>validateJournal({...j,documents:[{id:randomUUID(),filename:'someone-else.pdf',kind:'other',path:'foreign'}]},f));
+const small=syntheticPdf('Synthetic QA'),large=syntheticPdf('Synthetic QA',MAX_BYTES),oversized=syntheticPdf('Synthetic QA',MAX_BYTES+1);assert.ok(small.toString().startsWith('%PDF-1.4'));assert.ok(small.toString().includes('xref\n0 6'));assert.equal(large.length,MAX_BYTES);assert.equal(oversized.length,MAX_BYTES+1);assert.notEqual(sha(large),sha(oversized));
+let network=0;const priorFetch=globalThis.fetch,priorLog=console.log,output=[];globalThis.fetch=()=>{network++;throw Error('Network forbidden in preparation check');};console.log=v=>output.push(String(v));
+try{await main([]);await assert.rejects(()=>main(['--phase','setup']));await assert.rejects(()=>main(['--phase','cleanup','--execute','--project','wrong']));await assert.rejects(()=>main(['--phase','setup','--execute','--project',PROJECT,'--fixture','.local/__missing-'+randomUUID()+'.json']));}finally{globalThis.fetch=priorFetch;console.log=priorLog;}
+assert.equal(network,0);assert.ok(output.join('\n').includes('OFFLINE PLAN'));
+await mkdir('.local/storage-hosted-qa',{recursive:true});await writeFile('.local/storage-hosted-qa/preparation-report.json',JSON.stringify({status:'PASS: local preparation only',checks:['offline default and guarded execute','exact project and ignored paths','fixture/journal ownership','baseline membership protected by guarded SQL','synthetic PDF and exact size/hash boundaries'],httpCalls:network,hostedScenarioExecuted:false,hostedStoragePass:false},null,2));
+console.log('PASS: offline default/explicit target guards, fixture/journal ownership, guarded membership SQL and exact PDF boundaries;0 HTTP calls. No hosted assertions executed.');

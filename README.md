@@ -9,8 +9,9 @@
 | Статус | Функции |
 |---|---|
 | Работят и са проверени | Supabase register/login/logout, pending без роли, реално доставени confirmation/recovery писма и PKCE; отделни platform/org admin процеси, изрични manager/controller назначения; разрешен регистър на имоти и scoped лица; собственост/съсобственост и описателно обитаване с периоди, произход, проверки и история; проверена account-person връзка и минимален собствен изглед |
+| Включено в общия Storage/theme release | Един private PDF към имот:18 миграции/25 таблици, JS Edge/S3 download; реални bytes/hash, staff-only/owner opt-in, direct/sign/S3 откази, same-JWT role/link revoke и cleanup PASS. UI/service интеграцията е проверена; общият release включва Storage PR #2 и theme PR #3. Надписът/title/aria на бутона показват следващото действие. Виж [резултатите и setup](supabase/README.md). Конкретният production commit/ready статус се потвърждава отделно за deployment-а |
 | Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат само проверен чист domain validator, без API/UI/DB интеграция |
-| Предстоят | Пълен собственически портал с финансови/исторически функции; Storage upload/download; сигнали/задачи; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
+| Предстоят | Пълен собственически портал с финансови/исторически функции; сигнали/задачи; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
 
 Наеми, онлайн плащания, OCR, AI, EN и автоматични външни напомняния са бъдещи идеи, не работещи функции. Регистрацията не дава административни права. Собствеността/обитаването не създават автоматично акаунтна връзка, портален достъп, начисления или прехвърляне на стари дългове.
 
@@ -51,6 +52,8 @@ npm.cmd run check:navigation
 npm.cmd run check:db
 npm.cmd run check:occupancy-db
 npm.cmd run check:unit-shares-domain
+npm.cmd run check:unit-file-domain
+npm.cmd run check:unit-file-db
 ```
 
 DB скриптовете използват временен PGlite PostgreSQL и тестов Auth договор, не hosted GoTrue. Идеалните части се оценяват с точна BigInt аритметика,8 десетични знака и явен знаменател/състав;99.99% не става100%. Резултатът ready не удостоверява правна валидност, сървърни права или persisted review.
@@ -88,3 +91,5 @@ Brevo Free custom SMTP се използва за Auth confirmation и password 
 В „Акаунт“ има „Моите текущо разрешени имоти“ и обновяване със server read. Връзката се потвърждава само от отделно назначен scoped manager с verify_owner_access и read_registry, с точен потвърден Auth UUID, проверено scoped лице/ревизия, текуща проверена собственост и основание. Не се свързва по име/имейл. Org admin изрично включва/отнема verification правото на друг manager в собствен managed scope; то не следва от manage_registry/manage_members/platform_admin. Самоназначаване/самопотвърждаване и общият grant пакет без отделно основание са отказани.
 
 Оттеглянето пази кой/кога/защо и спира следващия owner read от същата сесия. Корекцията е revoke и нова проверка; старият request key не възстановява отнет достъп. Собственикът вижда само текущите разрешени идентификатори, не чужди лица, finance/history или operational registry. Няма нова owner role/membership от link. Личните demo права не са променяни. Целеви команди: npm.cmd run check:owner-access-db, npm.cmd run check:owner-access-api и npm.cmd run check:owner-access-browser; hosted/UI scripts ползват само предварително проверените синтетични manifests и запазват заявки преди записи. Не пресъздавай fixtures при retry.
+
+Private-file browser QA: npm.cmd run check:unit-file-browser стартира собствен loopback dev5173/API54331 с изолирани синтетични данни. Портовете трябва да са свободни. Използва реален Edge/SDK/HTTP bytes с локален QA transport, не hosted Supabase Storage; не изисква ключове, SMTP или тестови Auth акаунти и не е demo достъп.

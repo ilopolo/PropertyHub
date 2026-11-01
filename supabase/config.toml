@@ -4,3 +4,8 @@ project_id = "propertyhub"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/download-unit-file/index.js"
+
+[functions.download-ticket-file]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/download-ticket-file/index.js"

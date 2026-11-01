@@ -30,6 +30,22 @@ Platform admin няма подразбиращ се operational достъп. Or
 
 ## Действителна схема
 
+### Приложение към сигнал — локален child candidate
+
+Child от PR #5 добавя една typed `ticket_attachments` таблица (локално28таблици/21миграции срещу последно hosted27/20), private `ticket-private-files` bucket и отделен JS `download-ticket-file`. Не е приложен/deployed или публикуван frontend. Reporter/current-owner и explicit scoped manage_tickets ползват ticket-only RPC; unit documents/manage_documents правата не се променят. Един активен PNG/JPEG/PDF≤5MiB, pending→ready/tombstone→API removal→finish, audit и explicit incomplete cancellation. Owner reporter премахва само свое качване; служителят — всяко разрешено. Няма чужд co-owner read.
+
+Shared byte transport запазва auth→current caller RPC→fixed S3 key→size/hash→repeat RPC→no-store, а двата typed adapter-а имат отделни RPC/bucket/ID/MIME validators. Ticket adapter добавя signature проверка и octet-stream attachment за SDK Blob; unit остава PDF. Няма direct Storage/sign fallback. Local DB/service/real-browser proofs са налични; hosted byte/CDN/bypass/revocation тестовете предстоят. [Договор и бъдещ setup](../../supabase/README.md#минимално-приложение-към-сигнал--локален-child-пакет).
+
+```mermaid
+erDiagram
+    MANAGEMENT_UNITS ||--o{ TICKET_ATTACHMENTS : scope
+    WORK_ITEMS ||--o{ TICKET_ATTACHMENTS : typed_target
+    PROFILES ||--o{ TICKET_ATTACHMENTS : uploader
+    PROFILES o|--o{ TICKET_ATTACHMENTS : remover
+```
+
+Описанието по-долу за parent минималните сигнали е неговият отделен hosted PASS; то не включва attachment. Другите планирани категории/задачи/известия остават извън този пакет.
+
 ### Минимални сигнали: hosted приемане PASS, frontend в PR
 
 В този feature клон има десети HTML вход `pages/tickets.html`: отделни domain/tickets, services/tickets, ui/tickets и page controller. Service извиква guarded RPC; не приема client author/scope/status при create. Canonical `manage_tickets` се назначава изрично на scoped manager; registry/document/platform/org права не го заместват. Owner list е пресечението от собствено авторство и текущата my_owned_units проекция. Real hosted role/link revocation със същия JWT, own/foreign-author/scope isolation и local browser→hosted UI са проверени; frontend не е в main/live. Минималното hosted приемане е затворено: exactPT409корекцията е приложена и един real-browser current/staleHTTP409/reload тест премина, с unchangedrow/events при отказ и точенcleanup. Целият REQ009/MVP не е завършен.

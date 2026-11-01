@@ -1,6 +1,6 @@
 import {ticketStatuses,nextTicketStatus} from '../domain/tickets.js';
 function element(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
-export function renderTickets(root,tickets,onTransition){
+export function renderTickets(root,tickets,onTransition,onAttachments=()=>{}){
  if(!tickets.length){root.append(element('p','Няма разрешени сигнали.'));return;}
  for(const ticket of tickets){
   const card=element('article','','card mb-3'),body=element('div','','card-body p-4 text-break');card.dataset.ticket=ticket.id;
@@ -14,6 +14,6 @@ export function renderTickets(root,tickets,onTransition){
    input.id=`ticket-note-${ticket.id}`;label.htmlFor=input.id;input.name='note';input.maxLength=1000;input.required=true;input.rows=2;
    form.append(label,input,element('p','Основанието / резултатът се вижда и от подателя.','small'),button);form.addEventListener('submit',async event=>{event.preventDefault();if(!form.reportValidity())return;button.disabled=true;try{await onTransition(ticket,nextTicketStatus(ticket.status),input.value.trim());}catch{const error=element('p','Промяната е отказана. Обнови сигналите и провери правата.','text-danger');error.setAttribute('role','alert');form.append(error);button.disabled=false;}});body.append(form);
   }
-  card.append(body);root.append(card);
+  card.append(body);root.append(card);onAttachments(body,ticket);
  }
 }

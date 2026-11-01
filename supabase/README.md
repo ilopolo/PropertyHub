@@ -1,5 +1,40 @@
 # Supabase — setup, схема и проверки
 
+## Минимално приложение към сигнал — локален child пакет
+
+Зависимост: PR #5, `feature/owner-signals`/`4a6b10f`. Child `feature/ticket-attachment` се предлага към родителския клон, не към main. Parent минималните сигнали имат hosted PASS; **attachment има само локално приемане**. Локален кандидат `20261101195615_ticket_attachment.sql`:21 migration файла/28 application tables; последно потвърдени hosted20/27. Нито кандидатът, нито новият bucket/Edge function са приложени/deployed в този пакет.
+
+Един активен pending/ready файл към сигнал: PNG (`image/png`), JPEG (`image/jpeg`) или PDF (`application/pdf`),1..5242880bytes, безопасно basename до120Unicode символа с правилно разширение. Private `ticket-private-files`, immutable server key `scope/item/document.ext`, no upsert. Upload/read само текущият проверен подател или изрично scoped `manage_tickets`. Owner reporter премахва само собствен upload; staff може всеки разрешен файл с причина. Друг съсобственик, `manage_documents`, registry-only, platform/org admin не наследяват достъп. Status на сигнала не се променя от файла. Няма нова capability или разширяване на имотните документи.
+
+`ticket_attachments` е минимален typed document target с composite scope/item FK, uploader/time/type/size/SHA,15min pending lease и ready/removed/bytes-deleted история. Create idempotence изисква същия request UUID и payload. Incomplete/expired upload се показва за изрично прекратяване; не се изтрива мълчаливо. Tombstone→Storage API remove→finish запазва причината/audit и позволява довършване след прекъсване. Без SQL DELETE на `storage.objects`. Complete проверява обект/размер/MIME; SHA/signature се проверяват при всяко защитено четене. Няма antivirus/full image decoding/EXIF обработка или гаранция за достоверност на съдържанието.
+
+Нов `download-ticket-file`: само `{document_id}`→`auth.getUser`→caller-identity `authorize_ticket_file_download` с текущи права и session existence→fixed exact-key S3 GetObject→bounded size/SHA256/PNG-JPEG-PDF signature→повторна caller RPC→no-store attachment. Общият транспорт е `_shared/private-file-download.js`; unit adapter запазва строгия си unit/PDF договор. Новият handler връща `application/octet-stream`+attachment/nosniff за коректен Blob през installed functions-js, а trusted metadata/S3 запазват конкретния MIME. Direct Storage bytes/sign/list/info/copy/user-S3 не са download пътища; restrictive SELECT е само за разрешено delete/delete_many. Няма URL fallback. След отнемане новата заявка трябва да откаже със същия JWT; вече получени bytes не могат да се отнемат.
+
+Локални проверки без credentials/hosted requests:
+
+```powershell
+npm.cmd run check:ticket-file-db
+npm.cmd run check:ticket-file-download
+npm.cmd run check:ticket-file-service
+npm.cmd run check:ticket-file-browser
+npm.cmd run check:unit-file-download
+npm.cmd run build
+```
+
+DB проверките ползват disposable PGlite с изрични Auth/Storage fixtures. Service/browser ползват реален supabase-js/HTTP, application JS и handler с локални Auth/S3 adapters. Те доказват локалните contracts/policies/bytes, **не реалния provider/CDN/Storage runtime**. Browser е истински Edge,375/1440px, две теми, навигация/reload; screenshot QA артефактите са локални и игнорирани. Test credentials са генерирани само в RAM за `.invalid` фиктивни акаунти; не се създават hosted users.
+
+### Следващо hosted приемане — изисква отделно възлагане
+
+1. Read-only preflight за `qfybswnezdzzahmozikr`: parent20 versions, candidate отсъства, review на LF-SHA256 и непроменени20 стари SQL, target table/bucket/RPC/function липсват, operation helper и managed RLS са налични. Само migration21 pending в exact-version CLI dry-run. Не изпълнявай стари migration helpers, твърдо насочени към19/20.
+2. Exact apply само `20261101195615`, после действително потвърждение на history, grants/RLS/bucket private/MIME/size. Няма ръчно timestamp/history repair. При неизвестен резултат първо read-only reconciliation. Additive схема е съвместима с current main/live и parent signal frontend; unit policies/capabilities остават непокътнати.
+3. Presence-only проверка на **съществуващите server secrets**: `UNIT_FILES_PUBLIC_KEY` (публичният publishable key за caller RPC), `UNIT_FILES_S3_ENDPOINT=https://qfybswnezdzzahmozikr.storage.supabase.co/storage/v1/s3`, `UNIT_FILES_S3_REGION` (действителният регион), `UNIT_FILES_S3_ACCESS_KEY_ID`, `UNIT_FILES_S3_SECRET_ACCESS_KEY` (само сървърно S3 GetObject). Supabase предоставя `SUPABASE_URL`. Не извеждай стойности, не копирай във VITE/frontend/Git, не оттегляй работния S3 key. В този пакет нито се искат, нито се записват нови реални keys/secrets. Ако липсват/не разрешават новия bucket, спри за конкретна конфигурация; не разширявай права на предположение.
+4. След разрешение deploy **само** `supabase functions deploy download-ticket-file --project-ref qfybswnezdzzahmozikr` (pinned local CLI; verify_jwt остава true). Bundler включва shared core. Няма нужда от redeploy на съществуващия unit handler; неговият hosted v1 не е променен от локалното извличане на shared кода.
+5. Reuse на съществуващите синтетични Auth A/B/password-QA при нужда от двама current verified co-owners; без нови users. Запиши baseline/sobstveni IDs/run marker, временни scoped manage_tickets/verify_owner_access назначения и owner links само ако липсват и са разрешени. Не засягай лични записи/pending. Assertions са с обикновени сесии: реални PDF/PNG/JPEG bytes/SHA, reporter/staff upload/read, owner own-only removal, друг съсобственик на същия имот/foreign scope/anonymous отказ, positive download→role revoke→same-JWT отказ, отделно owner-link revoke. Докажи непозволени direct authenticated/public/sign/sign-many/list/info/copy/S3 user reads с positive Edge control; no-store success/error headers. Type/size limits се проверяват директно към Storage API отделно от app validation. Провери incomplete/missing/expired upload, exact removal и local frontend→hosted. Конфигурационна грешка не е authorization PASS.
+6. Cleanup само записаните собствени object paths чрез разрешените tombstone/API/finish операции; оттегли само временните grants/links/membership и закрий само собствените QA сесии. Пази ticket/status/document/audit history; нулеви owned Storage objects и remaining pending resources се сверяват действително. При прекъсване запиши IDs и неизвестните операции преди повторение. Не чисти общи fixtures по prefix. CLI operator token се изчиства след употреба; server S3 secrets остават работни.
+7. Едва след hosted gate: parent review/merge по отделно release решение, retarget child към main и re-review само добавката. Без самостоятелни merge/deployment/retries сега. Публикацията се планира отделно с бюджета; няма промяна на hosting настройки.
+
+Официална основа: [bucket type/size restrictions](https://supabase.com/docs/guides/storage/buckets/creating-buckets), [operation-specific Storage helpers](https://supabase.com/docs/guides/storage/schema/helper-functions). Наличните локални проверки не заместват бъдещото hosted приемане.
+
 ## Минимален сигнал: hosted приемане PASS, frontend в draft PR
 
 Exact [20261101141944_owner_signals.sql](migrations/20261101141944_owner_signals.sql) и [20261101180527_ticket_revision_conflict.sql](migrations/20261101180527_ticket_revision_conflict.sql) са приложени еднократно с точните версии след single-pending CLI dry-run/hash gates. Текущо: **20 приложени миграции /27 таблици (23public+4private)**;20локалниSQLфайла. Последната миграция променя само stale conflict кода на private status функцията; няма нова таблица, роля или frontend логика. Приложените SQL файлове не са редактирани.

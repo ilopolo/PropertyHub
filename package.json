@@ -7,6 +7,10 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:ticket-file-db": "node scripts/check-ticket-file-db.mjs",
+    "check:ticket-file-download": "node scripts/check-ticket-file-download.mjs",
+    "check:ticket-file-service": "node scripts/check-ticket-file-service.mjs",
+    "check:ticket-file-browser": "node scripts/check-ticket-file-browser.mjs",
     "check:tickets": "node scripts/check-tickets.mjs",
     "check:ticket-revision": "node scripts/check-ticket-revision.mjs",
     "check:tickets-api": "node scripts/check-tickets-api.mjs",

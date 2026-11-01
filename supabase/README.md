@@ -1,5 +1,17 @@
 # Supabase — setup, схема и проверки
 
+## Локален кандидат: минимален сигнал (не е приложен)
+
+[20261101141944_owner_signals.sql](migrations/20261101141944_owner_signals.sql) добавя само `work_items` и `work_item_events`, explicit `manage_tickets` за manager и guarded create/status/feed RPC. Hosted историята остава **18 миграции /25 таблици**; този клон съдържа **19 SQL файла**, а disposable локалната база след тях има **27 приложни таблици**. Няма hosted apply, нови Auth акаунти/назначения, Edge/Storage промени или production публикация за сигналите.
+
+Owner създава само за текущ разрешен собствен имот; author/scope/new са server-derived. Собственият прочит изисква авторство и текуща проверена собственост. Нов собственик не наследява чужди сигнали; историческият нефинансов достъп предстои. Org admin може изрично да назначи пакета „Сигнали“ на scoped manager чрез съществуващия процес; platform/org admin и registry/document permission не го наследяват. Direct client DML е отказан. Status RPC изисква revision и основание/резултат; последователност new→accepted→in_progress→completed, reopen completed→in_progress. Всяко действие записва събитие и audit; няма вътрешни бележки в първия пакет.
+
+Локални проверки: `npm.cmd run check:tickets`, `npm.cmd run check:tickets-api`, `npm.cmd run check:tickets-browser`, build и production-preview navigation. DB тестът използва disposable PGlite с реални PostgreSQL grants/RLS; API/browser — реален SDK/HTTP/Edge браузър, но локален Auth transport. Те **не доказват hosted Supabase поведение** и не използват реални credentials. Браузърният тест стартира/затваря собствени localhost5173/54331 процеси и пише игнорирани QA артефакти.
+
+Бъдещ release: сверяване target/history/hash/dry-run с точно този кандидат; след отделно разрешение additive apply преди frontend публикация; временно explicit synthetic manage_tickets назначение и съществуващ verified owner; действителни API/RLS положителни/отказани операции, чужд scope/автор, stale/invalid transition, current role/link revoke и точен cleanup с audit. Текущият main не ползва новите таблици/RPC, така че additive schema е съвместима; frontend кандидатът изисква миграцията. Не merge/deploy преди този gate. Не са нужни нови server secrets или Auth настройки.
+
+Файл към сигнал изисква отделен договор за target, owner upload, допустими тип/размер, audience, отнемане, недовършен upload и проследимо премахване. Сегашният staff-managed unit PDF не дава това право. Няма промяна на неговите bucket/policies/Edge download.
+
 ## Hosted Storage приемане — PASS, 01.11.2026
 
 Проект **qfybswnezdzzahmozikr**, **18 приложени миграции / 25 приложни таблици (21 public + 4 private)**. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Този код обединява Storage PR #2 и theme fix PR #3 в един release; production се публикува само от main. Git/общият release PR установяват конкретния публикуван commit и ready резултат.**

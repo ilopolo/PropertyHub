@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { modules } from '../src/domain/modules.js';
 
 const base = new URL(process.env.CHECK_BASE_URL || 'http://127.0.0.1:4173');
-const pages = ['index.html', 'pages/dashboard.html', 'pages/buildings.html', 'pages/account.html', 'pages/admin.html', 'pages/login.html', 'pages/register.html', 'pages/platform-admin.html', 'pages/organization-admin.html'];
+const pages = ['index.html', 'pages/dashboard.html', 'pages/buildings.html', 'pages/account.html', 'pages/admin.html', 'pages/login.html', 'pages/register.html', 'pages/platform-admin.html', 'pages/organization-admin.html', 'pages/tickets.html'];
 const targets = new Set(pages);
 for (const page of pages) {
   const source = await readFile(page, 'utf8');

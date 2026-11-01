@@ -15,6 +15,7 @@ export async function completeScopeSetup(requestId, address, entrance, provenanc
 export async function organizationStaff(org) { return unwrap(await getClient().rpc('organization_staff', { org })); }
 export async function assignStaff(org, authId, scope, role) {
   const documents = role === 'document_manager';
-  return unwrap(await getClient().rpc('assign_staff_role', { org, target_auth_user_id: authId, scope, role:documents?'manager':role, permissions: documents?['read_registry','manage_documents']:role === 'manager' ? ['read_registry', 'manage_registry'] : ['read_registry'] }));
+  const tickets = role === 'ticket_manager';
+  return unwrap(await getClient().rpc('assign_staff_role', { org, target_auth_user_id: authId, scope, role:documents||tickets?'manager':role, permissions: tickets?['manage_tickets']:documents?['read_registry','manage_documents']:role === 'manager' ? ['read_registry', 'manage_registry'] : ['read_registry'] }));
 }
 export async function revokeStaff(roleId) { return unwrap(await getClient().rpc('revoke_staff_role', { role_id: roleId })); }

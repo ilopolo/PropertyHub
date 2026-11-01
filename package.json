@@ -7,6 +7,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:tickets": "node scripts/check-tickets.mjs",
+    "check:tickets-api": "node scripts/check-tickets-api.mjs",
+    "check:tickets-browser": "node scripts/check-tickets-browser.mjs",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",

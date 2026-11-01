@@ -1,6 +1,6 @@
 # PropertyHub
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Девет HTML входа, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Десет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
 [Хранилище](https://github.com/ilopolo/PropertyHub) · [Ранна live версия](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 
@@ -11,7 +11,8 @@
 | Работят и са проверени | Supabase register/login/logout, pending без роли, реално доставени confirmation/recovery писма и PKCE; отделни platform/org admin процеси, изрични manager/controller назначения; разрешен регистър на имоти и scoped лица; собственост/съсобственост и описателно обитаване с периоди, произход, проверки и история; проверена account-person връзка и минимален собствен изглед |
 | Включено в общия Storage/theme release | Един private PDF към имот:18 миграции/25 таблици, JS Edge/S3 download; реални bytes/hash, staff-only/owner opt-in, direct/sign/S3 откази, same-JWT role/link revoke и cleanup PASS. UI/service интеграцията е проверена; общият release включва Storage PR #2 и theme PR #3. Надписът/title/aria на бутона показват следващото действие. Виж [резултатите и setup](supabase/README.md). Конкретният production commit/ready статус се потвърждава отделно за deployment-а |
 | Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат само проверен чист domain validator, без API/UI/DB интеграция |
-| Предстоят | Пълен собственически портал с финансови/исторически функции; сигнали/задачи; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
+| Локално проверен кандидат, още без hosted/live приемане | Минимален сигнал: текущ проверен собственик подава заглавие/описание за свой имот и чете собствените сигнали; explicit scoped manage_tickets позволява обработка. Четири статуса, reopen с причина, append-only история. pages/tickets.html и миграцията за двете таблици още не са публикувани |
+| Предстоят | Пълен собственически портал с финансови/исторически функции; hosted приемане на сигналите, категория/отговорник, прикачвания и задачи; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
 
 Наеми, онлайн плащания, OCR, AI, EN и автоматични външни напомняния са бъдещи идеи, не работещи функции. Регистрацията не дава административни права. Собствеността/обитаването не създават автоматично акаунтна връзка, портален достъп, начисления или прехвърляне на стари дългове.
 
@@ -71,7 +72,7 @@ Hosted/browser harness-ите изискват Microsoft Edge/Playwright, отд
 - src/services/: Supabase/Auth, административни и registry операции.
 - src/domain/: календарни правила, ownership/occupancy, password и domain-only unit shares. Каталогът на модули не предоставя права.
 - src/i18n/ и src/styles/: BG ресурси и общи стилове; някои текстове още са в контролери.
-- supabase/migrations/: публична приложена SQL история; supabase/operators/: доверен bootstrap без публичен endpoint.
+- supabase/migrations/: публична SQL история и ясно означени неприложени кандидати; supabase/operators/: доверен bootstrap без публичен endpoint.
 - docs/public/: публична техническа документация.
 
 ## Live, Auth и demo

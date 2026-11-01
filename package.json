@@ -8,6 +8,7 @@
   },
   "scripts": {
     "check:tickets": "node scripts/check-tickets.mjs",
+    "check:ticket-revision": "node scripts/check-ticket-revision.mjs",
     "check:tickets-api": "node scripts/check-tickets-api.mjs",
     "check:tickets-browser": "node scripts/check-tickets-browser.mjs",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",

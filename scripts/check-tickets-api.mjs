@@ -25,7 +25,7 @@ try{
  const forged=await owner.rpc('create_ticket',{unit:f.unit.A,title:'forged',description:'forged',reporter_profile_id:f.profile.pending,scope_id:f.scope.B,status:'completed'});assert.ok(forged.error);
  assert.deepEqual((await foreign.rpc('ticket_feed')).data,[]);
  assert.equal((await staff.rpc('change_ticket_status',{item:id,expected_revision:1,next_status:'accepted',note:'API accepted'})).error,null);
- assert.equal((await staff.rpc('change_ticket_status',{item:id,expected_revision:1,next_status:'in_progress',note:'stale'})).error?.code,'40001');
+ assert.equal((await staff.rpc('change_ticket_status',{item:id,expected_revision:1,next_status:'in_progress',note:'stale'})).error?.code,'PT409');
  const records=(await f.db.query('select * from public.work_items')).rows;assert.equal(records.length,1);assert.equal(records[0].status,'accepted');assert.equal(records[0].reporter_profile_id,f.profile.owner);assert.equal(records[0].scope_id,f.scope.A);assert.equal((await f.db.query('select * from public.work_item_events')).rows.length,2);
  await mkdir('.local/tickets-qa',{recursive:true});await writeFile('.local/tickets-qa/api.json',JSON.stringify({pass:true,hosted:false,checks:['SDK HTTP create/feed/transition persisted','anonymous/foreign scope/foreign author mutation denied','forged extra RPC arguments refused','invalid transition and stale revision refused','actual rows and events checked']},null,2));console.log('PASS tickets SDK/local HTTP API: 5 groups');
 }finally{for(const c of clients)c.auth.stopAutoRefresh();await api?.close();await f.db.close();}

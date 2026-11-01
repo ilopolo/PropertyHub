@@ -35,7 +35,7 @@ try{
  await denied('doc',"select public.change_ticket_status($1,1,'accepted','')",[id],'23514');
  await denied('doc','select public.change_ticket_status($1,1,null,$2)',[id,'bad'],'23514');
  for(const [i,status] of ['accepted','in_progress','completed','in_progress'].entries())await f.as('doc','select public.change_ticket_status($1,$2,$3,$4)',[id,i+1,status,'Synthetic result/reopen reason']);
- await denied('doc',"select public.change_ticket_status($1,1,'completed','stale')",[id],'40001');
+ await denied('doc',"select public.change_ticket_status($1,1,'completed','stale')",[id],'PT409');
  const final=(await f.db.query('select * from public.work_items where id=$1',[id])).rows[0];assert.equal(final.revision,5);assert.equal(final.completed_on,null);
  const events=(await f.db.query('select * from public.work_item_events where item_id=$1 order by revision',[id])).rows;assert.equal(events.length,5);assert.equal(events[3].to_status,'completed');assert.equal(events[4].from_status,'completed');assert.equal(events[4].actor_profile_id,f.profile.doc);
  assert.equal((await f.db.query("select * from public.audit_events where target_id=$1",[id])).rows.length,5);

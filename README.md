@@ -1,17 +1,20 @@
 # PropertyHub
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Девет HTML входа, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Десет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
 [Хранилище](https://github.com/ilopolo/PropertyHub) · [Ранна live версия](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 
 ## Реално състояние
+
+Минималните сигнали и приложението към тях са включени в **един общ frontend release**, обединяващ PR #5/#6 със запазена история. Backend е проверен: 21 миграции, 28 таблици и две отделни download Edge функции. Current owner подава собствен сигнал и един private PNG/JPEG/PDF до 5 MiB; изрично оправомощен служител обработва статуса. Конкретният production commit/READY и live smoke резултат се записват в общия release PR. [Договор, доказателства и операторски правила](supabase/README.md#минимално-приложение-към-сигнал--общ-frontend-release).
 
 | Статус | Функции |
 |---|---|
 | Работят и са проверени | Supabase register/login/logout, pending без роли, реално доставени confirmation/recovery писма и PKCE; отделни platform/org admin процеси, изрични manager/controller назначения; разрешен регистър на имоти и scoped лица; собственост/съсобственост и описателно обитаване с периоди, произход, проверки и история; проверена account-person връзка и минимален собствен изглед |
 | Включено в общия Storage/theme release | Един private PDF към имот:18 миграции/25 таблици, JS Edge/S3 download; реални bytes/hash, staff-only/owner opt-in, direct/sign/S3 откази, same-JWT role/link revoke и cleanup PASS. UI/service интеграцията е проверена; общият release включва Storage PR #2 и theme PR #3. Надписът/title/aria на бутона показват следващото действие. Виж [резултатите и setup](supabase/README.md). Конкретният production commit/ready статус се потвърждава отделно за deployment-а |
 | Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат само проверен чист domain validator, без API/UI/DB интеграция |
-| Предстоят | Пълен собственически портал с финансови/исторически функции; сигнали/задачи; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
+| Минимални сигнали и приложение — общ release | Двете exact миграции20261101141944/20261101180527 са приложени:20миграции/27таблици. Предишните access/RLS/co-owner/status/same-JWT/UI доказателства плюс новия current→staleHTTP409→reload/current тест затварят минималния договор. Stale отказът еPT409 за109ms, без промяна на ред/events; cleanup е потвърден. Общият release включва signal/attachment UI; категория, отговорник и задачи остават извън тази стъпка, целият REQ009 остава частичен |
+| Предстоят | Пълен собственически портал с финансови/исторически функции; категория/отговорник и задачи към сигналите; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
 
 Наеми, онлайн плащания, OCR, AI, EN и автоматични външни напомняния са бъдещи идеи, не работещи функции. Регистрацията не дава административни права. Собствеността/обитаването не създават автоматично акаунтна връзка, портален достъп, начисления или прехвърляне на стари дългове.
 
@@ -71,7 +74,7 @@ Hosted/browser harness-ите изискват Microsoft Edge/Playwright, отд
 - src/services/: Supabase/Auth, административни и registry операции.
 - src/domain/: календарни правила, ownership/occupancy, password и domain-only unit shares. Каталогът на модули не предоставя права.
 - src/i18n/ и src/styles/: BG ресурси и общи стилове; някои текстове още са в контролери.
-- supabase/migrations/: публична приложена SQL история; supabase/operators/: доверен bootstrap без публичен endpoint.
+- supabase/migrations/: публична SQL история и ясно означени неприложени кандидати; supabase/operators/: доверен bootstrap без публичен endpoint.
 - docs/public/: публична техническа документация.
 
 ## Live, Auth и demo

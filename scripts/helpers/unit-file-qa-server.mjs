@@ -3,7 +3,9 @@
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {createDownloadHandler} from '../../supabase/functions/download-unit-file/handler.js';
-export async function startUnitFileQaServer(f,qaPassword){
+export async function startUnitFileQaServer(f,qaPassword,options={}){
+ const bucket=options.bucket||'unit-private-files',functionName=options.functionName||'download-unit-file',authorizeRpc=options.authorizeRpc||'authorize_unit_file_download';
+ const handlerFactory=options.handlerFactory||createDownloadHandler,mimes=options.mimes||['application/pdf'];
  const objects=new Map(),sessions=new Map(),transfers={uploads:0,downloads:0,deletes:0},failures=[];let queue=Promise.resolve();
  const user=label=>({id:f.auth[label],email:`${label.toLowerCase()}@propertyhub.invalid`,email_confirmed_at:new Date().toISOString(),is_anonymous:false,aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{display_name:'Synthetic '+label}});
  const server=createServer((req,res)=>{queue=queue.then(async()=>{
@@ -28,7 +30,7 @@ export async function startUnitFileQaServer(f,qaPassword){
     const candidate=candidates.find(p=>Object.keys(args).every(k=>p.proargnames.slice(0,p.pronargs).includes(k)));if(!candidate)return json({message:'Unknown fixture RPC'},404);
     const names=Object.keys(args),values=names.map(k=>{const v=args[k];return k==='permissions'&&Array.isArray(v)?v:v&&typeof v==='object'?JSON.stringify(v):v;});
     const result=await f.as(label,`select * from public.${name}(${names.map((k,i)=>`"${k}"=>$${i+1}`).join(',')})`,values);
-    return json(candidate.proretset?result.rows:candidate.typname==='void'?null:result.rows[0]?.[name]??result.rows[0]);
+    return json(candidate.proretset?result.rows:candidate.typname==='void'?null:Object.hasOwn(result.rows[0]||{},name)?result.rows[0][name]:result.rows[0]);
    }
    if(url.pathname.startsWith('/rest/v1/')&&req.method==='GET'){
     const table=url.pathname.split('/').at(-1);if(!['profiles','user_roles','organizations','organization_memberships','scope_setup_requests','access_requests','units','unit_scope_periods','persons','management_units','entrances','buildings'].includes(table))return json({message:'Unknown fixture table'},404);
@@ -39,27 +41,28 @@ export async function startUnitFileQaServer(f,qaPassword){
     for(const field of result.fields||[])if(field.dataTypeID===1082)for(const row of result.rows)if(row[field.name] instanceof Date)row[field.name]=row[field.name].toISOString().slice(0,10);
     return json(req.headers.accept?.includes('application/vnd.pgrst.object')?result.rows[0]:result.rows);
    }
-   if(url.pathname==='/functions/v1/download-unit-file'&&req.method==='POST'){
-    const handler=createDownloadHandler({authenticate:async()=>label==='anon'?null:user(label),
-     authorize:async(_token,id)=>(await f.as(label,'select * from public.authorize_unit_file_download($1)',[id])).rows[0]||null,
-     fetchObject:async d=>{const content=objects.get(d.storage_path);if(!content)throw Error('Synthetic object absent');transfers.downloads++;return{body:(async function*(){yield content;})(),contentType:'application/pdf',contentLength:content.length};}});
+   if(url.pathname===`/functions/v1/${functionName}`&&req.method==='POST'){
+    const handler=handlerFactory({authenticate:async()=>label==='anon'?null:user(label),
+     authorize:async(_token,id)=>(await f.as(label,`select * from public.${authorizeRpc}($1)`,[id])).rows[0]||null,
+     fetchObject:async d=>{const content=objects.get(d.storage_path);if(!content)throw Error('Synthetic object absent');transfers.downloads++;return{body:(async function*(){yield content;})(),contentType:d.mime_type,contentLength:content.length};}});
     const response=await handler(new Request('http://local/functions/v1/download-unit-file',{method:'POST',headers:req.headers,body}));
     res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;
    }
-   const match=url.pathname.match(/^\/storage\/v1\/object\/(authenticated\/)?unit-private-files(?:\/(.+))?$/);
+   const match=url.pathname.match(new RegExp(`^/storage/v1/object/(authenticated/)?${bucket}(?:/(.+))?$`));
    if(match){
     const path=decodeURIComponent(match[2]||'');
     if(req.method==='POST'&&path&&!match[1]){
      const request=new Request('http://local/upload',{method:'POST',headers:{'content-type':req.headers['content-type']},body}),form=await request.formData(),file=form.get('file')||[...form.values()].find(v=>typeof v!=='string');
-     if(!file||file.type!=='application/pdf'||file.size<1||file.size>5242880)return json({message:'Bucket type/size refusal'},400);
-     const content=Buffer.from(await file.arrayBuffer());await f.as(label,"insert into storage.objects(bucket_id,name,metadata) values('unit-private-files',$1,$2)",[path,{size:content.length,mimetype:file.type}],'storage.object.upload');objects.set(path,content);transfers.uploads++;return json({Key:'unit-private-files/'+path,Id:randomUUID()});
+     if(!file||!mimes.includes(file.type)||file.size<1||file.size>5242880)return json({message:'Bucket type/size refusal'},400);
+     if(req.headers['x-upsert']==='true')return json({message:'Upsert forbidden'},403);
+     const content=Buffer.from(await file.arrayBuffer());await f.as(label,'insert into storage.objects(bucket_id,name,metadata) values($1,$2,$3)',[bucket,path,{size:content.length,mimetype:file.type}],'storage.object.upload');objects.set(path,content);transfers.uploads++;return json({Key:bucket+'/'+path,Id:randomUUID()});
     }
     if(req.method==='GET'&&path){
-     const rows=(await f.as(label,"select id from storage.objects where bucket_id='unit-private-files' and name=$1",[path],'storage.object.get_authenticated')).rows;if(!rows.length||!objects.has(path))return json({message:'Object unavailable'},403);
+     const rows=(await f.as(label,'select id from storage.objects where bucket_id=$1 and name=$2',[bucket,path],'storage.object.get_authenticated')).rows;if(!rows.length||!objects.has(path))return json({message:'Object unavailable'},403);
      transfers.downloads++;res.writeHead(200,{'content-type':'application/pdf'});res.end(objects.get(path));return;
     }
     if(req.method==='DELETE'&&!path){
-     const deleted=[];for(const name of JSON.parse(body).prefixes||[]){const rows=(await f.as(label,"delete from storage.objects where bucket_id='unit-private-files' and name=$1 returning name",[name],'storage.object.delete_many')).rows;if(rows.length){objects.delete(name);deleted.push({name});transfers.deletes++;}}return json(deleted);
+     const deleted=[];for(const name of JSON.parse(body).prefixes||[]){const rows=(await f.as(label,'delete from storage.objects where bucket_id=$1 and name=$2 returning name',[bucket,name],'storage.object.delete_many')).rows;if(rows.length){objects.delete(name);deleted.push({name});transfers.deletes++;}}return json(deleted);
     }
    }
    return json({message:'Unsupported local QA route'},404);

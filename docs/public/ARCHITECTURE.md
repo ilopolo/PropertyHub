@@ -4,7 +4,7 @@
 
 ## Стек и граници
 
-HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Девет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
+HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Десет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 
 ```mermaid
 flowchart LR
@@ -30,11 +30,11 @@ Platform admin няма подразбиращ се operational достъп. Or
 
 ## Действителна схема
 
-### Приложение към сигнал — локален child candidate
+### Приложение към сигнал — hosted backend, frontend в draft PR
 
-Child от PR #5 добавя една typed `ticket_attachments` таблица (локално28таблици/21миграции срещу последно hosted27/20), private `ticket-private-files` bucket и отделен JS `download-ticket-file`. Не е приложен/deployed или публикуван frontend. Reporter/current-owner и explicit scoped manage_tickets ползват ticket-only RPC; unit documents/manage_documents правата не се променят. Един активен PNG/JPEG/PDF≤5MiB, pending→ready/tombstone→API removal→finish, audit и explicit incomplete cancellation. Owner reporter премахва само свое качване; служителят — всяко разрешено. Няма чужд co-owner read.
+Child PR #6 добавя една typed `ticket_attachments` таблица: общо 21 приложени миграции и 28 application tables, private `ticket-private-files` и отделен `download-ticket-file` ACTIVE v1. PR #5 остава unmerged; main/live е `2e1b8f3`, а новият frontend още не е публикуван. Reporter/current-owner и explicit scoped `manage_tickets` ползват ticket-only RPC; unit documents/`manage_documents` правата не се променят. Един активен PNG/JPEG/PDF до 5 MiB, pending→ready/tombstone→API removal→finish, audit и изрично прекратяване на недовършено качване. Owner reporter премахва само свое качване; служителят — всяко разрешено. Друг съсобственик не получава чужд сигнал или файл.
 
-Shared byte transport запазва auth→current caller RPC→fixed S3 key→size/hash→repeat RPC→no-store, а двата typed adapter-а имат отделни RPC/bucket/ID/MIME validators. Ticket adapter добавя signature проверка и octet-stream attachment за SDK Blob; unit остава PDF. Няма direct Storage/sign fallback. Local DB/service/real-browser proofs са налични; hosted byte/CDN/bypass/revocation тестовете предстоят. [Договор и бъдещ setup](../../supabase/README.md#минимално-приложение-към-сигнал--локален-child-пакет).
+Shared byte transport пази auth→current caller RPC→fixed S3 key→size/hash→repeat RPC→no-store, с отделни typed RPC/bucket/ID/MIME validators. Ticket adapter добавя signature проверка и octet-stream attachment за SDK Blob; unit остава PDF и deployedv1 е непроменен. Hosted bytes/SHA/access/direct-bypass/new-request same-JWT role+link revoke/UI/cleanup преминаха;0objects/13removed histories/46audits. Няма full MIME decoder/AV; hosted wall-clock15min expiry и controlled mid-fetch revoke не са изпълнявани. [Точни резултати и release стъпки](../../supabase/README.md#минимално-приложение-към-сигнал--hosted-backend-pass-frontend-в-draft-pr).
 
 ```mermaid
 erDiagram
@@ -44,7 +44,7 @@ erDiagram
     PROFILES o|--o{ TICKET_ATTACHMENTS : remover
 ```
 
-Описанието по-долу за parent минималните сигнали е неговият отделен hosted PASS; то не включва attachment. Другите планирани категории/задачи/известия остават извън този пакет.
+Описанието по-долу за parent минималните сигнали е неговият отделен hosted PASS; attachment има отделното приемане по-горе. Другите планирани категории/задачи/известия остават извън този пакет.
 
 ### Минимални сигнали: hosted приемане PASS, frontend в PR
 

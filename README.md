@@ -6,7 +6,7 @@
 
 ## Реално състояние
 
-Този child feature клон добавя **локално проверено минимално приложение към сигнал**, зависимо от PR #5. Един PNG/JPEG/PDF до5MiB, private upload/remove и отделен `download-ticket-file` Edge adapter с текуща ticket авторизация. Кандидат20261101195615 НЕ е приложен: локално21 миграции/28 таблици срещу последно hosted20/27. Няма hosted attachment PASS или production публикация. [Договор, проверки и release стъпки](supabase/README.md#минимално-приложение-към-сигнал--локален-child-пакет).
+Минималното приложение към сигнал има **проверен hosted backend; frontend остава в draft PR #6**, зависим от PR #5. Разрешен е един private PNG/JPEG/PDF до 5 MiB, с ticket-only upload/read/remove и отделен download handler. Миграцията `20261101195615` е приложена: общо 21 миграции и 28 таблици; новата Edge функция е ACTIVE v1. Main/live остава `2e1b8f3`. [Приемане, ограничения, cleanup и оставащ release](supabase/README.md#минимално-приложение-към-сигнал--hosted-backend-pass-frontend-в-draft-pr).
 
 | Статус | Функции |
 |---|---|
@@ -14,7 +14,7 @@
 | Включено в общия Storage/theme release | Един private PDF към имот:18 миграции/25 таблици, JS Edge/S3 download; реални bytes/hash, staff-only/owner opt-in, direct/sign/S3 откази, same-JWT role/link revoke и cleanup PASS. UI/service интеграцията е проверена; общият release включва Storage PR #2 и theme PR #3. Надписът/title/aria на бутона показват следващото действие. Виж [резултатите и setup](supabase/README.md). Конкретният production commit/ready статус се потвърждава отделно за deployment-а |
 | Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат само проверен чист domain validator, без API/UI/DB интеграция |
 | Минимални сигнали: hosted PASS, frontend още в draft PR | Двете exact миграции20261101141944/20261101180527 са приложени:20миграции/27таблици. Предишните access/RLS/co-owner/status/same-JWT/UI доказателства плюс новия current→staleHTTP409→reload/current тест затварят минималния договор. Stale отказът еPT409 за109ms, без промяна на ред/events; cleanup е потвърден. Main/live още няма signal UI; целият REQ009 остава частичен |
-| Предстоят | Пълен собственически портал с финансови/исторически функции; frontend release на минималните сигнали, категория/отговорник и задачи; hosted приемане/release на локалното приложение към сигнал; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
+| Предстоят | Пълен собственически портал с финансови/исторически функции; frontend release на минималните сигнали, категория/отговорник и задачи; frontend release на проверения attachment backend; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
 
 Наеми, онлайн плащания, OCR, AI, EN и автоматични външни напомняния са бъдещи идеи, не работещи функции. Регистрацията не дава административни права. Собствеността/обитаването не създават автоматично акаунтна връзка, портален достъп, начисления или прехвърляне на стари дългове.
 

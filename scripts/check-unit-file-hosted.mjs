@@ -4,8 +4,10 @@ import {dirname} from 'node:path';
 import {loadEnvFile} from 'node:process';
 import {randomUUID} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
 import {createClient} from '@supabase/supabase-js';
 import {PROJECT,URL,BUCKET,MAX_BYTES,options,validateFixture,validateJournal,membershipCleanupSql,sha,syntheticPdf,PLAN} from './helpers/unit-file-hosted.mjs';
+import {edgeProbe,directByteProbes,signingProbes,validateS3PublicKey} from './helpers/unit-file-hosted-probes.mjs';
 const active=r=>Date.parse(r.valid_from)<=Date.now()&&(!r.valid_to||Date.now()<Date.parse(r.valid_to));
 const ok=result=>{if(result.error)throw Error('API refusal or transport failure');return result.data;};
 const refused=(r,codes)=>{assert.ok(r.error,'Expected refusal');if(codes)assert.ok(codes.includes(r.error.code),'Unexpected refusal category');else assert.ok([400,401,403,404,409,413].includes(Number(r.error.status||r.error.statusCode||r.error.context?.status)),'Unexpected Storage/transport failure');};
@@ -34,7 +36,11 @@ export async function main(args=process.argv.slice(2)){
   const rpc=async(c,name,args)=>ok(await c.rpc(name,args));
   const roles=async()=>ok(await B.from('user_roles').select('id,membership_id,scope_id,role_code,permissions,valid_from,valid_to'));
   const documents=()=>rpc(B,'unit_documents',{scope:f.scope,unit:f.unit});
-  const readFileBytes=(c,doc)=>c.functions.invoke('download-unit-file',{body:{document_id:doc.id}});
+  const readFileBytes=async(c,doc)=>{
+   const label=Object.keys(clients).find(label=>clients[label]===c)||'anon';j.requests??=[];
+   try{return await edgeProbe({fetcher:guardedFetch,token:claims[label],publicKey:process.env.VITE_SUPABASE_PUBLISHABLE_KEY,id:doc.id,evidence:j.requests,label});}
+   finally{await save();}
+  };
   const check=async(name,fn)=>{j.inFlight=name;await save();await fn();report.push(name);j.passed=[...report];j.inFlight=null;await save();console.log('PASS: '+name);};
   async function grant(){
    assert.ok(!j.roleIntention,'Uncertain role creation: operator reconciliation required; do not retry blindly');
@@ -65,7 +71,10 @@ export async function main(args=process.argv.slice(2)){
    // Missing/unapplied RPCs are setup failures, NEVER a successful access denial.
    assert.deepEqual(await rpc(B,'unit_documents',{scope:f.scope,unit:f.unit}),[]);
    assert.deepEqual(await rpc(B,'authorize_unit_file_download',{document_id:randomUUID()}),[]);
-   const boundary=await readFileBytes(B,{id:randomUUID()});assert.equal(boundary.error?.context?.status,404,'Download handler must be configured/authenticated before setup');
+   const boundary=await readFileBytes(B,{id:randomUUID()});assert.equal(boundary.error?.status,404,'Download handler must be configured/authenticated before setup');
+   validateS3PublicKey(process.env.STORAGE_QA_LEGACY_ANON_KEY);
+   const legacy=await guardedFetch(URL+'/auth/v1/settings',{headers:{apikey:process.env.STORAGE_QA_LEGACY_ANON_KEY}});assert.equal(legacy.status,200,'Valid legacy anon key required; bad S3 credentials are not an RLS proof');await legacy.body?.cancel();
+   await access('.local/edge-tools/node_modules/deno/deno.exe');
    const catalog=ok(await A.from('role_permissions').select('role_code,permission_code').eq('permission_code','manage_documents'));assert.ok(catalog.some(r=>r.role_code==='manager'));
    const admin=ok(await A.from('user_roles').select('role_code,membership_id,permissions,valid_from,valid_to')).filter(r=>active(r)&&r.role_code==='org_admin'&&r.permissions.includes('manage_members'));
    const memberships=ok(await A.from('organization_memberships').select('id,organization_id,status,valid_from,valid_to'));assert.ok(admin.some(r=>memberships.some(m=>m.id===r.membership_id&&m.organization_id===f.org&&m.status==='active'&&active(m))));
@@ -100,6 +109,21 @@ export async function main(args=process.argv.slice(2)){
     ok(await B.storage.from(BUCKET).upload(staff.path,small,{contentType:'application/pdf',upsert:false,cacheControl:'0'}));await download(B,staff,small);await rpc(B,'complete_unit_document',{document:staff.id});
     assert.equal((await documents()).find(d=>d.id===staff.id).visibility,'staff');refused(await readFileBytes(OWNER,staff));refused(await readFileBytes(anon,staff));refused(await B.storage.from(BUCKET).download(staff.path));refused(await OWNER.storage.from(BUCKET).download(staff.path));refused(await anon.storage.from(BUCKET).download(staff.path));refused(await anon.rpc('unit_documents',{scope:f.scope,unit:f.unit}),['42501']);refused(await B.storage.from(BUCKET).createSignedUrl(staff.path,1));
     const response=await guardedFetch(`${URL}/storage/v1/object/public/${BUCKET}/${staff.path}`,{headers:{apikey:process.env.VITE_SUPABASE_PUBLISHABLE_KEY}});assert.ok([400,403,404].includes(response.status));
+    await response.body?.cancel();
+    // The file exists and was read successfully through the handler immediately before these probes.
+    await directByteProbes({fetcher:guardedFetch,token:claims.B,publicKey:process.env.VITE_SUPABASE_PUBLISHABLE_KEY,path:staff.path,evidence:j.requests});
+    await signingProbes({fetcher:guardedFetch,token:claims.B,publicKey:process.env.VITE_SUPABASE_PUBLISHABLE_KEY,path:staff.path,evidence:j.requests});await save();
+    j.copyProbe={target:`${f.scope}/${f.unit}/${j.run}.pdf`,outcome:'UNKNOWN'};await save();
+    const copy=await B.storage.from(BUCKET).copy(staff.path,j.copyProbe.target);
+    const copyStatus=Number(copy.error?.status||copy.error?.statusCode);
+    j.copyProbe.outcome=copy.error&&[400,401,403,404].includes(copyStatus)?'REFUSED':copy.error?'UNKNOWN':'UNEXPECTED_OBJECT_CREATED';await save();
+    assert.equal(j.copyProbe.outcome,'REFUSED','Copy outcome requires exact-target reconciliation');refused(copy);
+    let s3;try{
+     const stdout=execFileSync('.local/edge-tools/node_modules/deno/deno.exe',['run','--allow-env','--allow-sys=osRelease','--allow-net=qfybswnezdzzahmozikr.storage.supabase.co:443','--config','supabase/functions/download-unit-file/deno.json','scripts/check-unit-file-hosted-s3.mjs','--execute','--project',PROJECT],
+      {input:JSON.stringify({token:claims.B,legacyAnonKey:process.env.STORAGE_QA_LEGACY_ANON_KEY,path:staff.path,region:'eu-west-1'}),encoding:'utf8',stdio:['pipe','pipe','pipe'],env:{...process.env,DENO_DIR:'.local/deno-cache'},timeout:30000});s3=JSON.parse(stdout);
+    }catch{throw Error('S3 user-token probe failed; transport/configuration is not denial proof');}
+    j.requests.push({probe:'s3-user-token',denied:s3.denied,status:s3.status,code:s3.code});await save();assert.equal(s3.denied,true);
+    await download(B,staff,small);refused(await readFileBytes(B,{id:randomUUID()}));
     await rpc(B,'remove_unit_document',{document:staff.id,note:marker});refused(await B.rpc('finish_unit_document_removal',{document:staff.id}),['23514']);refused(await readFileBytes(B,staff));refused(await B.storage.from(BUCKET).download(staff.path));await remove(staff);
    });
    await check('explicit current owner; exact5MiB bytes/hash; owner cannot remove',async()=>{
@@ -117,6 +141,7 @@ export async function main(args=process.argv.slice(2)){
    });
    j.phase='assertions-pass-cleanup-pending';await save();console.log('PASS: assertions; cleanup is still REQUIRED');
   }else{
+   assert.ok(!j.copyProbe||j.copyProbe.outcome==='REFUSED','Unknown/unexpected copy: reconcile exact journal target before cleanup');
    assert.ok(j.phase!=='preflight','No owned setup resources');assert.ok(!j.roleIntention,'Uncertain role creation: reconcile before cleanup');
    assert.ok(!(j.probes||[]).some(p=>p.state!=='refused'),'Uncertain/unexpected negative write: operator must reconcile exact journaled probe IDs first');
    const needsRights=j.documents.some(d=>!d.cleaned)||(j.link&&!j.linkRevoked)||(!j.link&&j.linkRequest);

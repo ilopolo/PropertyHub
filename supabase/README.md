@@ -1,71 +1,81 @@
 # Supabase — setup, схема и проверки
 
-## Защитен download — локална реализация, без hosted приемане
+## Hosted Storage приемане — PASS, 01.11.2026; frontend release предстои
 
-Приетата граница вече е реализирана **само локално в PR #2**: [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е нова, **НЕПРИЛОЖЕНА** additive миграция. Предишните17 миграции са неизменени. Candidate18 миграции/25 приложни таблици; hosted остава17/25. Един [JavaScript Edge handler](functions/download-unit-file/index.js), отделен проверим transport core и двата service read пътя; няма нов UI. Hosted разрешеният download още е блокиран от последната приложена policy. Няма доказан hosted fix/CDN bypass.
+Проект **qfybswnezdzzahmozikr**, **18 приложени миграции / 25 приложни таблици (21 public + 4 private)**. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Netlify main/live b088cfb още няма файловия UI; PR #2 остава отделен, без merge/production публикация.**
 
-Поток: `functions.invoke('download-unit-file', {body:{document_id}})` → Auth getUser с Bearer JWT → текущ caller-scoped RPC/session проверка → точен DB object key → server-only S3 GetObject → bounded size/SHA256 → втора caller RPC проверка → attachment с no-store headers. Pending uploader integrity използва същия handler; complete идва след нея. Клиентът не подава bucket/path/URL. Няма fallback, signed/public URL или общ Storage SELECT. DELETE SELECT exception остава само за разрешено отстраняване на tombstoned файл. Default staff и explicit current-owner правила не се разширяват.
+| Реално проверено с обикновени синтетични сесии | Резултат |
+|---|---|
+| PDF upload → pending integrity → ready → Edge/S3 bytes | 621 bytes и точно5242880 bytes със съвпадащ SHA-256 |
+| Staff default и изричен owner opt-in | Неупълномощеният owner отказва; текущият проверен owner чете само owners файла |
+| Anonymous, чужд scope и подменен document ID | Отказ; не се използват счупен transport/configuration за доказателство |
+| Успешен download → role revoke → повторен download | Отказ с непроменен JWT и същия document ID; отделен owner positive control още чете |
+| Успешен owner download → owner-link revoke | Отказ със същия JWT, без refresh/nonce |
+| Direct Storage default/authenticated/public/info/head/range/render и повторен default GET |400 при наличен файл и положителен handler control |
+| Signing, batch signing, list и copy | Sign400; batch200 с error и без URL; list200 с празен набор; copy отказ |
+| Директен S3 GetObject с user JWT + валиден legacy anon |404 NoSuchKey, докато handler чете съществуващия файл; не privileged RLS доказателство |
+| HTTP cache граница | Успешните и отказаните Edge отговори са no-store; успешен CDN статус DYNAMIC, без ETag; безопасни headers са запазени |
+| Действителен local frontend → hosted | Реален browser upload/integrity/download/hash/removal; reload; разгледани375/light и1440/dark, без overlap/overflow/console/page errors |
 
-Локални команди (без hosted credentials):
+Cleanup е потвърден от действителните записи: **0 objects;5 собствени document history реда removed/bytes_deleted;2 временни роли отнети;owner link оттеглен;новото собствено membership inactive**. Audit историята остава. Auth accounts7; fingerprint сверка на защитените profiles/roles/requests/memberships е непроменена. Личният admin/request и pending акаунтът не са променяни. CLI token и локалните S3 credential копия са изчистени; работният S3 key и петте server secrets са запазени. QA evidence/journals/screenshots са локални/игнорирани, не публичен demo достъп.
 
-```powershell
-npm ci
-npm run check:unit-file-download
-npm run check:unit-file-download-db
-npm run check:unit-file-download-integration
-npm run check:unit-file-db
-npm run check:unit-file-hosted-preparation
-npm run build
-# Deno 2.9.6; runtime тестът прихваща fetch, а реалната мрежа е забранена.
-deno run --allow-env --allow-sys=osRelease --deny-net --config supabase/functions/download-unit-file/deno.json scripts/check-unit-file-download-runtime.mjs
-```
+Предишният SDK/CDN same-JWT FAIL и fail-closed allowed-download отказ са исторически реални резултати. Те доведоха до тази граница; старите приложени SQL не са редактирани. Не се твърди, че стар Storage URL непременно проверява текущите права. Вече получени bytes не могат да бъдат отнети; старите премахнати cached QA обекти не са пресъздавани. При отнемането се повтаря вече успешната **handler** заявка; директните клиентски URL вече никога не получават read разрешение за новите файлове.
 
-Pinned server imports/lock: Supabase JS2.118.0, AWS S3 SDK3.1161.0, Smithy FetchHttpHandler5.8.0. Те не са frontend зависимости. Deno lockfile е във function каталога. Deno check/adapter execution не са Supabase Edge sandbox/deploy проверка. Auth/S3 в локалните тестове са fixtures/intercepted fetch; PGlite операциите са истински PostgreSQL/RLS с изрично моделирани managed schema/operation helper. Не доказват истинските Storage operation names, CDN headers, runtime privileges или hosted same-JWT поведение. Не е повтарян пълен Auth/PKCE/browser пакет. Няма нов visual PASS; UI не е променян.
+## Договор за private файл
 
-### Бъдещ server setup — само след отделно разрешение
+Един активен PDF/application/pdf към scoped имот,1..5242880 bytes, immutable generated path, без upsert/версии/OCR/malware scan/inline preview. `manage_documents` е изрично optional scoped manager право с `read_registry`; няма platform/org-admin/manage_registry наследяване. Owner read изисква едновременно `visibility=owners` и текуща проверена account-person/ownership връзка. Default е staff. Собствеността не създава служебни права.
 
-1. Свеж read-only preflight към **qfybswnezdzzahmozikr**:17-те applied версии/съдържание, единствената pending20261101094452 и нейният hash; private bucket/guards; текущ object/signing inventory. Не се replay-ват стари QA journals или migration drafts. Проверява се, че owner на private RPC може да чете auth.sessions; няма нов grant/DDL в auth schema. Старите кешируеми object keys не се reuse-ват и origin policy не се представя като ретроактивен purge.
-2. С отделно разрешение се създава generated S3 key в Storage S3 configuration и се копират endpoint/region от същия проект. **Ключът е project-wide, всички S3 операции/all buckets/bypass RLS**; ограничението до точния разрешен GetObject се налага в handler кода, не чрез измислен readonly scope. За authorization винаги се използва caller JWT, не S3/service role.
-3. Бъдещ игнориран локален `.env.edge.local` съдържа само: `UNIT_FILES_PUBLIC_KEY` (съществуващият sb_publishable ключ), `UNIT_FILES_S3_ACCESS_KEY_ID`, `UNIT_FILES_S3_SECRET_ACCESS_KEY`, `UNIT_FILES_S3_ENDPOINT` (точно `https://qfybswnezdzzahmozikr.storage.supabase.co/storage/v1/s3`), `UNIT_FILES_S3_REGION` (действителната region). `SUPABASE_URL` се предоставя от Edge runtime и трябва да е точният project URL. Файлът НЕ е създаван/попълван с реални ключове в локалния пакет. Нищо от S3 конфигурацията не е VITE_, Netlify environment или Git. Не се подават секрети като CLI аргументи и не се запазва debug output.
-4. След pre-apply checkpoint/hash: exact-version CLI dry-run с **една** pending миграция → apply само20261101094452 → actual history/content/guards сверка. При timeout първо действителното състояние. Не се използва автоматично генерирана друга версия и не се преименува файлът. Не се преизпълнява base bucket setup. Това затваря client byte пътищата; main b088cfb няма Storage UI и старите registry/Auth endpoints са запазени.
-5. Само след разрешение, CLI2.122.0 с проверени help flags:
+Клиентът подава само document ID: Auth getUser → caller-JWT RPC/current session/current DB права → точен trusted metadata key → server-only S3 GetObject → bounded размер/SHA-256 → повторна RPC авторизация → no-store attachment. Pending integrity е разрешен само на uploader с текущи права и срок. Няма direct Storage fallback, подписан/публичен URL или cached permission ticket. Client Storage SELECT остава само за authorized delete/delete_many на removed документ. Премахване: tombstone → Storage API remove → finish; историята остава, прекъсване изисква проверка преди retry.
+
+Общ25s abort и5MiB buffer ограничават заявката. Подписан JWT сам не доказва текуща роля; RPC проверява и session_id. Заявка, разрешена преди committed отнемане, може вече да е върнала bytes; няма обещание за атомарна DB+S3 транзакция или ретроактивно изтриване от клиентски диск.
+
+## Server setup и последваща ротация
+
+Настройките вече са записани в проекта. **Не прилагай миграциите и не създавай S3 key повторно при restart.** Бъдещи промени изискват exact project/history/hash preflight, отделно разрешение и съвместимост с live.
+
+| Edge server variable | Предназначение |
+|---|---|
+| UNIT_FILES_PUBLIC_KEY | Съществуващ sb_publishable ключ за caller-scoped Auth/RPC; не operator key |
+| UNIT_FILES_S3_ACCESS_KEY_ID / UNIT_FILES_S3_SECRET_ACCESS_KEY | Generated server S3 credentials; никога frontend/VITE/Git/logs |
+| UNIT_FILES_S3_ENDPOINT | https://qfybswnezdzzahmozikr.storage.supabase.co/storage/v1/s3 |
+| UNIT_FILES_S3_REGION | eu-west-1, проверена за този проект |
+
+SUPABASE_URL се предоставя от Edge runtime и се проверява за точния project. Generated S3 key има всички S3 операции/all buckets и bypass RLS; **не е scoped readonly ключ**. Handler кодът допуска само GetObject за вече разрешения metadata обект. Caller authorization никога не използва привилегированата самоличност.
+
+При бъдещ разрешен deploy/rotation: временен CLI token само в игнориран `.env.migration.local`; нужните scopes са database_write/database_pooling_config_read за apply и edge_functions_read, edge_functions_write, edge_functions_secrets_read и edge_functions_secrets_write за function/secret операции. Не се иска projects_read при explicit project ref.403 на secrets inventory блокира gate до проверена корекция, не се заобикаля. Secrets се подават чрез игнориран `.env.edge.local`, не като CLI аргументи:
 
 ```powershell
 npx --no-install supabase secrets set --project-ref qfybswnezdzzahmozikr --env-file .env.edge.local
 npx --no-install supabase functions deploy download-unit-file --project-ref qfybswnezdzzahmozikr --use-api
 ```
 
-Не използвай `--prune` или `--no-verify-jwt`. Config задава explicit JS entrypoint и verify_jwt=true; handler допълнително валидира потребителя чрез Auth. Реалната gateway/JWT/JS bundle съвместимост и gateway-generated error headers са hosted gates, не локален PASS. При401/неподдържан runtime се диагностицира конкретният проблем; Auth проверката не се изключва на сляпо. S3 fetch ползва explicit FetchHttpHandler с no-store/redirect:error и общ25s abort, без REST CDN fallback. Не се обещава непрекъсваем in-flight revoke след вече върнати bytes.
+Командите не са инструкции за повторение сега. Не използвай prune/no-verify-jwt. При ротация първо заместващ S3 key → server secret update → положителен download и отрицателни проверки → едва след потвърждение revoke на стария key. Локалните копия/CLI token се изчистват след използване; работните server secrets остават нужни. Текущият работен key не е оттеглян. Няма покупка или hosting промяна.
 
-### Бъдещи hosted проверки и cleanup
+Free ограниченията за invocations/uncached egress и runtime memory/CPU остават; тестът не е load/abuse тест и не обещава неограничена безплатна работа. Не е измерено отчитането на двата мрежови хопа. [Private caching KB](https://supabase.com/kb/troubleshooting/storage-private-bucket-files-still-accessible-after-remove-access-or-logout), [S3 auth](https://supabase.com/docs/guides/storage/s3/authentication), [Edge auth](https://supabase.com/docs/guides/functions/auth).
 
-След успешна server конфигурация и read-only fixture inventory се използват съществуващите A/B/OWNER ordinary sessions. Обновеният `check-unit-file-hosted` изпълнява положителните byte/hash и same-JWT откази през handler-а; директният SDK download остава negative case. Setup вече проверява новия RPC и конфигуриран handler **преди** временни grants/links. Default остава offline plan; изпълнение само с отделно разрешение, точен `--project`, нов маркиран journal и прегледан cleanup. Старите cleaned journals не се отварят за нов run.
+## Целеви проверки и повторно hosted изпълнение
 
-Приемане: истински малък/5MiB PDF upload→pending handler integrity→complete→download SHA256; staff default отказ за owner, explicit owners разрешение, anonymous/foreign отказ. Prime→committed role revoke→същия JWT/същата handler заявка отказ, положителен owner control; отделно owner-link revoke със същия JWT. Допълнителни задължителни probes преди hosted PASS: всички директни REST/authenticated/info/head/list/render/range/sign/sign_many/copy пътища и S3 user-token GetObject отказват дори на легитимен handler caller; S3 RLS probe изисква поддържан legacy anon key, не невалиден publishable key. Този пълен bypass/header/trace набор още не е автоматизиран в hosted harness и не се отчита като минал. Реални backend endpoint/cache headers и нула S3 fetch при първоначален authorization отказ се проверяват със безопасни trace данни; без tokens/URLs/лични данни в логове.
+Pinned server imports/lock: Supabase JS2.118.0, AWS S3 SDK3.1161.0, Smithy FetchHttpHandler5.8.0; не влизат в browser bundle. Локалните PGlite/Auth/S3 fixtures се различават от реалното hosted приемане:
 
-Cleanup: само новите journal-owned files/roles/links/memberships; tombstone→Storage API remove→finish, revoke grants/links, exact guarded membership cleanup при нужда, audit остава. След грешка/timeout първо сверка на собствените IDs, не blind retry. Няма нови Auth акаунти, промени по pending/личен admin/request или общи fixtures. Операторският CLI token и локалното копие на S3 secrets се изчистват след разрешеното използване; Edge secrets остават нужни на работещия handler. При провален setup се отменя само newly-owned key/function setup след съгласуван cleanup, без чужди ресурси. След реален PASS отделно release решение; този пакет няма merge/main/production/manual preview или Netlify бюджетна проверка.
+```powershell
+npm run check:unit-file-download
+npm run check:unit-file-download-db
+npm run check:unit-file-download-integration
+node scripts/check-unit-file-hosted-probes.mjs
+npm run check:unit-file-hosted
+```
 
-Официални механизми: [private caching KB](https://supabase.com/kb/troubleshooting/storage-private-bucket-files-still-accessible-after-remove-access-or-logout), [S3 authentication](https://supabase.com/docs/guides/storage/s3/authentication), [Edge auth](https://supabase.com/docs/guides/functions/auth), [JavaScript entrypoints](https://supabase.com/docs/guides/functions/function-configuration). Free plan invocations/uncached egress и реалният SDK memory/CPU разход остават ограничения; не е измерено текущо потребление или отчитането на двата хопа.
+Последната команда по подразбиране е **OFFLINE PLAN**, без env/login/HTTP/mutation. Hosted изпълнение е само по отделно възлагане с exact project, прегледан fixture и **нов** маркиран journal; старите cleaned journals не се replay-ват. Нужни са обикновените A/B/OWNER credentials в `.env.rls.local`/`.env.password-policy.local`, public config в `.env.local` и `STORAGE_QA_LEGACY_ANON_KEY` в `.env.storage-qa.local` за поддържания S3 user-token режим (не service_role/publishable). Windows S3 subprocess изисква Deno2.9.6 в `.local/edge-tools/node_modules/deno/deno.exe`; например локален tool install с `npm install --prefix .local/edge-tools --no-save deno@2.9.6`. Няма operator credential в access assertions. Optional STORAGE_QA_MANAGEMENT_TOKEN е само за exact guarded membership cleanup.
 
-Следващият раздел запазва **историческия hosted резултат преди новия локален handler**; не е доказателство, че новият договор вече е deployed.
+```powershell
+npm run check:unit-file-hosted -- --phase setup --execute --project qfybswnezdzzahmozikr --journal .local/storage-hosted-qa/new-run.json --external-membership-cleanup
+npm run check:unit-file-hosted -- --phase assertions --execute --project qfybswnezdzzahmozikr --journal .local/storage-hosted-qa/new-run.json
+npm run check:unit-file-hosted -- --phase cleanup --execute --project qfybswnezdzzahmozikr --journal .local/storage-hosted-qa/new-run.json --external-membership-cleanup
+```
 
-## 01.11.2026 — hosted приемане НЕ е преминало; release hold
+Setup проверява реални RPC/handler/key readiness преди grants. Copy probe записва exact target/intention; timeout/неочакван успех изисква state reconciliation. Не се приема transport/config failure за denial PASS. Safe evidence съдържа само status/header allowlist/резултати, без request headers, tokens, signed URLs или response bodies. Cleanup засяга само journal-owned rows/objects; traceable audit се пази. При нужда generated guarded membership SQL се изпълнява през доверен operator след review; baseline memberships не се приемат за собствени.
 
-**17 приложени миграции /25 приложни таблици (21public+4private), но private-file компонентът НЕ е готов за merge/production.** Main/live остава b088cfb. Миграцията20261031113950 е приложена точно с нейния timestamp и MD5bd03fcf5e724fb3512501640c5265f19; не я прилагай повторно. Следват две отделни applied policy corrections, които запазват историята:
-
-| Файл | Действителен резултат |
-|---|---|
-| [20261101081203_unit_file_authenticated_info.sql](migrations/20261101081203_unit_file_authenticated_info.sql) | Позволи authenticated metadata preflight при същия document predicate; byte download заработи, но cached authorization наруши same-session revoke критерия |
-| [20261101082303_unit_file_uncached_download.sql](migrations/20261101082303_unit_file_uncached_download.sql) | Върна fail-closed отказа на CDN info/head preflight; не е работещ цялостен download fix. Explicit authenticated route също минава през preflight |
-
-Hosted Storage1.80.2 доказателства: реални621byte и5MiB PDF bytes/SHA256; staff-only default иowners opt-in; anonymous/public/sign/foreign scope-unit откази; server MIME иsize enforcement, pending иtombstone/API-delete lifecycle. **FAIL:** след отнемане на B роля същиятJWT още свали същитеbytes по defaultSDKURL, включително no-store, докато metadataRPC вече отказва. Nonce отказът не се отчита като защита; client не може да наложи fresh server authorization на всички replay URL. Подробните [Storage serving](https://supabase.com/docs/guides/storage/serving/downloads) и [operation definitions](https://github.com/supabase/storage/blob/v1.80.2/src/http/routes/operations.ts) не заменят реалния runtime тест.
-
-**Блокер преди следващ hosted run:** нужна е приета контролирана download граница с fresh server authorization или потвърдена provider настройка за изключване на този authorization cache. Нов server/Edge proxy не е реализиран в този пакет. Не отслабвай критерия до nonce/TTL и не включвай signed/public URL тихомълком. Current fail-closed policy отказва нужния metadata preflight и при разрешен download; това е безопасен release hold, не PASS.
-
-Всички ресурси на двата маркирани run-а са почистени:0objects/activefile roles/active test links,2newmembershipinactive;3documenthistoryреда иrole/link/audit история са запазени. Authaccounts7непроменени, pendingпрофилpending, личната заявкаpending. CLI token е изчистен. Hosted owner-link same-JWT byte revoke assertion не е достигнат; cleanup не се представя като негов заместител. Няма нов live/browser Storage PASS, merge илиproduction deployment. PR#3/theme остава отделен. Старите локални tests и примерните executeкоманди по-долу са подготвени/исторически; **не пускай нов setup/assertions преди разрешаване на блокера и fresh inventory**.
-
-
-Установеният проект е qfybswnezdzzahmozikr. **Текуща hosted схема:17 приложени SQL миграции;25 приложни таблици:21 public +4 private. Private-file release е блокиран — виж текущия резултат по-долу.** Управляваните auth/storage таблици не са включени. Историята е сверена при съответните feature checkpoints; тази документационна редакция не прилага SQL или променя настройки. [README](../README.md) · [Действителни ER отношения](../docs/public/ARCHITECTURE.md).
+Реалната frontend проверка използва `npm run dev` на127.0.0.1:5173, synthetic scoped staff и маркиран PDF; проверява upload→ready→download SHA→remove и действителните DB записи. Не е нужен нов email/PKCE/redirect сценарий. QA credentials не са reviewer/demo credentials. Следващото release решение е отделно: PR review/combined main merge/един Netlify production deploy/целеви live smoke. В този пакет няма main merge/production/manual preview/budget проверка; full MVP, сигнали и други модули не се обявяват за завършени.
 
 ## Миграционна история
 
@@ -86,6 +96,11 @@ Hosted Storage1.80.2 доказателства: реални621byte и5MiB PDF 
 
 | [20261031092207_verified_owner_access.sql](migrations/20261031092207_verified_owner_access.sql) | Explicit verifier делегация, account-person history и минимален current owner projection |
 | [20261031092951_owner_verifier_explicit_delegation.sql](migrations/20261031092951_owner_verifier_explicit_delegation.sql) | Само отделният verifier setter може да включи правото с основание; generic INSERT отказ |
+
+| [20261031113950_private_unit_file.sql](migrations/20261031113950_private_unit_file.sql) | Private bucket, document lifecycle, scoped permission и guards |
+| [20261101081203_unit_file_authenticated_info.sql](migrations/20261101081203_unit_file_authenticated_info.sql) | Историческа info preflight диагностика |
+| [20261101082303_unit_file_uncached_download.sql](migrations/20261101082303_unit_file_uncached_download.sql) | Исторически fail-closed read attempt; immutable SQL |
+| [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) | Current authorization/session RPC и handler-only client read policies |
 
 Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички21 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 
@@ -117,7 +132,7 @@ Platform admin активира проверена organization заявка; or
 
 ## Проверки и синтетични ресурси
 
-Командите съществуват в package.json; тук не са преизпълнявани функционални тестове:
+Командите съществуват в package.json. Текущият пакет изпълни само целевите Storage проверки; останалите suites не са повторени:
 
 | Команда | Среда и ограничения |
 |---|---|
@@ -140,68 +155,3 @@ Platform admin активира проверена organization заявка; or
 Audit и private bootstrap/history/batch таблиците умишлено са затворени за пряк клиентски достъп; RLS-without-policy INFO не се премахва с отворена policy. Изложените registry таблици имат конкретни scope policies. Storage upload/download, финансови/исторически owner projections, CSV import/export, signals, notifications и finance/reporting още не са реализирани. Идеалните части са domain-only. Виж публичната архитектура за съществуващите отношения и ограничения.
 
 Owner-access checks: npm.cmd run check:owner-access-db (временен PostgreSQL); npm.cmd run check:owner-access-api (existing ordinary A/B/OWNER/PENDING sessions, publishable key, без нов Auth); npm.cmd run check:owner-access-browser (реални local Edge действия/снимки). State и request journals са ignored .local/owner-access-qa; не се публикуват и не се пресъздават след неизвестен резултат. Миграциите са additive спрямо предишния live backend; старите RPC signatures/default grants са непроменени.
-
-
-## Private файл към имот — локално проверен кандидат, още без hosted release
-
-Този branch съдържа [20261031113950_private_unit_file.sql](migrations/20261031113950_private_unit_file.sql), **Приложена на01.11 с точния timestamp**. Следващите baseline14/candidate15 бележки са първоначалният rollout контекст; текущият статус17/25 иruntimeFAIL е в началото на документа. Без managed-schema DDL: добавя private bucket unit-private-files и ограничени policies върху storage.objects; не редактира Supabase таблици/функции. Bucket name collision или липсващ storage.allow_only_operation(text) спират миграцията, вместо да променят наличното.
-
-- Съществуващото планирано manage_documents е optional manager permission +read_registry, изрично назначавано в собствен managed scope от org admin през assign_staff_role. В UI пакетът „Файлове“ означава manager с точно тези две права, без manage_registry. Няма автоматична промяна на стари роли или inheritance от platform/org admin. Existing manager с друг permission пакет се прекратява и се назначава изрично подходящият subset през съществуващия lifecycle; няма тихо добавяне към старата роля.
-- Един активен файл на scope/unit; само PDF, application/pdf,1..5242880bytes (5MiB). Генериран immutable path scope/unit/document.pdf; без upsert/copy/versions. Клиентски SHA-256 се сравнява с реално свалени bytes при upload и download; това не е server content attestation, проверка за malware или удостоверяване на PDF. Bucket налага MIME/размер, не доказва съдържание. Няма inline preview.
-- Default visibility=staff. Само изрично избраното owners допуска текущ проверен собственик чрез fresh my_owned_units projection. Собственикът чете ready файла, няма upload/delete/оперативни права. Няма общо право върху всички документи към имота. Metadata и bytes проверяват същите scope/visibility/current rights; owner projection не издава uploader/history.
-- prepare_unit_document→pending15min; upload през Storage API, без upsert; authenticated download +SHA256 check; complete_unit_document проверява actual object size/MIME, тогава ready. Недовършено/изтекло качване не е owner-visible. Manager го отменя и качва отново; няма автоматично доизмисляне/публикуване.
-- remove_unit_document първо записва tombstone/actor/reason и спира download. Storage API remove изтрива bytes; finish_unit_document_removal потвърждава липсващ object и запазва история. При прекъсване UI предлага довършване; SQL DELETE на storage.objects не е приложен метод за физическо изтриване. Current right revocation спира новите metadata/byte заявки; вече свален файл не може да бъде отнет.
-- Само authenticated get. SELECT е operation-specific; signed URL, signed upload, list/copy и UPDATE/upsert не се предоставят. Restrictive guards ограничават и бъдещи broad permissive policies за този bucket, без да променят другите buckets. Download използва cache:no-store и upload cacheControl:0.
-
-### Локални проверки и граници
-
-npm.cmd run check:unit-file-domain; npm.cmd run check:unit-file-db; npm.cmd run check:unit-file-browser. Първите проверки са pure domain и временен PGlite PostgreSQL с изрична Storage schema/helper fixture. Browser runner използва действителен Edge, действителния frontend/SDK и real HTTP upload/download bytes върху локален Node QA transport +SQL/RLS; **НЕ е Supabase Storage/Auth runtime**, не чете env credentials и блокира hosted заявки. Browser screenshots/отчети са ignored. Тези доказателства не са hosted Storage PASS или пълен local Supabase stack PASS.
-
-### Оставащ release gate — без автоматично изпълнение
-
-1. Read-only свери hosted history14 и hash на baseline, operation helper/Storage API version, managed grants/RLS, bucket name absence и наличните policies. Feature клон не изолира Supabase. При несъвпадение спри и отчети; не пресъздавай fixtures/миграции.
-2. След отделно разрешен release прозорец приложи точно новата additive миграция транзакционно преди новия frontend. Старият live b088cfb остава съвместим: старите RPC signatures/default grants не са изменени, новата capability не е дадена на никого автоматично. При failure не merge-вай UI.
-3. С existing synthetic ordinary sessions и минимално изрично file grant (без лични акаунти) докажи реалния Storage API: private/public/sign отказ, MIME и5MiB граница, interrupted pending/cleanup, upload→download actual bytes+SHA256; anonymous/foreign scope отказ, default staff-only/explicit owner audience и same-session revocation. Свери actual metadata/object записи и физически bytes, после оттегли точно временните synthetic grants/links и премахни само новите synthetic files чрез Storage API. Не използвай operator ключ за RLS доказателство. Hosted helper/operation mapping и multi-transaction races остават непроверени локално.
-4. Само след тези gates обедини проверени промени в разрешен merge към main/една production публикация с бюджетен резерв; после targeted live navigation/download/revoke. Настоящият PR НЕ се merge-ва и няма production deployment. При rollback на frontend остави additive DB и отказаните pending/removed записи за контролиран cleanup; не drop-вай/преименувай историята.
-
-
-Verified-owner история: действителната приложена/committed версия е20261031092207_verified_owner_access.sql;20261031091247 е била неприлагана CLI чернова. Local/committed/saved applied statement hash е e3a12961f10c23ebc1a50baad74d6075 (LF/trim). Номерът на черновата в стар списък не е основание за rename или reapply.
-
-### Hosted Storage harness — изпълнен частично; текущият FAIL/cleanup е описан в началото
-
-[check-unit-file-hosted.mjs](../scripts/check-unit-file-hosted.mjs) има безопасен **offline plan** по подразбиране: не зарежда env, не влиза в Auth и не изпраща HTTP. Целта е фиксирана към qfybswnezdzzahmozikr — същият споделен проект с live версията, **не изолиран staging**. Скриптът никога не прилага миграции или създава Auth акаунти. [Локалната preparation проверка](../scripts/check-unit-file-hosted-preparation.mjs) проверява execution/project/path guards, собствеността на journal ресурсите, guarded membership SQL и синтетичен валиден PDF с точни5MiB/5MiB+1 размери. Това не е managed Storage runtime тест.
-
-```powershell
-npm.cmd run check:unit-file-hosted
-npm.cmd run check:unit-file-hosted-preparation
-```
-
-За бъдещо отделно разрешено изпълнение са нужни игнорирани fixture/journal под .local/storage-hosted-qa. Fixture форматът е project,org,scope,unit,foreignScope,foreignUnit,person:{id,revision},auth:{A,B,OWNER},profiles:{A,B,OWNER}; всички ID са UUID на предварително проверени синтетични ресурси. Точните IDs не се публикуват. В локалната работна среда има подготвен fixture от предишния owner journal и read-only inventory; не го пресъздавай с нови акаунти/организации. Преди execute свери IDs/current grants/person revision/ownership и заетия file slot.
-
-Credentials се четат само в execute режим от игнорираните .env.local, .env.rls.local, .env.password-policy.local и optional .env.storage-qa.local:
-
-| Променливи | Предназначение |
-|---|---|
-| VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY | Точният project URL и само publishable key; не privileged key |
-| RLS_A_EMAIL, RLS_A_PASSWORD | Съществуващ synthetic A: org admin за назначенията, без файлово наследяване |
-| RLS_B_EMAIL, RLS_B_PASSWORD | Съществуващ synthetic B: временно файлово/verifier назначение в A; след revoke отново само чужд scope B |
-| PASSWORD_QA_EMAIL, PASSWORD_QA_PASSWORD | Вече съществуващият изолиран owner QA акаунт, без нова парола/reset |
-| STORAGE_QA_MANAGEMENT_TOKEN | Optional Management API token с database write достъп за конкретния проект; **само за точния membership cleanup**, не за access assertions. Не е Project Secret/service-role. Алтернативата е existing operator connector с генерирания guarded SQL |
-
-Не въвеждай пароли/token в CLI аргументи, VITE_ променливи за операторски ключове, чат, screenshots или Git. Изходът не съдържа credentials, еднократни URL или API response bodies. Sessions са ordinary, без persistence/auto-refresh; same-JWT сравненията остават само в RAM. Global Confirm Email и личните акаунти не се променят. Pending QA акаунтът не се използва, за да остане pending.
-
-След отделно разрешен read-only preflight и apply на миграцията, **НЕ като част от настоящата подготовка**:
-
-```powershell
-npm.cmd run check:unit-file-hosted -- --phase setup --execute --project qfybswnezdzzahmozikr --external-membership-cleanup
-npm.cmd run check:unit-file-hosted -- --phase assertions --execute --project qfybswnezdzzahmozikr
-npm.cmd run check:unit-file-hosted -- --phase cleanup --execute --project qfybswnezdzzahmozikr
-```
-
-- **setup:** проверява ordinary identities, baseline role/membership IDs, наличен document RPC/capability, person/ownership и свободния slot. Missing RPC/schema е preflight failure, никога успешен deny. A дава на B нов manager subset read_registry/manage_documents и отделно verify_owner_access; после B създава точно маркирана owner връзка. Не се изменят старите A/B назначения.
-- **assertions:** реални SDK upload/download SHA256 на малък staff-only и точен5MiB owner PDF; default privacy; anonymous/public/signed отказ; raw MIME/size откази и incomplete pending/complete refusal; чужди scope/unit IDs. B role се отнема, а **owner positive control още сваля същите bytes** — така foreign refusal не се бърка с липсващ файл. Втори изричен временен B grant възстановява само test setup за owner-link revoke/cleanup. Проверява се действително отнемане на owner bytes/metadata при същия JWT и проследим tombstone→Storage API remove→finish. Няма SQL DELETE на storage.objects.
-- **cleanup:** само journal IDs и filename marker storage-qa-<run>-<kind>.pdf, с проверка на uploader/scope/unit и link evidence. Запазва document/link/role/audit историята; не изтрива Auth/person/unit/org или baseline grants. Новият B membership в A се деактивира само по exact ID/profile/org и при липса на активни роли. Default operator вариантът генерира <journal>.membership-cleanup.sql; изпълни го през съществуващия connector след преглед и повтори само cleanup. Дотогава cleanup не е PASS. Optional token използва [Management API query](https://supabase.com/docs/reference/api/v1-run-a-query), beta endpoint; ако той е недостъпен/променен, остани на reviewed SQL през connector, без заобикаляне на права. Привилегированият cleanup не е RLS доказателство.
-
-setup отказва върху съществуващ journal. Assertions не се повтарят върху interrupted/completed run; първо cleanup/сверка, после нов journal path. Lock предпазва от паралелен writer. При pending role/link/prepare intention, неочаквано позволен negative write или stale lock: първо установи крайния server result по точните ID/marker и journal/.tmp, после документирано поправи състоянието; не изтривай lock и не повтаряй setup на сляпо. Completed cleanup се отчита RETAIN, не нов hosted PASS. Възможни многотранзакционни Storage races и provider operation mapping остават отделни hosted gates.
-
-Историческа preparation проверка: syntax/offline guards/fixture ownership/PDF boundaries, **0 HTTP от preparation теста**. Read-only connector inventory потвърди14 миграции, неприложена Storage миграция, липсващи bucket/documents, наличен helper и подходящите стари synthetic данни. Това е статусът на подготовката от31.10; за действителните01.11 runs води текущият FAIL/cleanup отчет в началото. Продуктовите SQL/policies/service са само прегледани, без промяна.

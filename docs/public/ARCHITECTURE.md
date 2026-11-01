@@ -1,10 +1,10 @@
 # Реализирана архитектура
 
-Актуализация:31.10.2026. Реализираният поднабор е Auth/admin/registry; целият университетски MVP остава незавършен. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
+Актуализация:01.11.2026. Реализираният поднабор е Auth/admin/registry и hosted private-file backend с проверена локална UI интеграция; файловият frontend release и целият университетски MVP остават незавършени. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
 
 ## Стек и граници
 
-HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth през supabase-js и REST/RPC. Няма React/Vue/TypeScript. Девет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
+HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Девет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 
 ```mermaid
 flowchart LR
@@ -14,6 +14,12 @@ flowchart LR
     Controllers --> Services[Services]
     Services --> Auth[Supabase Auth]
     Services --> API[REST and public RPC]
+    Services --> Files[Private Storage upload and remove]
+    Services --> Edge[Edge download boundary]
+    Edge --> Auth
+    Edge --> API
+    Edge --> S3[Server-only S3 GetObject]
+    S3 --> Files
     API --> Guards[Grants RLS and guarded private functions]
     Guards --> DB[Application tables]
 ```
@@ -24,7 +30,7 @@ Platform admin няма подразбиращ се operational достъп. Or
 
 ## Действителна схема
 
-**17 миграции;25 приложни таблици —21 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
+**18 миграции;25 приложни таблици —21 в public и4 в private**. Броят не включва управляваните Supabase auth/storage таблици. По-долу са основните физически FK; диаграмите не са пълен списък на колоните, индексите и composite constraints. PRIVATE_ префиксът означава реалната private схема, не допълнителни public таблици.
 
 ### Достъп и физически registry
 
@@ -130,7 +136,7 @@ Brevo Free custom SMTP обслужва само Auth confirmation/reset при 
 
 Запазени са ordinary-session2-org/pending RLS allow/deny, local PostgreSQL rebuild, domain boundary/concurrency проверки и реални Edge local/live screenshot/reload/theme проверки. Domain-only shares има17 synthetic групи; occupancy —9 local DB и9 hosted API групи плюс subject guard. Тези са резултати от съответните feature checkpoints, не нови тестове при документационна редакция. PGlite Auth fixtures и операторски setup не са доказателство за hosted Auth/RLS. QA artifacts и credentials остават локални.
 
-Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Пълният финансов/исторически owner портал, Storage/signals, import/export, finance/reports и in-app notifications предстоят; demo достъпът още не е подготвен. Не се използва личният platform admin за demo.
+Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Пълният финансов/исторически owner портал, сигнали, import/export, finance/reports и in-app notifications предстоят; private-file backend/локална UI интеграция имат hosted приемане, но main frontend release е отделен. Demo достъпът още не е подготвен; личният platform admin не се използва за demo.
 
 ## Минимален current owner projection
 
@@ -153,9 +159,9 @@ erDiagram
     PROFILES o|--o{ DOCUMENTS : removed_by
 ```
 
-UI controller unit-files → service unit-files → guarded document RPC + Storage upload/remove; двата byte read пътя вече минават през един JS Edge download handler по document ID. Handler: Auth getUser → caller-JWT RPC/current session и DB права → exact-key server-only S3 GetObject → bounded size/hash → повторна RPC авторизация → no-store attachment. Няма директен download/signing fallback; candidate policy оставя Storage SELECT само за разрешено tombstone removal. Чистият domain валидира filename/MIME/size и SHA256; BG ресурси и DOM renderer са отделни. Owner audience е изрична и default staff; няма owner upload. S3 key bypass-ва RLS и е само Edge secret; не се използва за caller authorization. Локалният QA transport е само test helper, не backend на продукта.
+UI controller unit-files → service unit-files → guarded document RPC + Storage upload/remove; двата byte read пътя минават през един JS Edge download handler по document ID. Handler: Auth getUser → caller-JWT RPC/current session и DB права → exact-key server-only S3 GetObject → bounded size/hash → повторна RPC авторизация → no-store attachment. Няма директен download/signing fallback; приложената policy оставя Storage SELECT само за разрешено tombstone removal. Чистият domain валидира filename/MIME/size и SHA256; BG ресурси и DOM renderer са отделни. Owner audience е изрична и default staff; няма owner upload. S3 key bypass-ва RLS и е само Edge secret; не се използва за caller authorization. Локалният QA transport е само test helper; отделното hosted приемане използва действителни Storage/S3/Edge и ordinary sessions.
 
 
 ## Private-file hosted status —01.11.2026
 
-Трите Storage миграции са applied(20261031113950,20261101081203,20261101082303). Първоначалните SQL файлове не са редактирани. Реални bytes/hash/visibility/limits/cleanup са доказани, но cached authorization наруши same-session отнемането; hosted final policy е fail-closed и разрешеният download не работи. Новата20261101094452 и Edge handler са **локално проверен кандидат, НЕПРИЛОЖЕНИ/deployed**, без hosted cache/revocation PASS. Hosted17 миграции/25 application tables, candidate18/25: няма нова таблица. Виж [setup и оставащите gates](../../supabase/README.md). Production main b088cfb още няма файловия UI. Няма нов production deployment.
+Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; новият Edgev1/S3 handler е deployed и текущото hosted приемане е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Няма load test или нов email/PKCE пакет. Виж [setup и release стъпките](../../supabase/README.md). Main/live b088cfb още няма файловия UI; PR2 остава отделен и няма Netlify production deployment.

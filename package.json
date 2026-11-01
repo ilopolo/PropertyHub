@@ -46,7 +46,8 @@
     "check:unit-file-hosted-preparation": "node scripts/check-unit-file-hosted-preparation.mjs",
     "check:unit-file-download": "node scripts/check-unit-file-download.mjs",
     "check:unit-file-download-db": "node scripts/check-unit-file-download-db.mjs",
-    "check:unit-file-download-integration": "node scripts/check-unit-file-download-integration.mjs"
+    "check:unit-file-download-integration": "node scripts/check-unit-file-download-integration.mjs",
+    "check:unit-file-hosted-probes": "node scripts/check-unit-file-hosted-probes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

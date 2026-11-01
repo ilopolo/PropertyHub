@@ -1,8 +1,8 @@
 # Supabase — setup, схема и проверки
 
-## Hosted Storage приемане — PASS, 01.11.2026; frontend release предстои
+## Hosted Storage приемане — PASS, 01.11.2026
 
-Проект **qfybswnezdzzahmozikr**, **18 приложени миграции / 25 приложни таблици (21 public + 4 private)**. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Netlify main/live b088cfb още няма файловия UI; PR #2 остава отделен, без merge/production публикация.**
+Проект **qfybswnezdzzahmozikr**, **18 приложени миграции / 25 приложни таблици (21 public + 4 private)**. Управляваните Auth/Storage таблици не са включени в броя. [20261101094452_unit_file_download_boundary.sql](migrations/20261101094452_unit_file_download_boundary.sql) е приложена еднократно с точната версия; предишните17 SQL файла са неизменени. LF-SHA256 на новата миграция: `3f3ebcb47d47966c8bd9e7c022d04b72310cbfa614a7d65e1953a5bafbc56b31`. Един [JS Edge handler](functions/download-unit-file/index.js) `download-unit-file`, версия1 ACTIVE/verify_jwt=true, е deployed в Supabase. **Този код обединява Storage PR #2 и theme fix PR #3 в един release; production се публикува само от main. Git/общият release PR установяват конкретния публикуван commit и ready резултат.**
 
 | Реално проверено с обикновени синтетични сесии | Резултат |
 |---|---|
@@ -75,7 +75,7 @@ npm run check:unit-file-hosted -- --phase cleanup --execute --project qfybswnezd
 
 Setup проверява реални RPC/handler/key readiness преди grants. Copy probe записва exact target/intention; timeout/неочакван успех изисква state reconciliation. Не се приема transport/config failure за denial PASS. Safe evidence съдържа само status/header allowlist/резултати, без request headers, tokens, signed URLs или response bodies. Cleanup засяга само journal-owned rows/objects; traceable audit се пази. При нужда generated guarded membership SQL се изпълнява през доверен operator след review; baseline memberships не се приемат за собствени.
 
-Реалната frontend проверка използва `npm run dev` на127.0.0.1:5173, synthetic scoped staff и маркиран PDF; проверява upload→ready→download SHA→remove и действителните DB записи. Не е нужен нов email/PKCE/redirect сценарий. QA credentials не са reviewer/demo credentials. Следващото release решение е отделно: PR review/combined main merge/един Netlify production deploy/целеви live smoke. В този пакет няма main merge/production/manual preview/budget проверка; full MVP, сигнали и други модули не се обявяват за завършени.
+Реалната frontend проверка използва `npm run dev` на127.0.0.1:5173, synthetic scoped staff и маркиран PDF; проверява upload→ready→download SHA→remove и действителните DB записи. Не е нужен нов email/PKCE/redirect сценарий. QA credentials не са reviewer/demo credentials. Общият Storage/theme release проверява само интеграцията, следва един main merge/автоматичен Netlify production deploy и тесен live smoke. Старият hosted набор не се replay-ва; миграции/secrets/Edge deployment не се повтарят. При release проблем се записват доказателства и recovery план, без автоматичен втори deploy. Full MVP, сигнали и други модули не се обявяват за завършени.
 
 ## Миграционна история
 

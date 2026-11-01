@@ -1,6 +1,6 @@
 # Реализирана архитектура
 
-Актуализация:01.11.2026. Реализираният поднабор е Auth/admin/registry и hosted private-file backend с проверена локална UI интеграция; файловият frontend release и целият университетски MVP остават незавършени. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
+Актуализация:01.11.2026. Реализираният поднабор е Auth/admin/registry и private-file Edge/S3 модул; Storage UI и theme fix са включени в общ release. Целият университетски MVP остава незавършен; конкретният production ready статус се установява за съответния main deployment. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
 
 ## Стек и граници
 
@@ -136,7 +136,7 @@ Brevo Free custom SMTP обслужва само Auth confirmation/reset при 
 
 Запазени са ordinary-session2-org/pending RLS allow/deny, local PostgreSQL rebuild, domain boundary/concurrency проверки и реални Edge local/live screenshot/reload/theme проверки. Domain-only shares има17 synthetic групи; occupancy —9 local DB и9 hosted API групи плюс subject guard. Тези са резултати от съответните feature checkpoints, не нови тестове при документационна редакция. PGlite Auth fixtures и операторски setup не са доказателство за hosted Auth/RLS. QA artifacts и credentials остават локални.
 
-Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Наличието на ready deployment не е пълен функционален/визуален PASS. Dashboard остава каталог. Пълният финансов/исторически owner портал, сигнали, import/export, finance/reports и in-app notifications предстоят; private-file backend/локална UI интеграция имат hosted приемане, но main frontend release е отделен. Demo достъпът още не е подготвен; личният platform admin не се използва за demo.
+Netlify: съществуващото repo/main, npm run build→dist, Node24, security headers/CSP от netlify.toml, без SPA fallback. Ready deployment и live UI smoke се отчитат отделно. Storage/theme се обединяват в един release PR и един production trigger. Dashboard остава каталог. Пълният финансов/исторически owner портал, сигнали, import/export, finance/reports и in-app notifications предстоят. Demo достъпът още не е подготвен; личният platform admin не се използва за demo.
 
 ## Минимален current owner projection
 
@@ -164,4 +164,4 @@ UI controller unit-files → service unit-files → guarded document RPC + Stora
 
 ## Private-file hosted status —01.11.2026
 
-Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; новият Edgev1/S3 handler е deployed и текущото hosted приемане е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Няма load test или нов email/PKCE пакет. Виж [setup и release стъпките](../../supabase/README.md). Main/live b088cfb още няма файловия UI; PR2 остава отделен и няма Netlify production deployment.
+Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; Edgev1/S3 handler е deployed и hosted приемането е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Общият release включва source PR2/PR3 без нови backend операции; преди main се проверяват merged build/navigation/theme/Storage UI-service интеграцията, после тесен live smoke. Няма повторен hosted RLS/PKCE набор или load test. Виж [setup и release стъпките](../../supabase/README.md).

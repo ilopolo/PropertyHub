@@ -4,6 +4,21 @@
 
 ## Стек и граници
 
+DB-D/1 е независим локален кандидат от main b5d9409: `financial-drafts` domain → service → guarded public/private RPC; UI/controller на `pages/finances.html`. Само `financial_categories` (операторски immutable версии), scoped `resolutions` и `allocation_rule_versions` със status=draft. Правилото сочи конкретна версия на каталога и пази server-created snapshot на основанието; редакция на текущото основание не променя тихо тази версия. Историята е в ограничено прочетими audit before/after записи. `prepare_rules` е optional manager/cashier право, `read_rules` — отделен преглед за manager/cashier/controller; current membership/scope/period guards и RLS са задължителни. Няма global client DML, admin inheritance или финансово изпълнение. Локалните PGlite/SDK/Edge-browser проверки не са hosted PASS. Handling PR #8 остава отделен, без runtime зависимост.
+
+Само локалният DB-D/1 кандидат добавя следните отношения към съществуващата схема:
+
+```mermaid
+erDiagram
+    management_units ||--o{ resolutions : scopes
+    management_units ||--o{ allocation_rule_versions : scopes
+    financial_categories ||--o{ allocation_rule_versions : pins_version
+    resolutions ||--o{ allocation_rule_versions : snapshots_basis
+    financial_categories o|--o| financial_categories : supersedes
+```
+
+Правната опора е текстът на ЗУЕС чл.48 ал.1/3, проверен на02.11.2026 в официалното издание на МРРБ до ДВ49/2025. Пълна приложимост/кворум/актуалност за конкретен период не са автоматично удостоверени: legal_status=text_checked, записите needs_review. Идеални части на сградата не са съсобственически дялове; липсващ DB/API набор не се измисля или нормализира. Бъдеща активация изисква затворен правен договор и отделно изрично право.
+
 HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Десет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 
 ```mermaid

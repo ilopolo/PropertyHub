@@ -14,7 +14,7 @@
 |---|---|
 | Работят и са проверени | Supabase register/login/logout, pending без роли, реално доставени confirmation/recovery писма и PKCE; отделни platform/org admin процеси, изрични manager/controller назначения; разрешен регистър на имоти и scoped лица; собственост/съсобственост и описателно обитаване с периоди, произход, проверки и история; проверена account-person връзка и минимален собствен изглед |
 | Включено в общия Storage/theme release | Един private PDF към имот:18 миграции/25 таблици, JS Edge/S3 download; реални bytes/hash, staff-only/owner opt-in, direct/sign/S3 откази, same-JWT role/link revoke и cleanup PASS. UI/service интеграцията е проверена; общият release включва Storage PR #2 и theme PR #3. Надписът/title/aria на бутона показват следващото действие. Виж [резултатите и setup](supabase/README.md). Конкретният production commit/ready статус се потвърждава отделно за deployment-а |
-| Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат само проверен чист domain validator, без API/UI/DB интеграция |
+| Частична основа | Регистърът няма пълен lifecycle/import/mixed-source редактор. Dashboard е каталог, не оперативно табло. Идеалните части имат локален persisted договор, guarded RPC и UI за версии/отделна проверка; още без hosted приемане или финансово изчисление |
 | Минимални сигнали и приложение — общ release | Двете exact миграции20261101141944/20261101180527 са приложени:20миграции/27таблици. Предишните access/RLS/co-owner/status/same-JWT/UI доказателства плюс новия current→staleHTTP409→reload/current тест затварят минималния договор. Stale отказът еPT409 за109ms, без промяна на ред/events; cleanup е потвърден. Общият release включва signal/attachment UI; категория, отговорник и задачи остават извън тази стъпка, целият REQ009 остава частичен |
 | Предстоят | Пълен собственически портал с финансови/исторически функции; категория/отговорник и задачи към сигналите; правила/начисления/плащания/разходи/фондове/начални салда; отчети; CSV import/export; in-app известия; безопасен demo достъп |
 
@@ -57,6 +57,8 @@ npm.cmd run check:navigation
 npm.cmd run check:db
 npm.cmd run check:occupancy-db
 npm.cmd run check:unit-shares-domain
+npm.cmd run check:unit-share-records
+npm.cmd run check:unit-share-records-browser
 npm.cmd run check:unit-file-domain
 npm.cmd run check:unit-file-db
 ```
@@ -74,7 +76,7 @@ Hosted/browser harness-ите изискват Microsoft Edge/Playwright, отд
 - index.html и pages/: отделни входове, изрично изброени във vite.config.js.
 - src/pages/: контролери; src/ui/: renderer-и, форми, навигация и тема.
 - src/services/: Supabase/Auth, административни и registry операции.
-- src/domain/: календарни правила, ownership/occupancy, password и domain-only unit shares. Каталогът на модули не предоставя права.
+- src/domain/: календарни правила, ownership/occupancy, password и точен unit-shares validator с persisted adapter. Каталогът на модули не предоставя права.
 - src/i18n/ и src/styles/: BG ресурси и общи стилове; някои текстове още са в контролери.
 - supabase/migrations/: публична SQL история и ясно означени неприложени кандидати; supabase/operators/: доверен bootstrap без публичен endpoint.
 - docs/public/: публична техническа документация.

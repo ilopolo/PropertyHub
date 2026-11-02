@@ -4,7 +4,27 @@
 
 ## Стек и граници
 
-DB-D/2 е само локално проверен за FND-F05 / основен ремонт по17(2)5: `resolutions.applicability` е structured gate, а `allocation_rule_versions` има редактиращи се draft редове и отделни immutable active варианти. Snapshot фиксира catalog/basis/evidence/review/participants/config/period; correction е explicit same-period supersession, старият ред не се променя. Current publish_rules, advisory/row locks, expected revisions, exact request UUID и UNIQUE защитават scoped activation/409/idempotence. Четири неприложени financial candidates:25SQL/31localtables, без нова таблица в DB-D/2. Няма начисления/плащания/ledger или правна гаранция. [Точен договор и hosted release план](../../supabase/README.md#db-d1--локални-финансови-чернови).
+### Persisted идеални части — локална основа
+
+Нова неприложена `20261102143241_unit_share_versions.sql`: branch26 SQL файла и34 application tables, различни от последния потвърден hosted22/28 checkpoint. Три нови таблици: стабилен физически знаменател `unit_share_bases`, immutable пакети `unit_share_versions` и отделни immutable `unit_share_verifications`. Предходните25 SQL файла не се редактират. Този registry модул няма runtime зависимост от финансовите таблици и не изчислява начисления.
+
+```mermaid
+erDiagram
+    management_units ||--o{ unit_share_bases : authorizes_scope
+    buildings ||--o{ unit_share_bases : physical_building
+    entrances o|--o{ unit_share_bases : physical_entrance
+    unit_share_bases ||--o{ unit_share_versions : immutable_versions
+    unit_share_versions o|--o| unit_share_versions : previous_version
+    unit_share_versions ||--o| unit_share_verifications : exact_review
+    profiles ||--o{ unit_share_versions : records
+    profiles ||--o{ unit_share_verifications : verifies
+```
+
+Участниците/unit IDs, процентните редове, provenance и периодът са в immutable packet, с DB проверки към физическите обекти и принадлежността им; не са съсобственически дялове. `read_registry` чете; само изрично `manage_registry` записва/проверява. Първият шаблон допуска целия състав в един whole-building management scope и изрично избрана сграда/вход; scope не установява знаменателя. Комплекс/подмножества общи части извън този шаблон не се поддържат. Exact8decimal text/SQL numeric; pure JS validator остава единственият клиентски аритметичен модул.
+
+Корекцията добавя нова версия и обезсилва текущата проверка. Проверка изисква установен пълен roster, изрично проверени източници на всеки ред и точно100 във всеки сегмент. `unit_share_version_at` изисква точни version ID+дата; исторически snapshot се връща с `ready_for_new_use=false`. Текущата готовност се проверява отново спрямо регистровото покритие. Старите snapshots остават неизменни. UI е в „Сгради“, без owner/finance права или автоматично извеждане от площ. Локалните Edge-browser/PGlite/SDK/HTTP доказателства не са hosted PostgreSQL/MVCC гаранция.
+
+DB-D/2 е само локално проверен за FND-F05 / основен ремонт по17(2)5: `resolutions.applicability` е structured gate, а `allocation_rule_versions` има редактиращи се draft редове и отделни immutable active варианти. Snapshot фиксира catalog/basis/evidence/review/participants/config/period; correction е explicit same-period supersession, старият ред не се променя. Current publish_rules, advisory/row locks, expected revisions, exact request UUID и UNIQUE защитават scoped activation/409/idempotence. Четири неприложени financial candidates (DB-D/2 checkpoint:25SQL/31localtables; persisted registry branch:26SQL/34tables), без нова таблица в DB-D/2. Няма начисления/плащания/ledger или правна гаранция. [Точен договор и hosted release план](../../supabase/README.md#db-d1--локални-финансови-чернови).
 
 Финансовата основа е независима от main b5d9409/handling PR #8: domain → service → guarded private RPC/public invoker wrappers → financial UI/controller. Само financial_categories, resolutions и allocation_rule_versions; статутът active е immutable вариант, не публикувана production функция. prepare_rules редактира, read_rules чете, manager/publish_rules review-ва и активира само разрешения scope; без admin наследяване. Foundation review без structured qualification сам по себе си не разрешава activation. Local PGlite/Auth/serialized HTTP не е hosted/concurrency stress proof.
 

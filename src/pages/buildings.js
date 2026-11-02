@@ -12,6 +12,7 @@ import { showOwnership } from './ownership.js';
 import { showOccupancy } from './occupancy.js';
 import {showOwnerVerification,hideOwnerVerification} from './owner-access.js';
 import {showUnitFiles,canManageFiles} from './unit-files.js';
+import {showUnitShares,hideUnitShares,canReadUnitShares} from './unit-shares.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -24,6 +25,7 @@ async function showUnits() {
   const revision = ++loadRevision;
   scopeSelect.disabled = true;
   hideOwnerVerification();
+  hideUnitShares();
   document.querySelector('#ownership').hidden = true;
   document.querySelector('#occupancy').hidden = true;
   try {
@@ -48,6 +50,8 @@ async function showUnits() {
   await showOwnership(scope,units,date,Boolean(context?.can_manage_registry));
   if (revision !== loadRevision) return;
   await showOccupancy(scope,units,date,Boolean(context?.can_manage_registry));
+  if (revision !== loadRevision) return;
+  if(canReadUnitShares(account,scope)) await showUnitShares(scope,date);
   if (revision !== loadRevision) return;
   await showOwnerVerification(scope,account);
   if (revision !== loadRevision) return;

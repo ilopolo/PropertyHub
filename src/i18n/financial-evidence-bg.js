@@ -3,4 +3,4 @@ export const evidenceLabels=Object.freeze({
 });
 export const evidenceStatus=Object.freeze({needs_review:'Непрегледано основание',reviewed:'Прегледано основание — без активация',changes_requested:'Върнато за корекция'});
 export const evidenceUnitTypes=Object.freeze({apartment:'Апартамент',shop:'Магазин',office:'Офис',garage:'Гараж',other:'Друг обект'});
-export const evidenceDisclaimer='Данните и сумите са заявени от основанието, не проверен банков/фондов баланс. Попълването и записаният преглед не гарантират юридическа валидност. Няма активация, начисления или изразходване на средства.';
+export const evidenceDisclaimer='Данните и сумите са заявени от основанието, не проверен банков/фондов баланс. Попълването и записаният преглед не гарантират юридическа валидност и сами не активират правило. Няма начисления или изразходване на средства.';

@@ -1,0 +1,5 @@
+import {getClient,unwrap} from './supabase.js';
+import {applicabilityDraft} from '../domain/financial-activation.js';
+import {changeReason} from '../domain/financial-drafts.js';
+export async function saveFinancialApplicability(scope,record,payload,note){if(!record)throw Error('Избери основание.');return unwrap(await getClient().rpc('save_financial_applicability',{scope,target:record.id,expected_revision:record.revision,payload:applicabilityDraft(payload),note:changeReason(note)}));}
+export async function activateFinancialRule(scope,record,payload,note){if(!record||Object.keys(payload).some(k=>!['request_key','supersedes'].includes(k))||!/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(payload.request_key))throw Error('Нужна е конкретна заявка.');return unwrap(await getClient().rpc('activate_financial_rule',{scope,target:record.id,expected_revision:record.revision,basis_revision:record.resolution_snapshot.revision,request_key:payload.request_key,supersedes:payload.supersedes||null,note:changeReason(note)}));}

@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:financial-activation": "node scripts/check-financial-activation.mjs",
+    "check:financial-activation-browser": "node scripts/check-financial-activation-browser.mjs",
     "check:financial-evidence": "node scripts/check-financial-evidence.mjs",
     "check:financial-evidence-browser": "node scripts/check-financial-evidence-browser.mjs",
     "check:financial-scenario-boundary": "node scripts/check-financial-scenario-boundary.mjs",

@@ -4,9 +4,9 @@
 
 ## Стек и граници
 
-Ограничение от 02.11.2026: каталог v2 допуска само **FND-F05 — целево набиране за недостиг по одобрен планиран ремонт**, document basis / whole-building scope / краен период. Трите финансови миграции са локални и неприложени: 24 SQL файла в клона, 31 таблици в локалната схема. DB-D/1a използва съществуващото основание с versioned/allowlisted evidence JSON, явни участници, точни C/B/U/R decimal strings и server reviewer metadata. Празните данни са видими липси; известните противоречия се отказват. Изричен manager `publish_rules` записва преглед, а редакция го обезсилва; audit и pinned snapshots се пазят. Това не е активация, ledger или правна гаранция. v1 и старите snapshots остават четими, без backfill. Синтетичният fixture позволява бъдеща DB-D/2 разработка; реален клиентски случай изисква собствени доказателства/мотиви, а hosted приемането предстои. Наличен фонд не се изразходва автоматично. [Точен договор и оставащи стъпки](../../supabase/README.md#db-d1--локални-финансови-чернови).
+DB-D/2 е само локално проверен за FND-F05 / основен ремонт по17(2)5: `resolutions.applicability` е structured gate, а `allocation_rule_versions` има редактиращи се draft редове и отделни immutable active варианти. Snapshot фиксира catalog/basis/evidence/review/participants/config/period; correction е explicit same-period supersession, старият ред не се променя. Current publish_rules, advisory/row locks, expected revisions, exact request UUID и UNIQUE защитават scoped activation/409/idempotence. Четири неприложени financial candidates:25SQL/31localtables, без нова таблица в DB-D/2. Няма начисления/плащания/ledger или правна гаранция. [Точен договор и hosted release план](../../supabase/README.md#db-d1--локални-финансови-чернови).
 
-DB-D/1 е независим локален кандидат от main b5d9409: `financial-drafts` domain → service → guarded public/private RPC; UI/controller на `pages/finances.html`. Само `financial_categories` (операторски immutable версии), scoped `resolutions` и `allocation_rule_versions` със status=draft. Правилото сочи конкретна версия на каталога и пази server-created snapshot на основанието; редакция на текущото основание не променя тихо тази версия. Историята е в ограничено прочетими audit before/after записи. `prepare_rules` е optional manager/cashier право, `read_rules` — отделен преглед за manager/cashier/controller; current membership/scope/period guards и RLS са задължителни. Няма global client DML, admin inheritance или финансово изпълнение. Локалните PGlite/SDK/Edge-browser проверки не са hosted PASS. Handling PR #8 остава отделен, без runtime зависимост.
+Финансовата основа е независима от main b5d9409/handling PR #8: domain → service → guarded private RPC/public invoker wrappers → financial UI/controller. Само financial_categories, resolutions и allocation_rule_versions; статутът active е immutable вариант, не публикувана production функция. prepare_rules редактира, read_rules чете, manager/publish_rules review-ва и активира само разрешения scope; без admin наследяване. Foundation review без structured qualification сам по себе си не разрешава activation. Local PGlite/Auth/serialized HTTP не е hosted/concurrency stress proof.
 
 Само локалният DB-D/1 кандидат добавя следните отношения към съществуващата схема:
 
@@ -17,6 +17,8 @@ erDiagram
     financial_categories ||--o{ allocation_rule_versions : pins_version
     resolutions ||--o{ allocation_rule_versions : snapshots_basis
     financial_categories o|--o| financial_categories : supersedes
+    allocation_rule_versions o|--o{ allocation_rule_versions : source_draft
+    allocation_rule_versions o|--o| allocation_rule_versions : supersedes
 ```
 
 Правната опора е текстът на ЗУЕС чл.48 ал.1/3, проверен на02.11.2026 в официалното издание на МРРБ до ДВ49/2025. Пълна приложимост/кворум/актуалност за конкретен период не са автоматично удостоверени: legal_status=text_checked, записите needs_review. Идеални части на сградата не са съсобственически дялове; липсващ DB/API набор не се измисля или нормализира. Бъдеща активация изисква затворен правен договор и отделно изрично право.

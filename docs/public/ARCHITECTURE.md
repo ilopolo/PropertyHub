@@ -4,9 +4,9 @@
 
 ## Стек и граници
 
-### FND-F05 — hosted API/UI и оставащ MVCC gate
+### FND-F05 — целево hosted API/UI/MVCC приемане
 
-Exact `20261102152437_financial_preview.sql` и петте зависими кандидата са приложени: hosted28миграции/35applicationtables; branch27SQL, тъй като вече приложената handling версия е в отделния PR8. Immutable `financial_previews` пази server-derived exact rule/share/date/basis/R и проверен ownership context. API/RLS/stale/same-JWT/UI assertions преминаха; независим PostgreSQL MVCC PASS още няма. Собствениците не получават лична сума/дълг, account links не участват. Frontend остава draft PR9, не main/production.
+Exact `20261102152437_financial_preview.sql` и петте зависими миграции са приложени: 28 hosted миграции / 35 приложни таблици. Клонът има 27 SQL файла, защото вече приложената handling версия е в отделния PR #8. Immutable `financial_previews` пази server-derived rule/share/date/basis/R и проверен ownership context. Целевите API/RLS/stale/same-JWT/UI проверки и осем контролирани MVCC случая преминаха с независими PostgreSQL сесии и наблюдавани waiters преди release. Проверени са replay/conflict, edit/review, phantom writer/NOWAIT и read-barrier сценарии; това не е гаранция за всички възможни interleavings или load test. Собствениците не получават лична сума/дълг; account links не участват. Frontend остава draft PR #9, извън main/production.
 
 ```mermaid
 erDiagram
@@ -16,7 +16,7 @@ erDiagram
     profiles ||--o{ financial_previews : prepares
 ```
 
-`prepare_charges` създава; `read_rules` или `prepare_charges` четат, без admin/prepare_rules/publish_rules наследяване. Два guarded RPC етапа derive-ват текущи входове и сравняват optimistic input fingerprint преди immutable insert/audit. Fingerprint е revision comparison, не подпис/authorization token. Кратки SHARE NOWAIT table barriers върху input таблиците блокират и phantom writers; busy→HTTP409 без retry. Тази консервативна MVP граница сериализира писатели и между scopes; реалният PostgreSQL/MVCC ефект и contention предстои да се приемат hosted.
+`prepare_charges` създава; `read_rules` или `prepare_charges` четат, без admin/prepare_rules/publish_rules наследяване. Два guarded RPC етапа derive-ват текущи входове и сравняват optimistic input fingerprint преди immutable insert/audit. Fingerprint е revision comparison, не подпис/authorization token. Кратки SHARE NOWAIT table barriers върху input таблиците блокират и phantom writers; busy→HTTP409 без retry. Ефектът е потвърден с действителен незавършен writer insert и обратен preview/read-barrier probe. Консервативната граница може да спира писатели и от други scopes; приемането не е измерване на production throughput или изчерпателен stress тест.
 
 SQL numeric/integer и pure JS BigInt policy oracle ползват exact8decimal share validator. Резултатът пази floor/remainder/extra-cent/policy, сборът е точноR; старите snapshots не се пренаписват. Отделен financial-preview UI/service модул в съществуващата финансова страница. Няма charge_batches/charges/obligation_parties/ledger/payments/fund movement. [Договор и общо hosted приемане](../../supabase/README.md#fnd-f05--локален-начислителен-preview).
 

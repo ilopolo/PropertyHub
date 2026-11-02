@@ -5,6 +5,7 @@ import {createTicket,ticketFeed,changeTicketStatus} from '../services/tickets.js
 import {bindForm,message,option} from '../ui/forms.js';
 import {renderTickets} from '../ui/tickets.js';
 import {mountTicketFiles} from './ticket-files.js';
+import {mountTicketHandling} from './ticket-handling.js';
 const create=document.querySelector('#ticket-create'),list=document.querySelector('#ticket-list'),refreshButton=document.querySelector('#refresh-tickets');
 async function refresh(){
  create.hidden=true;list.replaceChildren();list.dataset.ready='false';
@@ -16,7 +17,7 @@ async function refresh(){
  create.hidden=!units.length;refreshButton.hidden=false;
  document.querySelector('#ticket-access').textContent='Показани са собствените текущо разрешени сигнали и сигналите в обхвати с изрично право за обработка.';
  const attachments=[];
- renderTickets(list,tickets,async(ticket,status,note)=>{await changeTicketStatus(ticket,status,note);await refresh();message('Статусът и основанието са записани в историята.');},(body,ticket)=>attachments.push(mountTicketFiles(body,ticket)));
+ renderTickets(list,tickets,async(ticket,status,note)=>{await changeTicketStatus(ticket,status,note);await refresh();message('Статусът и основанието са записани в историята.');},(body,ticket)=>attachments.push(mountTicketFiles(body,ticket)),(body,ticket)=>attachments.push(mountTicketHandling(body,ticket,refresh)));
  await Promise.all(attachments);
  list.dataset.ready='true';
 }

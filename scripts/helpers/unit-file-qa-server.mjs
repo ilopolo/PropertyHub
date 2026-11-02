@@ -66,7 +66,7 @@ export async function startUnitFileQaServer(f,qaPassword,options={}){
     }
    }
    return json({message:'Unsupported local QA route'},404);
-  }catch(error){failures.push({path:url.pathname,code:error.code,message:error.message});return json({code:error.code||'QA_TRANSPORT',message:error.message},error.code==='42501'?403:400);}
+  }catch(error){failures.push({path:url.pathname,code:error.code,message:error.message});return json({code:error.code||'QA_TRANSPORT',message:error.message},error.code==='42501'?403:error.code==='PT409'?409:400);}
  }).catch(()=>{if(!res.headersSent)res.writeHead(500);res.end();});});
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(54331,'127.0.0.1',resolve);});
  return {transfers,objects,failures,close:()=>new Promise(resolve=>server.close(resolve))};

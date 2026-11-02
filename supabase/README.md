@@ -1,5 +1,15 @@
 # Supabase — setup, схема и проверки
 
+## Категория и отговорник — локален candidate, не hosted PASS
+
+`20261102080729_ticket_category_assignee.sql` добавя nullable `category_code` (девет стабилни кода), `assignee_profile_id` и typed `handling_delta` в съществуващите таблици. Няма нови таблици: **22 локални SQL файла; последно потвърдени 21 приложени миграции / 28 таблици**. Приложените файлове не са редактирани.
+
+Само текущо scoped `manage_tickets` променя съществуващ сигнал чрез `update_ticket_handling(item, expected_revision, category, assignee, note)`; `ticket_assignees(item)` връща минимален списък само на оправомощен служител. Получателят трябва да е активен confirmed/non-anonymous scoped manager със същото право и валидни membership/management периоди. Назначаването не предоставя права. Отнемането запазва историята и показва недействащ получател; необходимо е изрично премахване/преназначаване. NULL категория е „Некатегоризиран“, без автоматичен backfill. Причината и промените са видими на подателя на разрешения сигнал. Owner create-category и простите задачи остават отделно неизпълнени.
+
+Локални проверки: `npm.cmd run check:ticket-handling-db`, `check:ticket-handling-service`, `check:ticket-handling-browser`. PGlite с изолирана Auth симулация, действителни SDK/HTTP и Edge browser доказват локалния договор; queue-serialized conflict моделът не доказва hosted multi-transaction поведение. UI проверката е при 375/1440, light/dark. Не се използват hosted fixtures или credentials.
+
+Бъдещо hosted приемане изисква отделно разрешение: exact project/history/hash preflight → single-pending dry-run/exact apply само на candidate → обикновени синтетични сесии за разрешена промяна, чужд scope/автор, недопустим/отнет получател, current/stale HTTP409/reload и неизменени ред/events при отказ → точен cleanup с пазена audit история. Старата live версия продължава да работи с добавъчните nullable полета и непроменените status/attachment APIs; новият frontend изисква тази миграция. Няма secrets, Edge/bucket или hosting промяна. Този draft пакет не се merge-ва и не се публикува production.
+
 ## Минимално приложение към сигнал — общ frontend release
 
 Зависимост: PR #5, `feature/owner-signals`/`4a6b10f`. PR #5/#6 са обединени с проследими commit-и в един release клон/PR към main. **Минималното целево hosted приемане на attachment backend премина**; frontend е включен в общия release. Конкретният main/Netlify READY/live smoke статус се потвърждава в release PR, без отделни production публикации за двата пакета. Exact `20261101195615_ticket_attachment.sql` е приложена еднократно след single-pending dry-run, LF-SHA256 `30a14088710f2bcf1a53bbb57c9dbf666e32b8a18d86f0c813341528fd2b2090`. Текущо: **21 приложени миграции /28 application tables (24public+4private)** и21локалниSQLфайла. Старите20SQL не са редактирани. Само новият `download-ticket-file` е deployed ACTIVEv1/verify_jwt=true; съществуващият unit handler остава непромененv1. Петте server secrets са използвани повторно, без secret write или нов ключ.

@@ -7,6 +7,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:ticket-handling-db": "node scripts/check-ticket-handling-db.mjs",
+    "check:ticket-handling-service": "node scripts/check-ticket-handling-service.mjs",
+    "check:ticket-handling-browser": "node scripts/check-ticket-handling-browser.mjs",
     "check:ticket-file-db": "node scripts/check-ticket-file-db.mjs",
     "check:ticket-file-download": "node scripts/check-ticket-file-download.mjs",
     "check:ticket-file-service": "node scripts/check-ticket-file-service.mjs",

@@ -4,7 +4,7 @@
 
 ## Стек и граници
 
-Локална добавка категория/отговорник: `ticket-handling` domain/BG ресурси → controller/UI → `ticket_assignees` и `update_ticket_handling` RPC. Сървърът проверява текущо `manage_tickets`, точния scope и активните назначения/периоди на получателя. Общата revision със статуса използва PT409; `handling_changed` пази before/after и причина. Отнетото назначение остава в историята, но не дава достъп. Няма нови таблици или capabilities. Candidate `20261102080729` е само локална: 22 SQL файла срещу 21 приложени миграции и 28 таблици; hosted приемането предстои.
+Категория/отговорник: `ticket-handling` domain/BG ресурси → controller/UI → `ticket_assignees` и `update_ticket_handling` RPC. Сървърът проверява текущо `manage_tickets`, точния scope и активните назначения/периоди на получателя. Общата revision със статуса използва PT409; `handling_changed` пази before/after и причина. Отнетото назначение остава в историята, но не дава достъп. Няма нови таблици или capabilities. Exact `20261102080729` е приложена и hosted приемането премина:22 SQL файла/22 миграции/28 таблици, current/stale409/history/direct-DML/foreign/recipient/editor revoke с непроменени JWT. Реалният локален frontend към hosted backend е проверен; frontend остава draft PR #8, не main/production.
 
 HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Десет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 

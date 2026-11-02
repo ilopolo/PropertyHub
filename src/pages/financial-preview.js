@@ -1,0 +1,3 @@
+import {financialPreviewFeed,loadFinancialPreviewInputs,createFinancialPreview} from '../services/financial-preview.js';
+import {renderFinancialPreview} from '../ui/financial-preview.js';
+export async function refreshFinancialPreview(){const root=document.querySelector('#financial-preview');root.dataset.ready='false';try{const data=await financialPreviewFeed();renderFinancialPreview(root,data,{load:loadFinancialPreviewInputs,create:async(...args)=>{await createFinancialPreview(...args);await refreshFinancialPreview();}});}catch{root.textContent='Изчислителният preview не е достъпен. Нужни са текущи финансови права и приложени локално подготвените миграции.';}root.dataset.ready='true';}

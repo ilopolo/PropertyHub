@@ -4,6 +4,22 @@
 
 ## Стек и граници
 
+### FND-F05 — изчислителен preview, само локално
+
+Нова неприложена `20261102152437_financial_preview.sql` добавя само immutable `financial_previews`: branch27SQL/35applicationtables. Шест неприложени кандидата, различни от последния hosted22/28 checkpoint. Exactrule/shareversion/referenceDATE са explicit inputs; R идва от pinned activation basis. Current rule tip, current verified building share version/roster/coverage и reviewed ownership context към датата се проверяват сървърно. Собствениците не получават лична сума/дълг; account links не участват.
+
+```mermaid
+erDiagram
+    management_units ||--o{ financial_previews : scopes
+    allocation_rule_versions ||--o{ financial_previews : pins_active_snapshot
+    unit_share_versions ||--o{ financial_previews : pins_verified_version
+    profiles ||--o{ financial_previews : prepares
+```
+
+`prepare_charges` създава; `read_rules` или `prepare_charges` четат, без admin/prepare_rules/publish_rules наследяване. Два guarded RPC етапа derive-ват текущи входове и сравняват optimistic input fingerprint преди immutable insert/audit. Fingerprint е revision comparison, не подпис/authorization token. Кратки SHARE NOWAIT table barriers върху input таблиците блокират и phantom writers; busy→HTTP409 без retry. Тази консервативна MVP граница сериализира писатели и между scopes; реалният PostgreSQL/MVCC ефект и contention предстои да се приемат hosted.
+
+SQL numeric/integer и pure JS BigInt policy oracle ползват exact8decimal share validator. Резултатът пази floor/remainder/extra-cent/policy, сборът е точноR; старите snapshots не се пренаписват. Отделен financial-preview UI/service модул в съществуващата финансова страница. Няма charge_batches/charges/obligation_parties/ledger/payments/fund movement. [Договор и общо hosted приемане](../../supabase/README.md#fnd-f05--локален-начислителен-preview).
+
 ### Persisted идеални части — локална основа
 
 Нова неприложена `20261102143241_unit_share_versions.sql`: branch26 SQL файла и34 application tables, различни от последния потвърден hosted22/28 checkpoint. Три нови таблици: стабилен физически знаменател `unit_share_bases`, immutable пакети `unit_share_versions` и отделни immutable `unit_share_verifications`. Предходните25 SQL файла не се редактират. Този registry модул няма runtime зависимост от финансовите таблици и не изчислява начисления.

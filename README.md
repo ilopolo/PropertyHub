@@ -6,6 +6,8 @@
 
 ## Реално състояние
 
+**FND-F05 preview — само локално проверен:** изрично избрани active rule/share version/date → server проверка → immutable изчислителен snapshot. Един ред и сума по обект, точни евроценти с `largest-remainder-unit-id-v1`, маркирани остатъчни центове и проверени исторически собственици само като контекст. Без личен длъжник, задължения или движение на средства. Изисква отделно `prepare_charges`; `read_rules` чете. Шестте натрупани кандидата са неприложени; финансовият модул още няма hosted PASS. [Договор и общ hosted план](supabase/README.md#fnd-f05--локален-начислителен-preview).
+
 **DB-D/2 — само локално проверено:** каталог/основание/evidence, чернова и защитена активация за **FND-F05: целево набиране при недостиг за основен ремонт по чл. 17, ал. 2, т. 5 ЗУЕС**. Structured qualification/voting gate, explicit scoped publish_rules, точни версии/преглед, участници/суми/период и immutable snapshot. Повторена заявка не дублира активация; корекция е нов вариант с история. Синтетичните fixtures не са реално удостоверени решения. [Договор и setup](supabase/README.md#db-d1--локални-финансови-чернови). Четирите финансови миграции са неприложени; финансовата страница не е в production. Няма начисления, плащания, ledger или изразходване на фонд. Hosted приемане и реалната клиентска правна приложимост остават отделни gates.
 
 Минималните сигнали и приложението към тях са включени в **един общ frontend release**, обединяващ PR #5/#6 със запазена история. Backend е проверен: 21 миграции, 28 таблици и две отделни download Edge функции. Current owner подава собствен сигнал и един private PNG/JPEG/PDF до 5 MiB; изрично оправомощен служител обработва статуса. Конкретният production commit/READY и live smoke резултат се записват в общия release PR. [Договор, доказателства и операторски правила](supabase/README.md#минимално-приложение-към-сигнал--общ-frontend-release).
@@ -59,6 +61,8 @@ npm.cmd run check:occupancy-db
 npm.cmd run check:unit-shares-domain
 npm.cmd run check:unit-share-records
 npm.cmd run check:unit-share-records-browser
+npm.cmd run check:financial-preview
+npm.cmd run check:financial-preview-browser
 npm.cmd run check:unit-file-domain
 npm.cmd run check:unit-file-db
 ```

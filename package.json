@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:financial-preview": "node scripts/check-financial-preview.mjs",
+    "check:financial-preview-browser": "node scripts/check-financial-preview-browser.mjs",
     "check:unit-share-records": "node scripts/check-unit-share-records.mjs",
     "check:unit-share-records-browser": "node scripts/check-unit-share-records-browser.mjs",
     "check:financial-activation": "node scripts/check-financial-activation.mjs",

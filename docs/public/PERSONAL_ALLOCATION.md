@@ -2,7 +2,9 @@
 
 `src/domain/personal-allocation.js` implements only the pure arithmetic policy
 `largest-remainder-person-id-v1`. Run `npm run check:personal-allocation` for its
-synthetic checks. There is no API, persistence, UI or publication integration.
+synthetic checks. The allocator remains pure. Its bounded B/2 SQL/RPC and UI
+integration is locally checked separately by `npm run check:financial-coowner`
+and `npm run check:financial-coowner-browser`; it has **no hosted/MVCC PASS**.
 
 `allocatePersonal` accepts:
 
@@ -41,4 +43,35 @@ SIO, disputes, changes and unsupported representations must block that future
 whole batch. A successful arithmetic result proves none of these prerequisites.
 It creates no debtor, obligation, payer mapping, solidarity or access right and
 does not modify previously published batches. Exact rational quota support and
-the multi-party server workflow remain separate subsequent work.
+hosted acceptance of the multi-party server workflow remain separate work.
+
+## Local B/2 boundary
+
+The new `20261103171619_financial_coowner_publish.sql` migration is not applied.
+The new client uses `load_charge_batch_inputs_v2`, `save_charge_batch_v2`,
+`review_charge_batch_v2`, `publish_charge_batch_v2` and `charge_batch_feed_v2`.
+They route by an explicit `publication_model`: omitted/default `sole-owner-v1`
+preserves A; `ordinary-coowner-v1` enables the bounded B workflow. Legacy RPCs
+reject B writes/loads; the legacy feed projects only A batches and their related
+charges/parties/history, so old clients cannot silently display one of N persons.
+The v2 feed serializes monetary amounts as exact decimal strings.
+The SQL server counterpart is checked against this existing JS allocator, including
+large/zero amounts, exact residues, UUID ties and input permutations. Application
+services do not calculate or accept client-supplied personal amounts.
+
+The server pins the current complete ownership-set review **at L**, its fingerprint
+and exact record IDs, source periods/provenance, person revisions, and unchanged
+composition over the decision-to-publication interval. A separate publisher review
+must establish `ordinary_fractional`, `exact_decimal`, and
+`reviewed_proportional_liability` with per-person evidence and reasons. These
+structured statements record the authorized human assessment; they cannot prove
+source authenticity, a hidden dispute or legal truth automatically. Unknown/SIO/
+disputed cases or unsupported representations must not be asserted as supported.
+There is no generic checkbox that legally certifies a case.
+
+Each charge retains one fixed unit amount, with N unique person/charge slices.
+Personal snapshots retain policy/numerator/floor/remainder/residual-cent audit data.
+Unpaid corrections reverse **all** parties and replace the entire batch atomically,
+preserving unit amounts and R, with before/after identities and evidence. A/B
+correction models cannot be mixed. Existing A snapshots and one-party invariants
+are preserved; payment-related tables make this correction template fail closed.

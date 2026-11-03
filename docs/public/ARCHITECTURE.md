@@ -38,11 +38,13 @@ erDiagram
     resolutions ||--o{ charge_batches : funding_call
     charge_batches ||--o{ charges : atomic_unit_rows
     units ||--o{ charges : assessed_unit
-    charges ||--|| obligation_parties : sole_reviewed_debtor_A
+    charges ||--|{ obligation_parties : one_A_or_multiple_B
     persons ||--o{ obligation_parties : historical_identity
     ownership_periods ||--o{ obligation_parties : supplied_evidence
     charge_batches o|--o| charge_batches : replacement_or_reversal
 ```
+
+**B/2 — локална добавка, неприложена:** N-party отношението в диаграмата е новият candidate20261103171619. Изричните v2 RPC се използват от новия service; legacy load/write отказват B, а legacy feed е A-only. B използва SQL counterpart на съществуващия personal allocator, с parity checks; няма втори JS алгоритъм. Full unpaid reversal отменя всички parties при запазени обектни суми. Hosted/MVCC приемането предстои; [точен договор](PERSONAL_ALLOCATION.md).
 
 Отделни domain/service/UI/controller модули използват guarded RPC load/save/review/publish/feed. `prepare_charges` подготвя; `publish_charges` преглежда всяка лична отговорност и публикува целия batch; replacement изисква и `correct_finance`. Те са изрични scoped назначения, без admin наследяване или автоматичен owner достъп. Клиентът подава preview ID/основание и точни revisions, а не суми, actor, snapshot или свободно избран длъжник. Сървърът извежда и проверява източниците отново.
 

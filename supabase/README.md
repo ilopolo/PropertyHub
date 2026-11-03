@@ -1,5 +1,83 @@
 # Supabase — setup, схема и проверки
 
+## FND-F05 — локална съсобственост B/2
+
+**03.11.2026: локален PASS; hosted/MVCC НЕ е изпълнен.** Нова неприложена
+[20261103171619_financial_coowner_publish.sql](migrations/20261103171619_financial_coowner_publish.sql).
+Не редактира предходните SQL, не създава нови роли или назначения. Няма нови таблици;
+миграционните файлове и броят приложни таблици са различни показатели.
+
+Новият service използва изрични `load_charge_batch_inputs_v2`, `save_charge_batch_v2`,
+`review_charge_batch_v2`, `publish_charge_batch_v2`, `charge_batch_feed_v2` — без
+fallback към старите RPC. Изричният `publication_model=ordinary-coowner-v1` избира B;
+липсващ/default режим запазва A и старите preparation tokens. Legacy write/load RPC
+отказват B данни, а старият feed показва само A batches и свързаните с тях charge/
+party/history редове. Така старият клиент не показва само първия B длъжник. Exact
+decimal strings във feed пазят паричната точност и при големи суми. A/B correction
+моделите не се смесват.
+`prepare_charges`, `publish_charges`, допълнително `correct_finance` за replacement
+и scoped read остават задължителни, без admin/owner наследяване.
+
+Сървърът pin-ва exact reviewed ownership set към L, fingerprint/record IDs, source
+rows/provenance и person revisions. Целият проверен състав трябва да покрива
+непроменен `[M,T+1)`; един непригоден обект блокира целия batch. Това е техническа
+граница на първия template, не универсално законово правило. Мотивираният per-person
+финансов преглед записва режима, точното представяне и защо квотата е приложима
+лична тежест към L. Попълнените полета не са автоматично доказателство за правна
+валидност/автентичност. СИО, неустановен спор, липсващи данни и квоти като1/3,
+които не се представят точно в сегашния decimal модел, остават блокирани случаи.
+
+N obligation parties са разрез на една фиксирана обектна сума, не допълнителен дълг.
+SQL counterpart на [B/1 allocator](../docs/public/PERSONAL_ALLOCATION.md) се сверява
+срещу него; няма втори JS алгоритъм. `largest-remainder-person-id-v1` пази точно
+личен/обектен/общ сбор, canonical UUID tie-break и изчислителните доказателства.
+Няма повторно изчисляване на preview/R, солидарност или автоматично прехвърляне на
+стар дълг. Платецът е отделен. Whole-batch unpaid reversal отменя всички N parties;
+новият вариант пази обектните суми и before/after история. Стари published A записи
+не се разцепват/презаписват; A пази един личен ред на charge.
+
+### Локални проверки
+
+`npm run check:financial-coowner`: осем целеви synthetic DB/RLS/domain/SDK/service
+групи с disposable PGlite, включително SQL/B/1 parity, чужд scope, подменени суми/
+лица, непълен/променен ownership, unsupported review, stale HTTP409 без retry,
+дубликати, отнето право и корекция на квоти чрез append-only source RPC.
+`npm run check:financial-coowner-browser`: реален локален UI поток, отделен порт5177,
+API54337, отделен Edge profile, simulated identities, забранена външна мрежа.
+Mobile/desktop, две теми, reload/navigation и всички N лични редове са проверени.
+Засегнатият `check:financial-publish` пази 11 A групи. Това НЕ доказва hosted Auth,
+PostgreSQL MVCC или естествения календарен rollover.
+
+### Бъдещо hosted приемане — отделно разрешение
+
+1. Прегледай PH-DEMO-V1 guard/manifest; подготви **отделен** изрично разрешен scope
+   и baseline за временните назначения. Не използвай demo ресурси за revocation,
+   destructive/concurrency QA. B demo е org_admin+cashier, не pure cashier proof.
+2. Fresh SELECT-only project/history/hash preflight и exact dry-run. Последно
+   потвърдените29 hosted версии включват handling миграцията от отделния PR#8;
+   финансовият клон има28 предходни SQL файла плюс този candidate. Подготви пълна
+   изолирана CLI история със запазените exact applied версии; не repair-вай историята,
+   не включвай unrelated pending SQL. Candidate трябва да е единствената pending
+   версия. Свери съвместимостта с main и текущите A receipts/snapshots.
+3. След отделно разрешение: exact apply веднъж; post-apply version/function/grant
+   проверка. Няма нужда от Edge/Storage/Auth конфигурация или нови Auth акаунти.
+4. Ordinary-session B2 API/UI assertions: positive exact sums/snapshots; scope/admin/
+   direct-write/forged inputs; exact L review, unsupported/changed sources, HTTP409,
+   same-JWT permission revoke; different-key business duplicates; whole unpaid
+   correction с всички parties и unchanged unit amounts/R; A regression само за
+   засегнатите входни/публикационни пътища.
+5. Независими PostgreSQL сесии с наблюдавани barriers/waiters: publish/publish,
+   publish срещу ownership/person/review input edit или revoke; concurrent full-batch
+   correction. Валидно сериализиран snapshot или timely409; без смесен/частичен batch,
+   duplicate obligation или изгубена party. PGlite/последователен HTTP не заместват MVCC.
+6. Cleanup само за новите маркирани назначения/сесии; financial snapshots/reversal/
+   audit се запазват и manifest-ват. Проверка на demo/personal baseline без промени.
+   Временните operator credentials се чистят след употреба. Publish A natural-day
+   rollover е отделният запазен тест на04.11 или по-късно, без промяна на часовника.
+
+B/2 няма hosted PASS и не затваря exact rational квотите, плащанията или целия
+финансов MVP. Няма merge/deployment като част от локалното приемане.
+
 ## FND-F05 — локално публикуване A
 
 **Текущ статус 03.11.2026: exact migration applied; bounded hosted API/UI/MVCC PASS; общият date gate още е отворен.** [20261103064400_financial_publish_a.sql](migrations/20261103064400_financial_publish_a.sql) е приложена с точната версия след fresh SELECT/hash и dry-run с единствен candidate в изолирана пълна29-file история. LF-trim SHA256 **15e03bdfd6ca013c5e7711d2acc65dc856724eff51d8e8d8125377c266c1dd45**. Последващият SELECT потвърди29 миграции, четирите нови RLS таблици/публични RPC и Auth7; приложните public+private таблици са39. Клонът има 28 SQL файла, защото приложената handling версия е отделна в PR #8. Предходните SQL са непроменени. **Не прилагай candidate повторно.** Frontend е draft PR #9, извън main/production.

@@ -66,6 +66,7 @@ try{
   assert(!x.f.requests.some(r=>r.name==='ensure_profile'),'shell/dashboard must not provision a profile');
   if(role==='platform'){
    await p.locator('.workspace-profile summary').focus();await p.keyboard.press('Enter');assert.equal(await p.locator('.workspace-profile').getAttribute('open'),null);await p.keyboard.press('Enter');assert.notEqual(await p.locator('.workspace-profile').getAttribute('open'),null);
+   await x.go('pages/platform-admin.html');await p.locator('.workspace-profile summary').click();await p.getByRole('link',{name:'Табло — моите дейности',exact:true}).click();await p.waitForURL('**/pages/dashboard.html');await p.locator('#workspace-actions[data-state=ready]').waitFor();assert.equal(await p.locator('nav[aria-label="Основна навигация"]').getByRole('link',{name:'Табло',exact:true}).count(),1);
   }
   if(['platform','staff','cashier','owner'].includes(role)){await p.setViewportSize({width:role==='platform'?375:1440,height:1000});const path=`${out}/dashboard-${role}.png`;await p.screenshot({path,fullPage:true});images.push(path);await p.setViewportSize({width:1440,height:1000});}
   const nav=p.locator('nav[aria-label="Основна навигация"]');

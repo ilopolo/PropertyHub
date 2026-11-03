@@ -15,6 +15,7 @@ export function initializeShell() {
   const summary=document.createElement('summary');summary.textContent='Акаунт';summary.className='btn btn-outline-secondary';menu.append(summary);
   const add=(parent,path,label)=>{const a=document.createElement('a');a.href=base+path;a.textContent=label;a.className='nav-link px-2 py-2';if(location.pathname===base+path)a.setAttribute('aria-current','page');parent.append(a);};
   add(menu,'pages/account.html','Акаунт и достъп');wrap.insertBefore(menu,wrap.lastElementChild);
+  add(menu,'pages/dashboard.html','Табло — моите дейности');
   const context=document.createElement('div');context.id='workspace-context';context.className='w-100 small';context.dataset.state='loading';context.setAttribute('role','status');context.textContent='Зареждане на достъпа…';wrap.append(context);
   const dashboard=document.querySelector('#workspace-actions');
   loadWorkspace().then(data=>renderWorkspace(data,context,menu,links,add,dashboard)).catch(()=>{

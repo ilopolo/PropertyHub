@@ -21,4 +21,6 @@ code { overflow-wrap: anywhere; }
 :focus-visible { outline: 3px solid var(--ph-accent); outline-offset: 4px; }
 .skip-link { position: absolute; top: -5rem; left: 1rem; z-index: 10; }
 .skip-link:focus { top: .5rem; }
+.navbar .nav-link { color: var(--bs-body-color); }
+.navbar .nav-link[aria-current="page"] { color: var(--ph-accent); }
 @media (max-width: 575px) { main { padding-top: 2rem; } .navbar-brand { width: 100%; } }

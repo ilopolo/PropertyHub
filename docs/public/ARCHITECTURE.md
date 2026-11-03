@@ -1,5 +1,11 @@
 # Реализирана архитектура
 
+За устойчивия ръчен demo е добавен локален QA предпазител: обичайните hosted QA
+entrypoints спират преди login/setup/cleanup при липсващ или защитен demo manifest.
+Той предпазва споделените synthetic профили от стар restore/revoke cleanup;
+не е server/RLS изолация. Manifest-ът, конкретните назначения и login данните
+остават извън Git. Това не добавя публичен demo login или нова production публикация.
+
 ## Локален Demo/UI-1 в финансовия feature клон
 
 Ролевата навигация използва read-only workspace adapter към съществуващите

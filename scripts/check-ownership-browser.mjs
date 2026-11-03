@@ -1,3 +1,5 @@
+import {assertHostedQaAllowed} from './helpers/demo-guard.mjs';
+assertHostedQaAllowed();
 import assert from 'node:assert/strict';
 import {loadEnvFile} from 'node:process';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';

@@ -4,6 +4,29 @@
 
 ## Стек и граници
 
+### FND-F05 — локално публикуване A, без hosted приемане
+
+Новата неприложена [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) добавя три public таблици и една private receipt таблица. Hosted историята остава последно потвърдените 28 миграции / 35 приложни таблици; в клона вече има 28 SQL файла (отделната PR #8 версия още не е в него). Никакъв apply или deployment не е извършен за publish A.
+
+```mermaid
+erDiagram
+    management_units ||--o{ charge_batches : scopes
+    financial_previews ||--o{ charge_batches : pins_exact_calculation
+    resolutions ||--o{ charge_batches : funding_call
+    charge_batches ||--o{ charges : atomic_unit_rows
+    units ||--o{ charges : assessed_unit
+    charges ||--|| obligation_parties : sole_reviewed_debtor_A
+    persons ||--o{ obligation_parties : historical_identity
+    ownership_periods ||--o{ obligation_parties : supplied_evidence
+    charge_batches o|--o| charge_batches : replacement_or_reversal
+```
+
+Отделни domain/service/UI/controller модули използват guarded RPC load/save/review/publish/feed. `prepare_charges` подготвя; `publish_charges` преглежда всяка лична отговорност и публикува целия batch; replacement изисква и `correct_finance`. Те са изрични scoped назначения, без admin наследяване или автоматичен owner достъп. Клиентът подава preview ID/основание и точни revisions, а не суми, actor, snapshot или свободно избран длъжник. Сървърът извежда и проверява източниците отново.
+
+M/L/D/T/P са отделни; T е текущата сървърна дата Europe/Sofia, ownership покрива [M,T+1), а L/D са в M…T. Нов ден или променени входове изискват нов преглед с HTTP409. Това е ограничение на първия template, не универсална правна формула. Snapshot пази точния приет preview и `largest-remainder-unit-id-v1`, без преизчисляване или нормализация. Actor/key receipt, scope advisory lock и business unique индекси пазят и повторна операция с нов ключ. SHARE NOWAIT input barriers са консервативни; **реалните конкурентни свойства на publish още не са hosted доказани**.
+
+Публикуваните batch/charges/parties са неизменими. Неплатена корекция създава отрицателен обратен batch и нов положителен replacement в една транзакция; старите редове се пазят. При наличие на бъдещ payment/allocation модел първият correction template отказва до изрично интегриране на проверката за плащания. Няма payment, payer, ledger или фондови операции. Съсобствеността и личният финансов портал остават отделни задължителни следващи стъпки. [Локални проверки и hosted gate](../../supabase/README.md#fnd-f05--локално-публикуване-a).
+
 ### FND-F05 — целево hosted API/UI/MVCC приемане
 
 Exact `20261102152437_financial_preview.sql` и петте зависими миграции са приложени: 28 hosted миграции / 35 приложни таблици. Клонът има 27 SQL файла, защото вече приложената handling версия е в отделния PR #8. Immutable `financial_previews` пази server-derived rule/share/date/basis/R и проверен ownership context. Целевите API/RLS/stale/same-JWT/UI проверки и осем контролирани MVCC случая преминаха с независими PostgreSQL сесии и наблюдавани waiters преди release. Проверени са replay/conflict, edit/review, phantom writer/NOWAIT и read-barrier сценарии; това не е гаранция за всички възможни interleavings или load test. Собствениците не получават лична сума/дълг; account links не участват. Frontend остава draft PR #9, извън main/production.
@@ -18,7 +41,7 @@ erDiagram
 
 `prepare_charges` създава; `read_rules` или `prepare_charges` четат, без admin/prepare_rules/publish_rules наследяване. Два guarded RPC етапа derive-ват текущи входове и сравняват optimistic input fingerprint преди immutable insert/audit. Fingerprint е revision comparison, не подпис/authorization token. Кратки SHARE NOWAIT table barriers върху input таблиците блокират и phantom writers; busy→HTTP409 без retry. Ефектът е потвърден с действителен незавършен writer insert и обратен preview/read-barrier probe. Консервативната граница може да спира писатели и от други scopes; приемането не е измерване на production throughput или изчерпателен stress тест.
 
-SQL numeric/integer и pure JS BigInt policy oracle ползват exact8decimal share validator. Резултатът пази floor/remainder/extra-cent/policy, сборът е точноR; старите snapshots не се пренаписват. Отделен financial-preview UI/service модул в съществуващата финансова страница. Няма charge_batches/charges/obligation_parties/ledger/payments/fund movement. [Договор и общо hosted приемане](../../supabase/README.md#fnd-f05--локален-начислителен-preview).
+SQL numeric/integer и pure JS BigInt policy oracle ползват exact8decimal share validator. Резултатът пази floor/remainder/extra-cent/policy, сборът е точноR; старите snapshots не се пренаписват. Отделен financial-preview UI/service модул в съществуващата финансова страница. Самият preview няма лични задължения; charge_batches/charges/obligation_parties са само в новия локален publish A пакет по-горе. Няма ledger/payments/fund movement. [Договор и общо hosted приемане](../../supabase/README.md#fnd-f05--локален-начислителен-preview).
 
 ### Persisted идеални части — приложена версия на registry договора
 

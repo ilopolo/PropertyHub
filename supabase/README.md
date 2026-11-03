@@ -1,5 +1,39 @@
 # Supabase — setup, схема и проверки
 
+## FND-F05 — локално публикуване A
+
+**Само локален PASS, без hosted apply.** Candidate [20261103064400_financial_publish_a.sql](migrations/20261103064400_financial_publish_a.sql) зависи от шестте вече приложени financial/registry версии; PR #8 не е зависимост. Предходните SQL са непроменени. Последният потвърден hosted backend има 28 миграции / 35 приложни таблици; тази задача не го сверява или променя. Клонът има 28 SQL файла, защото handling версията е в отделния PR #8.
+
+Три public таблици `charge_batches`, `charges`, `obligation_parties` и private `charge_operations` receipt. Публичните таблици са с RLS/SELECT само за current scoped `read_rules` или `prepare_charges`/`publish_charges`; директен DML е отказан. `prepare_charges` създава/редактира чернова; `publish_charges` прави отделен мотивиран party review и атомарно публикуване. Мениджър/касиер могат да получат изрично publish/correct subset чрез съществуващия guarded org-admin lifecycle; migration не назначава никого. Admin и owner роли не наследяват тези права.
+
+RPC: `load_charge_batch_inputs`, `save_charge_batch`, `review_charge_batch`, `publish_charge_batch`, `charge_batch_feed`. Save приема само preview ID, explicit L/event/legal/evidence/creditor references и евентуален replacement ID. Всички суми, scope, участници и snapshot се извеждат от сървъра. Review изисква точните unit/person/revision/ownership IDs и отделен evidence reference за всеки ред; това записва потребителския мотивиран преглед, не удостоверява автоматично юридическа валидност.
+
+M=датата на ОС решението; T=текуща server DATE Europe/Sofia; M≤L,D≤T; P е отделен падеж. Всеки обект трябва да има един verified 100% owner, покриващ целия [M,T+1), с current verified person revision. Един неподходящ ред блокира всички. Този интервал е техническа граница на A, не общо законово правило; съсобствеността остава задължителна следваща MVP подстъпка. Клиентът няма clock override. Смяна на деня/входовете/revision → PT409/HTTP409 и изричен нов преглед, без автоматичен retry. Preview R/results/policy се фиксират без преизчисляване или повторно приспадане на използваните средства.
+
+Receipt пази actor/request key/canonical input; отделни business индекси пазят един оригинал по preview, scope/resolution и scope/category/период. Нов ключ или preview не разрешава второ събиране на R. Scope advisory serialization и кратките SHARE NOWAIT barriers предстои да се проверят с независими hosted PostgreSQL сесии; локално сериализираният transport не е MVCC доказателство.
+
+Unpaid correction изисква prepare_charges+correct_finance при подготовката и publish_charges+correct_finance при review/publish. В една транзакция се добавят reversal със срещуположни суми и replacement, свързани с оригинала; published редовете са immutable. Плащания още няма. Ако бъде добавена таблица payments/payment_allocations, първият correction template fail-closed отказва до интегриране на реалния paid/unpaid договор; не е реализирана проверка на банков баланс или payment coverage. Не създавай placeholder таблици за заобикаляне на тази граница.
+
+Локални команди (без env credentials или hosted достъп):
+
+```powershell
+npm.cmd ci
+npm.cmd run check:financial-publish
+npm.cmd run check:financial-publish-browser
+npm.cmd run build
+```
+
+11 synthetic групи: whole batch; co-owner/променен период; L/D граници и midnight409; бъдещ P без future-owner презумпция; explicit права/foreign scope/direct DML; forged inputs/changed source; replay/business duplication; local competing-call invariant; exact R/snapshot/reversal; payer≠debtor. Реален Edge/Vite/SDK/HTTP процес, navigation/reload и375/1440 light/dark. Disposable PGlite fixture има изрично supplied ownership покритие от01.10 и фиксиран server test day03.11; production clock остава действителният Europe/Sofia ден. Тези резултати не са hosted/реални MVCC гаранции.
+
+### Следващо ограничено hosted приемане на publish A — още неизпълнено
+
+1. Fresh SELECT-only preflight на qfybswnezdzzahmozikr: exact28 предишни версии/hash evidence, липсващ candidate, същия SQL hash и additive съвместимост с main/live. Изолиран CLI history workdir включва и вече приложената отделна PR #8 версия; dry-run трябва да показва само20261103064400. Нужна е отделна авторизация за exact apply; не използвай механизъм, който заменя timestamp.
+2. При отделно разрешение: временен CLI token в игнорирания `.env.migration.local` (`SUPABASE_ACCESS_TOKEN`, само database_write/database_pooling_config_read); ordinary A/B сесии от `.env.rls.local` за access assertions. Независим session-pooler URI само в `.env.finance-mvcc.local` (`FINANCE_QA_DATABASE_URL`) за barriers/observer, без нови DB роли/GRANT. Не са нужни Edge/S3/secrets настройки. Сега не се искат или четат credentials.
+3. Exact apply → actual history/objects/hash verification. Старият main/live не използва новите additive таблици/RPC; съществуващите финансови receipts/snapshots не се променят. След неизвестен резултат първо провери историята, без повторен apply на сляпо.
+4. Само маркиран synthetic scope/basis/ownership/share/preview с **доказано** [M,T+1) покритие, explicit L/доказателства/party review и временни application subsets; не приемай, че старите fixtures покриват интервала. Изпълни11 hosted случая, same-JWT revoke и тесния frontend процес. Не маркирай synthetic основание като реално клиентско удостоверено.
+5. Независими PostgreSQL транзакции с контролирани barriers/observed waiters: same/different-key competing publication и duplicate business call; review/edit/input/ownership/revoke срещу publish; correction срещу correction. Един допустим result/receipt/audit, timely409/no partial charges/parties; проверка на реален date-rollover без exposed clock override. Local injected clock proof остава отделен от hosted civil-time теста. Поетапният conservative table lock може да блокира писатели от други scopes — не е benchmark или throughput гаранция.
+6. Cleanup оттегля само временните права/сесии и възстановява предходния scope state; published charges/parties/reversal/snapshots и audit се пазят с exact IDs. Не изтривай история за „чист“ тест. Изчисти временните CLI/DB credentials. Без merge/release преди отделно разрешение и затворен hosted gate. Няма hosted PASS за publish A към този checkpoint.
+
 ## FND-F05 — локален начислителен preview
 
 [20261102152437_financial_preview.sql](migrations/20261102152437_financial_preview.sql) и петте предходни financial/registry кандидата са **приложени с точните версии на 02.11.2026** след dry-run само за тях и сверка на hashes. Backend има **28 миграции, 35 приложни таблици и 7 Auth акаунта**. Клонът съдържа 27 SQL файла, включително шестте финансови/registry версии; отделната вече приложена handling миграция от PR #8 е добавена само в изолирания CLI history workdir. Предходни SQL не са редактирани; няма подмяна на timestamp или поправяне на историята. **Не прилагай тези версии повторно.** Frontend остава в draft PR #9, извън main/production. Този текущ статус заменя числата и плановете за apply в историческите локални checkpoints по-долу.

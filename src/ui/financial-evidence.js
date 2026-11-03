@@ -20,7 +20,7 @@ export function renderFinancialEvidenceEditors(root,scope,bases,units,onSave){
  for(const kind of ['evidence','review']){
   if(kind==='evidence'&&!scope.can_prepare||kind==='review'&&!scope.can_review)continue;
   const section=el('section','','card card-body mb-4'),form=el('form'),fields={};form.dataset.financeForm=kind;
-  section.append(el('h2',kind==='evidence'?'FND-F05 — доказателства и финансиране':'Преглед на конкретно основание','h4'),form);root.append(section);
+  section.append(el('h2',kind==='evidence'?'Доказателства и финансиране на ремонта':'Преглед на конкретно основание','h4'),form);root.append(section);
   function field(name,label,type='text',parent=form){const l=el('label',label,'form-label'),i=el(type==='select'?'select':type==='textarea'?'textarea':'input','','form-control mb-3');if(i.tagName==='INPUT')i.type=type;i.name=name;i.id=`finance-${kind}-${name}`;l.htmlFor=i.id;if(type==='textarea')i.rows=2;if(!['date','select'].includes(type))i.maxLength=1000;parent.append(l,i);return i;}
   const choose=field('target','Конкретно основание и редакция','select');for(const b of available)option(choose,b.id,`${b.reference} · редакция ${b.revision}`);
   const checks=[];if(kind==='evidence'){

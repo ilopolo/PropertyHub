@@ -42,7 +42,7 @@ export async function changePassword(password) {
   if (!user?.email_confirmed_at) throw new Error('Confirmed session required');
   unwrap(await getClient().auth.updateUser({ password }));
 }
-export async function loadAccount() {
+export async function loadAccount({ensureProfile=true}={}) {
   const { data: { session }, error } = await getClient().auth.getSession();
   if (error) throw error;
   if (!session) return null;
@@ -50,7 +50,7 @@ export async function loadAccount() {
   if (!user.email_confirmed_at) throw new Error('Потвърди имейла си преди достъп.');
   // Metadata supplies a display label only. All permissions come from current DB grants.
   const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 100).trim() : '';
-  unwrap(await getClient().rpc('ensure_profile', { display_name: name || 'Потребител' }));
+  if(ensureProfile) unwrap(await getClient().rpc('ensure_profile', { display_name: name || 'Потребител' }));
   const profile = unwrap(await getClient().from('profiles').select('id,display_name,status,theme').single());
   const roles = unwrap(await getClient().from('user_roles').select('id,role_code,membership_id,scope_id,permissions,valid_from,valid_to'));
   const organizations = unwrap(await getClient().from('organizations').select('id,name,organization_kind,status'));

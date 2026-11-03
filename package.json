@@ -7,6 +7,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:demo-ui": "node scripts/check-demo-ui.mjs",
     "check:personal-allocation": "node scripts/check-personal-allocation.mjs",
     "check:financial-publish": "node scripts/check-financial-publish.mjs",
     "check:financial-publish-browser": "node scripts/check-financial-publish-browser.mjs",

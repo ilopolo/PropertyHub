@@ -17,7 +17,7 @@ account/context, owner и финансови feeds. Той не създава �
 
 Таблото показва разрешени действия без измислени показатели. Финансовите записи
 и действия предхождат разгъваемите технически подробности; preview не създава
-задължения, публикуването ги създава след отделен преглед, плащания още няма.
+задължения, публикуването ги създава след отделен преглед, ръчните платежни записи са отделен локален кандидат без движение на средства.
 Зареждане, липса на контекст/право, празни записи и техническа грешка са различени.
 `npm run check:demo-ui` проверява локални синтетични роли в реален headless браузър
 с изолиран fixture transport. Това не е ново hosted/RLS/MVCC доказателство и не
@@ -26,6 +26,10 @@ account/context, owner и финансови feeds. Той не създава �
 Актуализация:01.11.2026. Реализираният поднабор е Auth/admin/registry и private-file Edge/S3 модул; Storage UI и theme fix са включени в общ release. Целият университетски MVP остава незавършен; конкретният production ready статус се установява за съответния main deployment. [README](../../README.md) · [Supabase setup и миграции](../../supabase/README.md).
 
 ## Стек и граници
+
+### Парични сметки — локална DB-21 конфигурация
+
+Нова20261104110007 добавя cash_accounts, immutable cash_account_versions и private actor/key receipts. Explicit scoped manage_cash_accounts управлява само конфигурация; read_payments/record_payments позволяват scoped historical read без редакция. RPC/RLS/identity/history guards пазят revisions и account identity; няма client DML/delete/auto-account/fund mapping. Finances/workspace и Екип и права използват съществуващите слоеве. Локалното DB/RLS/service/browser приемане не е hosted/MVCC. [Договор и следваща атомарна payment↔movement зависимост](CASH_ACCOUNTS.md).
 
 ### Manual receipts — локален, неприложен пакет
 

@@ -1,12 +1,20 @@
 # Supabase — setup, схема и проверки
 
+## DB-21 парични сметки — локален кандидат
+
+[20261104110007_scoped_cash_accounts.sql](migrations/20261104110007_scoped_cash_accounts.sql) е **НЕПРИЛОЖЕНА**. SHA-256: `8d62ba590b6c1c970bf87e27b9e9c0c1539412446fd1d709c8de9cfb3ea6a4e0`. Предходните SQL файлове са непроменени. Осем DB/domain/RLS групи и изолиран реален UI/service са локално проверени; **hosted/MVCC няма**. Не се конфигурира нищо в hosted проекта с този пакет.
+
+`manage_cash_accounts` е explicit scoped manager/cashier subset чрез съществуващия org-admin assignment lifecycle. Не е admin наследяване; read_payments/record_payments четат без управление. Immutable identity/versions, reason/revision, guarded RPC/RLS и deactivation пазят историята. Няма movements или balance. [Пълният договор, RPC, локални команди и бъдещото hosted приемане](../docs/public/CASH_ACCOUNTS.md).
+
+Бъдещият exact apply ред е неприложената manual-payment20261104080554 → account-config20261104110007 → все още НЕсъздадената atomic inbound миграция. Преди него: fresh target/history/hash/dry-run и отделно разрешение. Main/live не използва тези нови таблици/права; промяната е additive и не променя старите RPC или snapshots. Не пускай новия frontend преди неговата schema зависимост.
 ## DB-26 inbound — само чист domain модул
 
 `src/domain/payment-movements.js` подготвя детерминирано цялото постъпление и
 linked whole compensation, с explicit EUR/scope/account и точни евроценти.
 `npm.cmd run check:payment-movements`:8синтетични групи PASS, **не DB/API/hosted/MVCC**.
-Няма нов SQL, endpoint, account setup или posting за предишни записи.
-Приетият следващ prerequisite е приложно управление на сметките чрез отделно scoped
+Самият pure domain модул не добавя SQL, endpoint или posting за предишни записи;
+локалният account-config кандидат е отделният раздел по-горе.
+Реализираният локален prerequisite е приложно управление на сметките чрез отделно scoped
 право; операторският setup не е нормалният клиентски процес и не е реализиран тук.
 Стабилният `payment:<UUID>` source key не замества DB unique/FK/transaction guards.
 Allocation не създава ново постъпление. Компенсацията пази оригинала, не е bank refund.

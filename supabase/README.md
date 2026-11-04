@@ -1,5 +1,17 @@
 # Supabase — setup, схема и проверки
 
+## DB-26 inbound — само чист domain модул
+
+`src/domain/payment-movements.js` подготвя детерминирано цялото постъпление и
+linked whole compensation, с explicit EUR/scope/account и точни евроценти.
+`npm.cmd run check:payment-movements`:8синтетични групи PASS, **не DB/API/hosted/MVCC**.
+Няма нов SQL, endpoint, account setup или posting за предишни записи.
+Приетият следващ prerequisite е приложно управление на сметките чрез отделно scoped
+право; операторският setup не е нормалният клиентски процес и не е реализиран тук.
+Стабилният `payment:<UUID>` source key не замества DB unique/FK/transaction guards.
+Allocation не създава ново постъпление. Компенсацията пази оригинала, не е bank refund.
+[Входен договор, controlled transition и следващият атомарен DB/payment gate](../docs/public/MANUAL_PAYMENTS.md#db-26-inbound--чист-domain-договор-04112026).
+
 ## Ръчни плащания — локален кандидат, НЕ hosted PASS
 
 Нова [20261104080554_manual_payment_allocations.sql](migrations/20261104080554_manual_payment_allocations.sql)

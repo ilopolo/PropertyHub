@@ -6,6 +6,7 @@ import {bindForm,message,option} from '../ui/forms.js';
 import {renderTickets} from '../ui/tickets.js';
 import {mountTicketFiles} from './ticket-files.js';
 import {getWorkspaceScope} from '../ui/workspace-context.js';
+import {mountTicketHandling} from './ticket-handling.js';
 const create=document.querySelector('#ticket-create'),list=document.querySelector('#ticket-list'),refreshButton=document.querySelector('#refresh-tickets');
 let loadGeneration=0;
 async function refresh(){
@@ -22,7 +23,7 @@ async function refresh(){
  create.hidden=!units.length;refreshButton.hidden=false;
  document.querySelector('#ticket-access').textContent=units.length?'Подай сигнал за свой разрешен имот или прегледай подадените сигнали.':'За подаване е нужен проверен собствен достъп; обработката изисква отделно служебно право.';
  const attachments=[];
- renderTickets(list,tickets,async(ticket,status,note)=>{await changeTicketStatus(ticket,status,note);await refresh();message('Статусът и основанието са записани в историята.');},(body,ticket)=>attachments.push(mountTicketFiles(body,ticket)));
+ renderTickets(list,tickets,async(ticket,status,note)=>{await changeTicketStatus(ticket,status,note);await refresh();message('Статусът и основанието са записани в историята.');},(body,ticket)=>attachments.push(mountTicketFiles(body,ticket)),(body,ticket)=>attachments.push(mountTicketHandling(body,ticket,refresh)));
  await Promise.all(attachments);
  if(generation!==loadGeneration)return;
  list.dataset.ready='true';list.dataset.state=tickets.length?'ready':'empty';if(!tickets.length)list.textContent=units.length?'Още нямаш подадени сигнали за избрания контекст. Използвай „Подай сигнал“.':'Няма видими сигнали за избрания контекст. Провери достъпа в акаунта си.';

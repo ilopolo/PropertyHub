@@ -15,7 +15,9 @@ export async function observedTransactionRace({connect,holderAction,contenderAct
   evidence.pids={holder:await pid(holder),contender:await pid(contender),observer:await pid(observer)};
   assert.equal(new Set(Object.values(evidence.pids)).size,3,'Independent PostgreSQL connections required');
   await begin(holder,holderClaims);await begin(contender,contenderClaims);
-  evidence.holder=await holderAction(holder); // Actual uncommitted ordinary-user publish/correction, not a sleep-based race.
+  const holderResult=await holderAction(holder); // Actual uncommitted ordinary-user publish/correction, not a sleep-based race.
+  // pg.Result also contains parser functions and cannot be structured-cloned or journaled.
+  evidence.holder={rows:holderResult.rows,rowCount:holderResult.rowCount,command:holderResult.command};
   evidence.locks=(await observer.query('select locktype,mode,relation::regclass::text relation,granted from pg_locks where pid=$1',[evidence.pids.holder])).rows;
   assert(evidence.locks.some(l=>l.granted),'Holder locks were not observed');
   // Convert both branches immediately so a timeout/rejection cannot become an unhandled promise.

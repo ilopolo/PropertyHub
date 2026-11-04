@@ -83,9 +83,9 @@ await test('native barrier observes distinct waiter before commit; deadlines/fin
     if(name==='holder'&&['commit','rollback'].includes(sql)){released=true;release();}return{rows:[]};},
    async end(){closed.push(name);}
   });
-  return{log,closed,connect,holderAction:async()=>({batch:'synthetic only'}),contenderAction:async()=>{await blocked;return{sameBatch:true};},holderClaims:claims,contenderClaims:claims};
+  return{log,closed,connect,holderAction:async()=>({rows:[{id:'synthetic only'}],rowCount:1,command:'SELECT',_parsers:[()=>{}]}),contenderAction:async()=>{await blocked;return{sameBatch:true};},holderClaims:claims,contenderClaims:claims};
  }
- const good=nativeFixture();const evidence=await observedTransactionRace(good);assert(evidence.pass&&evidence.waiter);assert.deepEqual(good.closed.sort(),['contender','holder','observer']);
+ const good=nativeFixture();let persisted;const evidence=await observedTransactionRace({...good,onObserved:async e=>{persisted=structuredClone(e);}});assert(evidence.pass&&evidence.waiter);assert.deepEqual(persisted.holder,{rows:[{id:'synthetic only'}],rowCount:1,command:'SELECT'});assert.deepEqual(good.closed.sort(),['contender','holder','observer']);
  assert(good.log.some(q=>q.sql.includes("statement_timeout='15000ms'")));
  for(const data of [nativeFixture({waiter:false}),nativeFixture({duplicate:true})]){await assert.rejects(observedTransactionRace({...data,deadlineMs:0}));assert.deepEqual(data.closed.sort(),['contender','holder','observer']);}
  assert(!good.log.some(q=>q.sql.includes('pg_cancel_backend')||q.sql.includes('pg_terminate_backend')));

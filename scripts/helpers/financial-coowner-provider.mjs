@@ -31,7 +31,7 @@ export function createProvider(config,t){
    const member=await one("select id from public.organization_memberships where organization_id=$1 and profile_id=$2 and status='active'",[config.org_id,config.actors.B.profile_id]);assert(member,'Existing B membership in non-demo org must already be active; do not restore other memberships');
    assert(config.foreign_scope_id&&!j.protection.resourceIds.includes(config.foreign_scope_id),'Reviewed non-demo foreign scope required');
    const foreign=await one("select id from public.management_units where id=$1 and status='active'",[config.foreign_scope_id]);assert(foreign,'Foreign scope must actually exist; missing configuration is not access-denial evidence');
-   const today=(await one("select private.charge_publication_day()::text day")).day;
+   const today=(await one('select private.charge_publication_day()::text as "day"')).day;
    return{project:targetProject,schemaReady:true,isolationVerified:true,versions,signatures,day:today,transport:'pinned TLS/ordinary sessions; no migrations applied by driver'};
   },
   async baseline(j){

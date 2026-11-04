@@ -94,7 +94,7 @@ export function bindFinancialCoownerCases(adapter,{query,one,call,auth,config,t,
   const p=publishArgs(f.original,'positive-publish');const replay=await ctx.write('replay-HTTP','rpc',{marker:ctx.j.marker,actor:'B',rpc:'publish_charge_batch_v2',params:p});assert.equal(replay.id,f.original);
   const duplicate=await draft('duplicate-draft');await review('duplicate-review',duplicate);const r=await ctx.write('duplicate-publish','rpc',{marker:ctx.j.marker,actor:'B',rpc:'publish_charge_batch_v2',params:publishArgs(duplicate,'duplicate-publish')});assert.equal(r.code,'PT409');assert.deepEqual(await counts(),before);await done('duplicates',{sameKey:true,differentKey:true});}else checks.push(f.caseProgress.duplicates);
   if(!f.caseProgress.correction){f.corrected=await correction('correction',f.original);await publish('correction-publish',f.corrected);await verify(f.corrected);const reversed=await one('select id from public.charge_batches where reverses_id=$1',[f.original]);assert(reversed);assert.equal((await one('select count(*)::int n from public.obligation_parties p join public.charges c on c.id=p.charge_id where c.batch_id=$1',[reversed.id] )).n,f.originalProof.snapshot.inputs.parties.length);await done('correction',{replacement:f.corrected,reversal:reversed.id});}else checks.push(f.caseProgress.correction);
-  if(!f.caseProgress.legacy){const legacy=await read('B','charge_batch_feed',{});assert(!legacy.code);assert(!legacy.data.batches.some(b=>b.id===f.original));await ctx.verifyBaseline();await done('legacy',{AUnchanged:true,legacyHidesB:true});}else checks.push(f.caseProgress.legacy);return checks;
+  if(!f.caseProgress.legacy){const legacy=await read('B','charge_batch_feed',{});assert(!legacy.code,'Legacy feed failed: '+legacy.code+' / '+legacy.errorName);assert(!legacy.data.batches.some(b=>b.id===f.original));await ctx.verifyBaseline();await done('legacy',{AUnchanged:true,legacyHidesB:true});}else checks.push(f.caseProgress.legacy);return checks;
  };
  async function correction(k,replaces){const claim={...fixture().claim,replaces_batch_id:replaces,evidence_reference:note(k+'-new-personal-evidence')},id=await draft(k+'-draft',claim);await review(k+'-review',id,claim);return id;}
  const nativeCall=(connection,name,params)=>connection.query(`select public.${name}(${Object.keys(params).map((n,i)=>'"'+n+'"=>$'+(i+1)).join(',')}) id`,Object.values(params));
@@ -109,7 +109,7 @@ export function bindFinancialCoownerCases(adapter,{query,one,call,auth,config,t,
    const result={id:p.a,status:200,data:barrier};op.completedNative=result;await ctx.save();return result;
   };
   const run=async(id,a,b)=>{
-   const r=await ctx.write('native-'+id,'native-race',{marker:ctx.j.marker,race:id,scope_id:f.scope,a,b});await verify(a);assert(r.data.pass);if(id==='publish-input')assert(r.data.contender.ok);else{assert(!r.data.contender.ok);assert.equal(r.data.contender.code,'PT409');}return{id,pass:true,invariants:true,barrier:r.data};
+   const r=await ctx.write('native-'+id+':'+fixture().scope,'native-race',{marker:ctx.j.marker,race:id,scope_id:fixture().scope,a,b});await verify(a);assert(r.data.pass);if(id==='publish-input')assert(r.data.contender.ok);else{assert(!r.data.contender.ok);assert.equal(r.data.contender.code,'PT409');}return{id,pass:true,invariants:true,barrier:r.data};
   };
   if(!ctx.j.mvccProgress['publish-publish']){
    if(!ctx.j.raceFixture){

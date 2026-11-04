@@ -2,10 +2,16 @@
 
 ## FND-F05 — локална съсобственост B/2
 
-**03.11.2026: локален PASS; hosted/MVCC НЕ е изпълнен.** Нова неприложена
-[20261103171619_financial_coowner_publish.sql](migrations/20261103171619_financial_coowner_publish.sql).
-Не редактира предходните SQL, не създава нови роли или назначения. Няма нови таблици;
-миграционните файлове и броят приложни таблици са различни показатели.
+**04.11.2026: ограничено hosted API/UI/MVCC приемане PASS.** Exact
+[20261103171619](migrations/20261103171619_financial_coowner_publish.sql) е приложена
+с LF-trim SHA256 `9b56f89120652bf4f668898e0e0cfd3bdcd446c8aa5c01ecd3c0c599a9ce7b2e`.
+Отделната минимална [20261104073315](migrations/20261104073315_financial_coowner_legacy_feed_materialized.sql)
+е приложена с hash `fe0002f73c6e9dbdfada07859bb19d99e6a41ce22625d3dc8dd4ad47df76224c`: source feed се материализира
+веднъж вместо повторени authorization scans, които причиниха legacy API timeout.
+Целева локална equivalence проверка пази същите A-only резултати и grants.
+Предходните SQL не са редактирани; няма нови таблици. Actual31 миграции срещу30
+SQL файла в този клон (приложената PR #8 версия е отделна). Frontend още е
+draft PR #9, извън main/production; това не е завършен финансов MVP.
 
 Новият service използва изрични `load_charge_batch_inputs_v2`, `save_charge_batch_v2`,
 `review_charge_batch_v2`, `publish_charge_batch_v2`, `charge_batch_feed_v2` — без
@@ -48,13 +54,31 @@ Mobile/desktop, две теми, reload/navigation и всички N лични 
 Засегнатият `check:financial-publish` пази 11 A групи. Това НЕ доказва hosted Auth,
 PostgreSQL MVCC или естествения календарен rollover.
 
-### Бъдещо hosted приемане — отделно разрешение
+### Hosted резултат и възпроизводим driver
 
 #### Изпълним B/2 acceptance driver — 04.11.2026
 
-Driver-ът е реализиран и проверен с fake transports/adapters. **Реален hosted/MVCC
-run НЕ е изпълнен.** Предходните описания за несвързан provider/CLI са исторически.
-Няма нови зависимости, SQL миграции или production промяна в този harness пакет.
+Driver-ът е изпълнен срещу hosted проекта с официален CA и TLS проверка. Шест
+ordinary-session assertion групи и три controlled native PostgreSQL races са PASS:
+original publish/publish, publish/ownership-review writer и competing unpaid
+corrections. Всеки race има три independent PIDs и observed waiter преди release.
+Same-JWT revoke, replay/business duplicate, точни суми, stale inputs и неизменни A
+snapshots са проверени. Реален локален UI към hosted завърши prepare → мотивиран
+N-party review → publish на синтетична unpaid корекция;375/1440 light/dark,
+navigation/reload и четири снимки са прегледани. Това не е exhaustive MVCC/load test.
+
+Cleanup PASS:0 собствени активни роли/сесии/backends, временната membership и
+rollover context са върнати към baseline, Auth остава7. Старите row hashes в23
+таблици (включително demo/personal/A snapshots) съвпадат. Пазят се два маркирани
+QA scope,15 batch реда (draft/published/reversals),40 charges/60 personal slices,
+net1000.06 EUR synthetic unpaid history; не са реални клиентски начисления.
+Exact retained IDs/receipts са в игнорирания run manifest. Временните CLI token/DB
+URI са изчистени; QA/demo credentials и server secrets не са променяни.
+
+При първия native attempt pg.Result parser functions причиниха DataCloneError
+преди COMMIT. Exact pre-COMMIT runtime location, unchanged drafts и затворени
+backends доказаха rollback преди възобновяване; липса на ред сама не е използвана
+като proof. Barrier журналът вече съдържа само safe holder rows/count/command.
 
 От B/2 worktree, безопасно/offline по подразбиране:
 
@@ -79,7 +103,8 @@ Named RPC параметрите се сверяват с действителн
 
 ##### Предпоставки за бъдещ изрично разрешен run
 
-- Първо отделно exact apply/post-apply на candidate20261103171619; driver-ът НЕ
+- Проверявай actual историята:20261103171619 и20261104073315 вече са applied; не ги
+  прилагай повторно. За нова среда е нужен отделен exact apply/post-apply; driver-ът НЕ
   прилага миграции. Очакваната пълна история включва и вече applied PR#8 handling
   версията, която не е във финансовия клон. Preflight изисква exact списък версии,
   локален SQL hash, съществуващи RPC и точния project ref.
@@ -161,40 +186,18 @@ Lock recovery: същите explicit флагове плюс `--phase recover-lo
 
 След реален cleanup изчисти временния локален operator URI след сверка. Не трий
 demo credentials/назначения или retained financial/audit rows. Публикуваните QA
-суми са синтетични, не реални клиентски плащания. Natural Publish A rollover04.11+
-остава отделна задача; driver-ът не променя часовника и не го стартира автоматично.
+суми са синтетични, не реални клиентски плащания. Отделният natural Publish A
+rollover е PASS на04.11; driver-ът не променя часовника и не го стартира автоматично.
 
-1. Прегледай PH-DEMO-V1 guard/manifest; подготви **отделен** изрично разрешен scope
-   и baseline за временните назначения. Не използвай demo ресурси за revocation,
-   destructive/concurrency QA. B demo е org_admin+cashier, не pure cashier proof.
-2. Fresh SELECT-only project/history/hash preflight и exact dry-run. Последно
-   потвърдените29 hosted версии включват handling миграцията от отделния PR#8;
-   финансовият клон има28 предходни SQL файла плюс този candidate. Подготви пълна
-   изолирана CLI история със запазените exact applied версии; не repair-вай историята,
-   не включвай unrelated pending SQL. Candidate трябва да е единствената pending
-   версия. Свери съвместимостта с main и текущите A receipts/snapshots.
-3. След отделно разрешение: exact apply веднъж; post-apply version/function/grant
-   проверка. Няма нужда от Edge/Storage/Auth конфигурация или нови Auth акаунти.
-4. Ordinary-session B2 API/UI assertions: positive exact sums/snapshots; scope/admin/
-   direct-write/forged inputs; exact L review, unsupported/changed sources, HTTP409,
-   same-JWT permission revoke; different-key business duplicates; whole unpaid
-   correction с всички parties и unchanged unit amounts/R; A regression само за
-   засегнатите входни/публикационни пътища.
-5. Независими PostgreSQL сесии с наблюдавани barriers/waiters: publish/publish,
-   publish срещу ownership/person/review input edit или revoke; concurrent full-batch
-   correction. Валидно сериализиран snapshot или timely409; без смесен/частичен batch,
-   duplicate obligation или изгубена party. PGlite/последователен HTTP не заместват MVCC.
-6. Cleanup само за новите маркирани назначения/сесии; financial snapshots/reversal/
-   audit се запазват и manifest-ват. Проверка на demo/personal baseline без промени.
-   Временните operator credentials се чистят след употреба. Publish A natural-day
-   rollover е отделният запазен тест на04.11 или по-късно, без промяна на часовника.
-
-B/2 няма hosted PASS и не затваря exact rational квотите, плащанията или целия
-финансов MVP. Няма merge/deployment като част от локалното приемане.
+B/2 затваря само приетия decimal ordinary-coowner договор. Exact rational квотите
+(например1/3), СИО, спорните случаи, плащанията и целият финансов MVP остават
+непокрити. Не повтаряй завършения setup/acceptance без засегната промяна. Бъдещ
+общ release review трябва да провери съвместимостта на обединения frontend; това
+приемане не разрешава merge/deployment.
 
 ## FND-F05 — локално публикуване A
 
-**Текущ статус 03.11.2026: exact migration applied; bounded hosted API/UI/MVCC PASS; общият date gate още е отворен.** [20261103064400_financial_publish_a.sql](migrations/20261103064400_financial_publish_a.sql) е приложена с точната версия след fresh SELECT/hash и dry-run с единствен candidate в изолирана пълна29-file история. LF-trim SHA256 **15e03bdfd6ca013c5e7711d2acc65dc856724eff51d8e8d8125377c266c1dd45**. Последващият SELECT потвърди29 миграции, четирите нови RLS таблици/публични RPC и Auth7; приложните public+private таблици са39. Клонът има 28 SQL файла, защото приложената handling версия е отделна в PR #8. Предходните SQL са непроменени. **Не прилагай candidate повторно.** Frontend е draft PR #9, извън main/production.
+**Текущ статус 04.11.2026: Publish A целево hosted API/UI/MVCC и отделен natural rollover PASS.** [20261103064400](migrations/20261103064400_financial_publish_a.sql) е приложена на03.11 с LF-trim SHA256 `15e03bdfd6ca013c5e7711d2acc65dc856724eff51d8e8d8125377c266c1dd45`. Тогава историята е29 версии/39 public+private приложни таблици; текущата история след B/2 и feed поправката е31 версии. Не прилагай старите миграции повторно. Финансовият frontend още е draft PR #9, извън main/production.
 
 ### Договор и защита
 
@@ -218,13 +221,20 @@ Unpaid correction е атомарен negative reversal и positive replacement 
 
 Cleanup SELECT PASS: всички 3 временни run roles отнети, новият scope/assignment са inactive, B membership е възстановен точно,0 own sessions/transactions, Auth7. Пазят се 36 charges/36 parties и 9 published history batches (включително3 reversals), три ефективни synthetic unpaid batches с net 1500.03 EUR. Това не са реални клиентски задължения или получени пари. Exact IDs/status/marker са в игнорирания операторски журнал. 15 собствени сесии са затворени; CLI token и DB URI са изчистени; официалният CA/TLS rejectUnauthorized е запазен. Server/hosting secrets не са променяни.
 
-### Оставащ gate и release
+### Natural rollover и оставащ release
 
-**Естествената календарна смяна на деня не е изчакана.** Production clock не е променян. Локалният injected-clock тест не е hosted доказателство; няма общ безусловен publish A PASS или разрешен production release.
+На04.11.2026 по действителния server Europe/Sofia ден старата reviewed draft
+revision2/review_day03.11 достигна точно **charge_day_changed / PT409 / HTTP409**.
+Броят batch20/charges36/parties36 и target audit2 остана същият; няма промяна на
+самия draft. Временното право е отнето, точният scope/assignment са отново inactive,
+а membership е върната след отделното B2 приемане. Часовникът не е променян.
+Отделният естествен date gate е затворен; старият MVCC набор не е повтарян.
 
-Минимален следващ пакет след действителна Europe/Sofia дата, различна от03.11.2026: fresh SELECT на запазения reviewed replacement/revision2/day03.11 и текущите cleanup states → само точното временно възстановяване на маркирания synthetic context/права → ordinary publisher заявка с непроменен стар review → **PT409/HTTP409 charge_day_changed**, без нови batch/charge/party/audit publication редове → точен cleanup и credential clear. Exact IDs са в локалния HANDOFF/retained journal. Не са нужни повторен apply, CLI token, старите5 MVCC случая или нов Auth; използвай наличния поддържан операторски connection за точния setup, ако е достъпен.
-
-Едва след този тесен gate и отделен общ release review може да се планира бъдещ frontend release. PR #8 остава отделен, main/live не е променян. Няма merge, Netlify deployment, hosting настройка или бюджетна проверка в това приемане. Съсобственическият publish остава следващ задължителен MVP обхват; плащанията/отчетите не са реализирани.
+Следва бъдещ общ frontend release review, без повторно apply на вече проверените
+версии. PR #8 остава отделен, main/live не е променян в това приемане. Няма merge,
+Netlify deployment, hosting настройка или бюджетна проверка. Exact rational
+съсобствеността, останалите неподдържани режими, плащанията и отчетите остават
+отделни MVP подстъпки. Реална клиентска правна приложимост се преглежда отделно.
 
 Локалните възпроизводими проверки остават (без hosted credentials):
 

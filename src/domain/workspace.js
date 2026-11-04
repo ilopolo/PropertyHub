@@ -10,7 +10,7 @@ export function workspaceModel(account,admin,feeds,now=Date.now()){
   }
   for(const c of account.contexts)if(roles.some(r=>r.scope_id===c.scope_id&&r.permissions.includes('read_registry')))
     add(c.scope_id,c.scope_label,'staff','registry',c.organization_name);
-  for(const feed of [feeds.drafts,feeds.preview,feeds.charges])for(const s of feed?.scopes||[]){
+  for(const feed of [feeds.drafts,feeds.preview,feeds.charges,feeds.payments])for(const s of feed?.scopes||[]){
     const c=account.contexts.find(c=>c.scope_id===s.id),r=roles.find(r=>r.scope_id===s.id),membership=admin?.memberships?.find(m=>m.id===r?.membership_id),organization=account.organizations.find(o=>o.id===membership?.organization_id);
     add(s.id,s.label,'staff','finance',c?.organization_name||organization?.name);
   }

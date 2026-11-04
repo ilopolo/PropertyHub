@@ -1,5 +1,34 @@
 # Supabase — setup, схема и проверки
 
+## Ръчни плащания — локален кандидат, НЕ hosted PASS
+
+Нова [20261104080554_manual_payment_allocations.sql](migrations/20261104080554_manual_payment_allocations.sql)
+е **неприложена**, LF-trim SHA256 `0ff4f6091d2d70fb60256c6681a7b0cf7d23ec0dc4d4b487ba98a271e596f5aa`.
+Последният hosted baseline остава31версии. Receipt → explicit personal allocation →
+exact остатък/аванс и append-only reverse/replace са само локално проверени.
+11DB/domain/RLS групи и реален isolated UI/service/SDK/HTTP/PGlite процес,
+375/1440две теми/reload/navigation/errorstates, build и11productionpages/assets са PASS.
+PGlite/localparallel не е PostgreSQL/MVCC доказателство.
+
+`read_payments` е отделно scoped право; `record_payments` включва необходимото
+четене/запис/отнасяне, а корекция изисква и `correct_finance`. Няма admin/read_rules
+наследяване. Платецът не сменя длъжника или начислителните snapshots.
+Ръчното отчитане **не е банково потвърждение и не променя касова/банкова наличност**.
+DB26 inbound `money_movement` по stable payments.id остава задължителен следващ пакет;
+пълният payment MVP не е приключил. Owner partial financial projections остават отделни.
+
+```powershell
+npm.cmd run check:manual-payments
+npm.cmd run check:manual-payments-browser
+```
+
+[Договор, точни RPC, setup/cleanup и бъдещ hosted/MVCC план](../docs/public/MANUAL_PAYMENTS.md).
+След отделно разрешение: fresh project/history/hash и един pending candidate → exact
+dry-run/apply/post-apply → ordinary synthetic API/UI → independent PostgreSQL barriers
+с observedwaiters → own-onlycleanup със запазена финансова/audit история.
+Не прилагай повторно старите31версии и не използвай PH-DEMO-V1/preview4173 за QA.
+В този локален пакет няма credentials loading/hosted операции/нови назначения/deployment.
+
 ## FND-F05 — локална съсобственост B/2
 
 **04.11.2026: ограничено hosted API/UI/MVCC приемане PASS.** Exact

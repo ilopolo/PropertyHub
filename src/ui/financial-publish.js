@@ -21,7 +21,7 @@ export function renderChargeBatches(root,data,actions){
    const save=el('button','Запази черновата','btn btn-primary');form.append(save);body.append(form);
   }
   for(const b of batches){const card=el('article','','card card-body mb-3');card.dataset.chargeBatch=b.id;card.append(el('h3',`${b.status==='draft'?'Чернова':b.kind==='reversal'?'Обратен запис':'Публикувано'} · редакция ${b.revision}`,'h5'),el('p',`R ${b.pool_amount} EUR · ${b.period_start}…${b.period_end}`),financeDetails('Идентификатори и версии',el('p',`Набор ${b.id} · изчисление ${b.preview_id}`,'small')));
-   if(b.status==='published'){card.append(el('p','Неизменим snapshot. Платецът е отделен от длъжника; няма записани плащания.'));
+   if(b.status==='published'){card.append(el('p','Неизменим snapshot. Платецът е отделен от длъжника; покритията и остатъкът се показват в раздела за плащания.'));
     for(const c of data.charges.filter(c=>c.batch_id===b.id)){const item=el('section','','border rounded p-2 mb-2');item.dataset.charge=c.id;item.append(el('p',`Обект ${c.unit_snapshot?.unit_number||c.unit_id} · общо ${c.amount} EUR · падеж ${c.due_date}`,'fw-bold'));
      for(const p of data.parties.filter(p=>p.charge_id===c.id)){const line=el('p',`Длъжник: ${p.person_snapshot.label||p.person_id} · ${p.assessed_amount} EUR · дата на отговорността ${p.liability_date}`);line.dataset.obligationParty=p.id;item.append(line);}
      card.append(item);}

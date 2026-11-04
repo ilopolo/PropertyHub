@@ -27,6 +27,20 @@ account/context, owner и финансови feeds. Той не създава �
 
 ## Стек и граници
 
+### Manual receipts — локален, неприложен пакет
+
+Нова20261104080554 добавя immutable payments/payment_allocations и private actor/key receipts. Guarded record/allocate/reverse/replace RPC проверяват explicit scoped права, revisions, personal remainder и unallocated credit. Payment writes и unpaid publish/correction споделят scope advisory lock; any allocation history блокира unpaid корекция на съответния batch. Старите charge/party snapshots не се променят. Ръчното отчитане не е cash/bank balance или bank confirmation; unique inbound posting по stable payments.id е задължителна следваща стъпка.
+
+11локални DB/RLS/domain групи и actual isolated UI/service/build/navigation са PASS; **hosted/MVCC не е изпълнен**. [Договор и бъдещо приемане](MANUAL_PAYMENTS.md). Owner financial projection/paid charge corrections/ledger са извън този ограничен пакет, без да отпадат от MVP.
+
+```mermaid
+erDiagram
+    payments ||--o{ payment_allocations : explicit_credit
+    obligation_parties ||--o{ payment_allocations : personal_coverage
+    charges ||--o{ payment_allocations : fixed_assessment
+    payments o|--o| payments : reversal_or_replacement
+```
+
 ### FND-F05 — publish A/B: ограничено hosted приемане, frontend release предстои
 
 Exact [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) е приложена на 03.11.2026 след single-candidate dry-run/hash gate. При приемането на A backend имаше29 миграции/39 public+private приложни таблици. След B/2 и отделната feed поправка са31 миграции; клонът има30 SQL файла, защото приложената PR #8 версия е отделна. B/2 не добавя таблици. Три public таблици и една private receipt таблица, всичките с RLS. Няма промяна на старите SQL, нови Auth акаунти или deployment. Frontend е draft PR #9, извън main/production.
@@ -50,7 +64,7 @@ erDiagram
 
 M/L/D/T/P са отделни; T е текущата сървърна дата Europe/Sofia, ownership покрива [M,T+1), а L/D са в M…T. Нов ден или променени входове изискват нов преглед с HTTP409. Това е ограничение на първия template, не универсална правна формула. Snapshot пази точния приет preview и `largest-remainder-unit-id-v1`, без преизчисляване или нормализация. Actor/key receipt, scope advisory lock и business unique индекси пазят и повторна операция с нов ключ. SHARE NOWAIT input barriers са консервативни; **пет конкретни конкурентни interleaving-а са hosted доказани с независими PostgreSQL сесии и наблюдавани PID/waiters**: first same-key replay, different-key business duplicate, uncommitted input writer→409, held authenticated correction→queued writer, competing unpaid corrections. Това не е изчерпателен MVCC/stress тест.
 
-Публикуваните batch/charges/parties са неизменими. Неплатена корекция създава отрицателен обратен batch и нов положителен replacement в една транзакция; старите редове се пазят. При наличие на бъдещ payment/allocation модел първият correction template отказва до изрично интегриране на проверката за плащания. Няма payment, payer, ledger или фондови операции. Exact rational квотите, неподдържаните собственически режими и личният финансов портал остават отделни задължителни следващи стъпки. [Локални проверки и hosted gate](../../supabase/README.md#fnd-f05--локално-публикуване-a).
+Публикуваните batch/charges/parties са неизменими. Неплатена корекция създава отрицателен обратен batch и нов положителен replacement в една транзакция; старите редове се пазят. При наличие на бъдещ payment/allocation модел първият correction template отказва до изрично интегриране на проверката за плащания. B2 сам не създава payment, payer, ledger или фондови операции; ръчните payment записи са отделният локален кандидат по-горе. Exact rational квотите, неподдържаните собственически режими и личният финансов портал остават отделни задължителни следващи стъпки. [Локални проверки и hosted gate](../../supabase/README.md#fnd-f05--локално-публикуване-a).
 
 Реалният UI prepare/review/publish/navigation/reload е проверен към hosted;375/1440 light/dark снимките са действително разгледани. Same-JWT отнемането на правото е проверено. На04.11.2026 отделният естествен Europe/Sofia rollover достигна точно charge_day_changed/HTTP409 със стария review и без нови финансови/audit publication редове. Часовникът не е променян. Cleanup възстанови временния контекст и отне само собствените QA права/сесии, запазвайки synthetic финансовата история, старите A snapshots, демото и личните данни. Финансовият frontend остава извън main/production; следва отделен общ release review. [Приемане и release стъпка](../../supabase/README.md#fnd-f05--локално-публикуване-a).
 

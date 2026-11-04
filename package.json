@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:manual-payments": "node scripts/check-manual-payments.mjs",
+    "check:manual-payments-browser": "node scripts/check-manual-payments-browser.mjs",
     "check:financial-coowner": "node scripts/check-financial-coowner.mjs",
     "check:financial-coowner-browser": "node scripts/check-financial-coowner-browser.mjs",
     "check:demo-guard": "node scripts/check-demo-guard.mjs",

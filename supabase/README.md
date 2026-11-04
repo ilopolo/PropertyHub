@@ -1,5 +1,22 @@
 # Supabase — setup, схема и проверки
 
+## P2 — само локален кандидат: owner category / ticket-only contexts
+
+Новата [20261104212948_owner_ticket_category_contexts.sql](migrations/20261104212948_owner_ticket_category_contexts.sql)
+е **неприложена**, SHA256
+`1048e7f5fd9d9fe92c7c5ca6a707e8c4af4623e8a7d2c690b3cd5f46df6b396d`.
+Зависимата PR #8 версия20261102080729 е непроменена, вече приложена и включена в
+историята на PR #9 чрез нормален merge e9a5f29. Последното backend доказателство е
+35applied от P1; локално има35предходниSQL+1кандидат. Няма fresh hostedP2 сверка.
+
+**Не изпълнявай standalone apply върху стария live клиент:** create_ticket с3args вече
+отказва23514; задължителната категория не позволява auto-default. Първо отделно изрично
+съгласуван frontend cutover/прозорец. Exact future preflight/apply/API/UI/cleanup gates
+са в [TICKET_CREATION](../docs/public/TICKET_CREATION.md#бъдещо-hosted-приемане-и-release-gate).
+Не прилагай PR8/P1 повторно, не променяй стари миграции/история. Local10DB+9UI,
+4PR8DB+3service, build/navigation са PASS; не са hosted/MVCC доказателства.
+
+
 ## P1 „Моите финанси“ — ограничено hosted API/UI PASS,04.11.2026
 
 Приложена еднократно `20261104182905_owner_financial_projection.sql`, SHA-256
@@ -660,7 +677,7 @@ Setup проверява реални RPC/handler/key readiness преди grant
 | [20261101141944_owner_signals.sql](migrations/20261101141944_owner_signals.sql) | Приложен minimal signal schema/RPC/RLS; първоначалният stale код е коригиран от следващата миграция |
 | [20261101180527_ticket_revision_conflict.sql](migrations/20261101180527_ticket_revision_conflict.sql) | Приложена exact корекция40001→PT409; current/staleHTTP409/reload и cleanup HOSTED PASS |
 | [20261101195615_ticket_attachment.sql](migrations/20261101195615_ticket_attachment.sql) | Приложен private attachment договор; separate Edge download; hosted PASS |
-| [20261102080729_ticket_category_assignee.sql](migrations/20261102080729_ticket_category_assignee.sql) | Приложена категория/отговорник; typed история, eligibility и PT409; hosted backend PASS, frontend draft PR8 |
+| [20261102080729_ticket_category_assignee.sql](migrations/20261102080729_ticket_category_assignee.sql) | Приложена категория/отговорник; typed история, eligibility и PT409; hosted backend PASS, историята е включена в draft PR9 |
 
 Не прилагай миграциите повторно върху този проект и не преименувай изпълнени версии. Ownership действителната версия е194407;193517 е било име на непубликуван draft. Приложените SQL statements и локалните файлове са сверени след LF/trim normalization. Private таблици: bootstrap_state, person_revisions, ownership_batches, occupancy_batches. Всички24 public таблици имат RLS. Няма приложни anon grants; private не се излага през Data API.
 

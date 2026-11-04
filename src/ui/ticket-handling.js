@@ -11,6 +11,7 @@ export function ticketHandlingSummary(ticket){
  return box;
 }
 export function ticketEventLabel(event){
+ if(event.event_type==='created'&&event.created_category_code)return 'Подаден · Категория: '+categoryName(event.created_category_code);
  if(event.event_type!=='handling_changed')return ticketStatuses[event.to_status]||event.to_status;
  const d=event.handling_delta||{},parts=[];
  if(d.category)parts.push(`Категория: ${categoryName(d.category.from)} → ${categoryName(d.category.to)}`);

@@ -15,8 +15,7 @@ export function workspaceModel(account,admin,feeds,now=Date.now()){
     add(s.id,s.label,'staff','finance',c?.organization_name||organization?.name);
   }
   for(const u of feeds.owned||[])add(u.scope_id,u.scope_label,'owner','tickets');
-  for(const t of feeds.tickets||[])if(t.can_manage)add(t.scope_id,t.scope_label,'staff','tickets');
-  // Only a scope confirmed by a current server feed can enable an empty staff inbox link.
-  for(const c of contexts.values())if(c.mode==='staff'&&roles.some(r=>r.scope_id===c.id&&r.permissions.includes('manage_tickets')))c.tickets=true;
+  // Fresh guarded discovery is authoritative even when there are no tickets or registry rights.
+  for(const s of feeds.ticketContexts||[])add(s.scope_id,s.scope_label,'staff','tickets');
   return {signedIn:true,platform:Boolean(admin?.platform),ownerFinance:feeds.ownerFinance===true,organizations:admin?.adminOrganizations||[],name:account.profile.display_name,profileId:account.profile.id,contexts:[...contexts.values()]};
 }

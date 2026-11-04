@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:ticket-creation-db": "node scripts/check-ticket-creation-db.mjs",
+    "check:ticket-creation-browser": "node scripts/check-ticket-creation-browser.mjs",
     "check:owner-finances": "node scripts/check-owner-finances.mjs",
     "check:owner-finances-browser": "node scripts/check-owner-finances-browser.mjs",
     "check:payment-inbound": "node scripts/check-payment-inbound.mjs",

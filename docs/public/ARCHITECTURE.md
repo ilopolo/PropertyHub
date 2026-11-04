@@ -1,5 +1,17 @@
 # Реализирана архитектура
 
+## P2 — owner category и празен ticket-only контекст
+
+[Договор и приемане](TICKET_CREATION.md): mandatory explicit9category → domain/service/UI
+→4-argument guarded create_ticket → atomic ticket/creation snapshot/audit. Старият3arg
+write отказва; старитеNULL остават. ticket_contexts е auth-only guarded projection само
+на scope id/label по current manage_tickets, без registry grant или existing-ticket gate.
+Workspace/navigation използва свежия DTO, а UI различава empty/no-access/error/loading.
+PR8 е интегриран в PR9 чрез e9a5f29, запазени parents и приложенаSQLверсия. Новата
+20261104212948 е само локална;10DB+9UI/build/navigation PASS не е hosted/MVCC PASS.
+Standalone hosted apply чака съгласуван cutover за стария live3argклиент.
+
+
 ## P1 лична финансова проекция — ограничено hosted приемане
 
 Account workspace има отделни owner-finances domain/service/controller/UI/BG модули.
@@ -67,7 +79,7 @@ erDiagram
 
 ### FND-F05 — publish A/B: ограничено hosted приемане, frontend release предстои
 
-Exact [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) е приложена на 03.11.2026 след single-candidate dry-run/hash gate. При приемането на A backend имаше29 миграции/39 public+private приложни таблици. При B/2 и отделната feed поправка бяха31 миграции; след payment/account/inbound са34; клонът има30 SQL файла, защото приложената PR #8 версия е отделна. B/2 не добавя таблици. Три public таблици и една private receipt таблица, всичките с RLS. Няма промяна на старите SQL, нови Auth акаунти или deployment. Frontend е draft PR #9, извън main/production.
+Exact [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) е приложена на 03.11.2026 след single-candidate dry-run/hash gate. При приемането на A backend имаше29 миграции/39 public+private приложни таблици. При B/2 и отделната feed поправка бяха31 миграции; след payment/account/inbound са34; тогава клонът имаше30 SQL файла без отделната PR #8 версия; актуалният P2 включва историята ѝ. B/2 не добавя таблици. Три public таблици и една private receipt таблица, всичките с RLS. Няма промяна на старите SQL, нови Auth акаунти или deployment. Frontend е draft PR #9, извън main/production.
 
 ```mermaid
 erDiagram
@@ -94,7 +106,7 @@ M/L/D/T/P са отделни; T е текущата сървърна дата E
 
 ### FND-F05 — целево hosted API/UI/MVCC приемане
 
-Exact `20261102152437_financial_preview.sql` и петте зависими миграции са приложени: 28 hosted миграции / 35 приложни таблици. Клонът има 27 SQL файла, защото вече приложената handling версия е в отделния PR #8. Immutable `financial_previews` пази server-derived rule/share/date/basis/R и проверен ownership context. Целевите API/RLS/stale/same-JWT/UI проверки и осем контролирани MVCC случая преминаха с независими PostgreSQL сесии и наблюдавани waiters преди release. Проверени са replay/conflict, edit/review, phantom writer/NOWAIT и read-barrier сценарии; това не е гаранция за всички възможни interleavings или load test. Собствениците не получават лична сума/дълг; account links не участват. Frontend остава draft PR #9, извън main/production.
+Exact `20261102152437_financial_preview.sql` и петте зависими миграции са приложени: 28 hosted миграции / 35 приложни таблици. Тогава клонът имаше27 SQL файла без отделната handling версия; тя вече е включена чрез PR #8 интеграцията. Immutable `financial_previews` пази server-derived rule/share/date/basis/R и проверен ownership context. Целевите API/RLS/stale/same-JWT/UI проверки и осем контролирани MVCC случая преминаха с независими PostgreSQL сесии и наблюдавани waiters преди release. Проверени са replay/conflict, edit/review, phantom writer/NOWAIT и read-barrier сценарии; това не е гаранция за всички възможни interleavings или load test. Собствениците не получават лична сума/дълг; account links не участват. Frontend остава draft PR #9, извън main/production.
 
 ```mermaid
 erDiagram
@@ -147,7 +159,7 @@ erDiagram
 
 Правната опора е текстът на ЗУЕС чл.48 ал.1/3, проверен на02.11.2026 в официалното издание на МРРБ до ДВ49/2025. Пълна приложимост/кворум/актуалност за конкретен период не са автоматично удостоверени: legal_status=text_checked, записите needs_review. Идеални части на сградата не са съсобственически дялове; липсващ DB/API набор не се измисля или нормализира. Бъдеща активация изисква затворен правен договор и отделно изрично право.
 
-Категория/отговорник: `ticket-handling` domain/BG ресурси → controller/UI → `ticket_assignees` и `update_ticket_handling` RPC. Сървърът проверява текущо `manage_tickets`, точния scope и активните назначения/периоди на получателя. Общата revision със статуса използва PT409; `handling_changed` пази before/after и причина. Отнетото назначение остава в историята, но не дава достъп. Няма нови таблици или capabilities. Exact `20261102080729` е приложена и hosted приемането премина:22 SQL файла/22 миграции/28 таблици, current/stale409/history/direct-DML/foreign/recipient/editor revoke с непроменени JWT. Реалният локален frontend към hosted backend е проверен; frontend остава draft PR #8, не main/production.
+Категория/отговорник: `ticket-handling` domain/BG ресурси → controller/UI → `ticket_assignees` и `update_ticket_handling` RPC. Сървърът проверява текущо `manage_tickets`, точния scope и активните назначения/периоди на получателя. Общата revision със статуса използва PT409; `handling_changed` пази before/after и причина. Отнетото назначение остава в историята, но не дава достъп. Няма нови таблици или capabilities. Exact `20261102080729` е приложена и hosted приемането премина:22 SQL файла/22 миграции/28 таблици, current/stale409/history/direct-DML/foreign/recipient/editor revoke с непроменени JWT. Реалният локален frontend към hosted backend е проверен; историята на PR #8 вече е включена в PR #9; frontend не е main/production. Числата22/28 са от тогавашното hosted приемане.
 
 HTML/CSS/vanilla JavaScript/Bootstrap, Node/npm/Vite multi-page; Supabase DB/Auth/Storage и един JS Edge handler през supabase-js, REST/RPC и server-only S3 SDK. Няма React/Vue/TypeScript. Десет HTML входа са изрични във vite.config.js. Controllers са в src/pages, UI renderer-и в src/ui, операции в src/services, чисти правила в src/domain, ресурси/стилове в src/i18n и src/styles.
 

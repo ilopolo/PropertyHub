@@ -23,7 +23,7 @@ try{
   await page.goto('http://127.0.0.1:5173/pages/tickets.html');if(label)await page.locator('#ticket-list[data-ready=true]').waitFor();else await page.getByText('Влез с потвърден акаунт за разрешените сигнали.').waitFor();return page;
  }
  const owner=await open('owner');assert.equal(await owner.locator('#ticket-unit option').count(),1);assert.equal(await owner.locator('input[type=file]').count(),0);
- await owner.locator('#ticket-title').fill('Synthetic: теч в общата тръба');await owner.locator('#ticket-description').fill('Синтетичен сигнал за локалния тест. Няма лични данни.');await owner.locator('#new-ticket button').click();await owner.locator('[data-ticket]').waitFor();
+ await owner.locator('#ticket-category').selectOption('other');await owner.locator('#ticket-title').fill('Synthetic: теч в общата тръба');await owner.locator('#ticket-description').fill('Синтетичен сигнал за локалния тест. Няма лични данни.');await owner.locator('#new-ticket button').click();await owner.locator('[data-ticket]').waitFor();
  const id=(await f.db.query('select id from public.work_items')).rows[0].id;
  assert.equal((await f.db.query('select reporter_profile_id from public.work_items')).rows[0].reporter_profile_id,f.profile.owner);
  assert.equal(await owner.locator('[data-ticket] form').count(),0);checks.push('owner create through real service/SDK/HTTP; correct persisted author/unit; no staff/file controls');

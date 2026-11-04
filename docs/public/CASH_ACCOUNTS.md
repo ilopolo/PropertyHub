@@ -40,8 +40,9 @@ Allowlist отказва неизвестни полета, контролни �
 
 Всяка операция добавя неизменима версия и audit с actor, време, причина и
 before/after. Деактивирането е еднопосочно, пази четенето/историята и не позволява
-редакция или реактивиране. Няма DELETE. Бъдещият posting процес трябва атомарно
-да отказва ново използване на неактивна сметка; той **още не е реализиран**.
+редакция или реактивиране. Няма DELETE. Локалният [inbound posting кандидат](PAYMENT_INBOUND.md)
+атомарно отказва ново първично използване на неактивна сметка; историческата компенсация
+остава по original account/version според отделно приетия договор.
 
 ## Server/API
 
@@ -75,16 +76,11 @@ admin/read_rules/owner отказ, чужд scope, невалидни данни
 две теми, reload/navigation и отделни loading/empty/no-access/no-context/error.
 Това **не е hosted Auth/PostgreSQL/MVCC PASS**. Fixtures не използват постоянния demo.
 
-Следващият пакет е атомарната [payment↔movement интеграция](MANUAL_PAYMENTS.md#следващ-атомарен-db-пакет-и-общ-paymentmvcc-gate):
-сървърно избрана/проверена explicit account ID+version, цялото първично постъпление
-с unique payment/source връзка, allocations без второ постъпление, проследима
-компенсация и неизменен оригинал. Няма автоматичен backfill на стари плащания.
-Компенсация през неактивна сметка остава отказана по текущия domain договор до
-отделен изрично приет исторически correction процес.
+Атомарната [payment↔movement интеграция](PAYMENT_INBOUND.md) вече е локален кандидат20261104114357. Новото първично постъпление изисква explicit ACTIVE account ID/version. Приетата пълна еднократна историческа compensation използва account ID/version/snapshot от original movement, включително след деактивиране, без activation; current record_payments+correct_finance и explicit date/reason. Replacement изисква отделно избрана ACTIVE account и конкретна причина при друга account ID, не трансфер/refund. Няма automatic backfill.
 
 Общото бъдещо hosted приемане изисква fresh project/history/hash/dry-run и отделно
 разрешение за apply. Първо manual payment `20261104080554`, после account config
-`20261104110007`, после бъдещата inbound миграция. Няма такава трета миграция тук.
+`20261104110007`, после inbound20261104114357. И трите остават НЕПРИЛОЖЕНИ; [общият точен план и hashes](PAYMENT_INBOUND.md#общ-hostedmvcc-acceptance-план--не-е-изпълнен).
 Проверяват се ordinary-session rights/UI, same-JWT revoke и независими PostgreSQL
 sessions с наблюдавани waiters: edit/edit и edit/deactivate дават един допустим
 резултат и stale409 без изгубена версия; posting/deactivate, duplicate receipt,

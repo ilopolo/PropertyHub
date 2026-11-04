@@ -27,13 +27,17 @@ account/context, owner и финансови feeds. Той не създава �
 
 ## Стек и граници
 
+### Атомарен manual payment↔inbound — локален DB-26 кандидат
+
+Нова20261104114357 добавя immutable money_movements и exact operation receipts. Guarded inbound record/reverse/replace използват съществуващото payment bookkeeping в една transaction; deferred new-payment completeness и unique payment/source/reversal пазят цялото posting. Старите receipt-only writes отказват, allocation/read остават. Compensation извежда exact original account/version дори след deactivation; replacement към explicit ACTIVE account. Няма legacy backfill или пълен баланс. 14локални DB/RLS/upgrade групи и реален UI/service са PASS; **hosted/MVCC няма**. [Договор и общ acceptance план](PAYMENT_INBOUND.md).
+
 ### Парични сметки — локална DB-21 конфигурация
 
 Нова20261104110007 добавя cash_accounts, immutable cash_account_versions и private actor/key receipts. Explicit scoped manage_cash_accounts управлява само конфигурация; read_payments/record_payments позволяват scoped historical read без редакция. RPC/RLS/identity/history guards пазят revisions и account identity; няма client DML/delete/auto-account/fund mapping. Finances/workspace и Екип и права използват съществуващите слоеве. Локалното DB/RLS/service/browser приемане не е hosted/MVCC. [Договор и следваща атомарна payment↔movement зависимост](CASH_ACCOUNTS.md).
 
 ### Manual receipts — локален, неприложен пакет
 
-Нова20261104080554 добавя immutable payments/payment_allocations и private actor/key receipts. Guarded record/allocate/reverse/replace RPC проверяват explicit scoped права, revisions, personal remainder и unallocated credit. Payment writes и unpaid publish/correction споделят scope advisory lock; any allocation history блокира unpaid корекция на съответния batch. Старите charge/party snapshots не се променят. Ръчното отчитане не е cash/bank balance или bank confirmation; unique inbound posting по stable payments.id е задължителна следваща стъпка.
+Нова20261104080554 добавя immutable payments/payment_allocations и private actor/key receipts. Guarded record/allocate/reverse/replace RPC проверяват explicit scoped права, revisions, personal remainder и unallocated credit. Payment writes и unpaid publish/correction споделят scope advisory lock; any allocation history блокира unpaid корекция на съответния batch. Старите charge/party snapshots не се променят. Ръчното отчитане не е cash/bank balance или bank confirmation; unique inbound posting по stable payments.id е реализиран в отделния локален DB-26 кандидат по-горе.
 
 11локални DB/RLS/domain групи и actual isolated UI/service/build/navigation са PASS; **hosted/MVCC не е изпълнен**. [Договор и бъдещо приемане](MANUAL_PAYMENTS.md). Owner financial projection/paid charge corrections/ledger са извън този ограничен пакет, без да отпадат от MVP.
 

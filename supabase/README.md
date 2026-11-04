@@ -1,12 +1,21 @@
 # Supabase — setup, схема и проверки
 
+## DB-26 atomic payment↔inbound — локален кандидат
+
+[20261104114357_payment_inbound_movements.sql](migrations/20261104114357_payment_inbound_movements.sql) е **НЕПРИЛОЖЕНА**. LF SHA-256 `ef5895232c1b87830d07c4749760d7ae7079e77a1614e03b7e6cae8286821aa1`. Предходните SQL са непроменени. 14нови domain/DB/RLS/upgrade групи,11засегнати manual-payment групи, account compatibility и реален isolated UI/service са локално проверени. **Общ hosted/PostgreSQL/MVCC PASS няма.**
+
+Receipt+exact1full inbound са атомарни; allocations не създават cash. Explicit active account/version, immutable historical compensation след deactivation, atomic replacement с причина при различна account. Old receipt-only paths отказват writes; old history/allocations остават, без backfill или доказана наличност. [Пълен договор, точни RPC, трите hashes и общ setup/assertions/MVCC/cleanup план](../docs/public/PAYMENT_INBOUND.md).
+
+Бъдещ exact apply ред след отделно разрешение/fresh history/hash/dry-run: manual20261104080554 → accounts20261104110007 → inbound20261104114357. Никакъв apply/credentials/setup/deployment не е извършен тук. Main/live няма payment UI и остава съвместим; новият frontend се публикува след своите schema зависимости и hosted gate.
+
+
 ## DB-21 парични сметки — локален кандидат
 
 [20261104110007_scoped_cash_accounts.sql](migrations/20261104110007_scoped_cash_accounts.sql) е **НЕПРИЛОЖЕНА**. SHA-256: `8d62ba590b6c1c970bf87e27b9e9c0c1539412446fd1d709c8de9cfb3ea6a4e0`. Предходните SQL файлове са непроменени. Осем DB/domain/RLS групи и изолиран реален UI/service са локално проверени; **hosted/MVCC няма**. Не се конфигурира нищо в hosted проекта с този пакет.
 
 `manage_cash_accounts` е explicit scoped manager/cashier subset чрез съществуващия org-admin assignment lifecycle. Не е admin наследяване; read_payments/record_payments четат без управление. Immutable identity/versions, reason/revision, guarded RPC/RLS и deactivation пазят историята. Няма movements или balance. [Пълният договор, RPC, локални команди и бъдещото hosted приемане](../docs/public/CASH_ACCOUNTS.md).
 
-Бъдещият exact apply ред е неприложената manual-payment20261104080554 → account-config20261104110007 → все още НЕсъздадената atomic inbound миграция. Преди него: fresh target/history/hash/dry-run и отделно разрешение. Main/live не използва тези нови таблици/права; промяната е additive и не променя старите RPC или snapshots. Не пускай новия frontend преди неговата schema зависимост.
+Бъдещият exact apply ред е неприложената manual-payment20261104080554 → account-config20261104110007 → inbound20261104114357. Преди него: fresh target/history/hash/dry-run и отделно разрешение. Main/live не използва тези нови таблици/права; промяната е additive и не променя старите RPC или snapshots. Не пускай новия frontend преди неговата schema зависимост.
 ## DB-26 inbound — само чист domain модул
 
 `src/domain/payment-movements.js` подготвя детерминирано цялото постъпление и
@@ -34,7 +43,7 @@ PGlite/localparallel не е PostgreSQL/MVCC доказателство.
 четене/запис/отнасяне, а корекция изисква и `correct_finance`. Няма admin/read_rules
 наследяване. Платецът не сменя длъжника или начислителните snapshots.
 Ръчното отчитане **не е банково потвърждение и не променя касова/банкова наличност**.
-DB26 inbound `money_movement` по stable payments.id остава задължителен следващ пакет;
+DB26 inbound `money_movement` по stable payments.id вече е отделният локален кандидат по-горе;
 пълният payment MVP не е приключил. Owner partial financial projections остават отделни.
 
 ```powershell
@@ -43,7 +52,7 @@ npm.cmd run check:manual-payments-browser
 ```
 
 [Договор, точни RPC, setup/cleanup и бъдещ hosted/MVCC план](../docs/public/MANUAL_PAYMENTS.md).
-След отделно разрешение: fresh project/history/hash и един pending candidate → exact
+След отделно разрешение: fresh project/history/hashes и точните три pending candidates → exact
 dry-run/apply/post-apply → ordinary synthetic API/UI → independent PostgreSQL barriers
 с observedwaiters → own-onlycleanup със запазена финансова/audit история.
 Не прилагай повторно старите31версии и не използвай PH-DEMO-V1/preview4173 за QA.

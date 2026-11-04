@@ -2,14 +2,9 @@
 
 ## Статус и граница — 04.11.2026
 
-Само локално проверен кандидат `20261104080554_manual_payment_allocations.sql`
-в draft PR #9. **Не е приложен hosted; payment API/UI/MVCC PASS няма.** Предходните
-B/2 и Publish A rollover доказателства не доказват този нов процес.
+Локално проверени manual20261104080554, account20261104110007 и atomic inbound20261104114357 кандидати в draft PR #9. **И трите са неприложени; общ payment/account/hosted/MVCC PASS няма.** Предходните B/2 и Publish A rollover доказателства не доказват новия процес.
 
-Ръчното отчитане не е банково потвърждение, получаване на средства през приложението
-или промяна на касова/банкова наличност. DB-26 изискването за едно inbound
-`money_movement` остава **задължителен следващ зависим пакет**, не отпаднал MVP обхват.
-Няма разходи, фондови движения, банкови услуги или owner финансов портал.
+Ръчното отчитане не е банково потвърждение или получаване през приложението. Плащането и точно едно full inbound вече се записват атомарно в локалния DB-26 кандидат; не се изчислява пълен касов/банков баланс. Няма разходи, фондови движения, банкови услуги, opening balances или owner финансов портал. [Точният интегриран договор и общото бъдещо приемане](PAYMENT_INBOUND.md).
 
 ## Права и данни
 
@@ -34,7 +29,7 @@ ownership и account-person link не дават payment достъп. Owner par
 
 ## Процес и инварианти
 
-1. `record_manual_payment(scope,payload,request_key,note)` създава immutable receipt.
+1. `record_manual_payment_inbound(scope,account_id,account_revision,payload,request_key,note)` създава immutable receipt и точно едно full inbound атомарно.
    Първоначално цялата сума е неразнесена; няма implicit FIFO или автоматичен debtor.
 2. `allocate_manual_payment(scope,payment_id,expected_revision,obligation_party_id,amount,request_key,note)`
    покрива точно избрания личен ред. Charge, person, scope и остатъкът се извеждат
@@ -58,12 +53,12 @@ fixed search_path, ограничени grants, operation receipt и audit.
 
 ## Отмяна, корекция и начислителни snapshots
 
-`reverse_manual_payment` изисква точната текуща revision и двете права. Добавя
+`reverse_manual_payment_inbound` изисква точната текуща revision, двете права и изрична compensation_date. Добавя
 свързан отрицателен payment и отрицателни allocations, освобождаващи само старите
 покрития. Оригиналите не се редактират/изтриват. Това е отмяна на отчетения запис,
 **не банков refund** или реално изходящо движение.
 
-`replace_manual_payment` прави същата отмяна и нов положителен receipt атомарно,
+`replace_manual_payment_inbound` прави същата отмяна/whole compensation и нов положителен receipt/inbound атомарно,
 с връзка към оригинала. Новата сума остава неразнесена до ново изрично указание;
 старите allocations не се копират. Историята пази причината, actor и връзките.
 Повторени отмени/корекции не създават втора reversal операция.
@@ -74,10 +69,7 @@ Published charge/party snapshots остават неизменни. Unpaid full-
 template; необходим е бъдещ отделен payment-aware charge correction договор.
 Само неразнесен receipt не блокира корекция на непокрит batch.
 
-`payments.id` е стабилната връзка за бъдещия `money_movements.payment_id` с unique
-source constraint. Следващият пакет трябва да сверява вече съществуващите receipts/
-reversals и cutover/provenance, да записва постъплението веднъж и да не създава ново
-плащане или allocations. Засега няма cash/fund balance и няма такъв posting engine.
+`payments.id` вече има unique стабилна връзка с `money_movements.payment_id` в локалния inbound кандидат. Корекцията използва original account/version snapshot, включително след деактивиране. Replacement изисква ACTIVE account/version и конкретна причина при различен account ID. Старите receipt-only record/reverse/replace входове са fail-closed; allocation/historical read се пазят. Няма backfill на стари receipts или пълен balance engine. [Подробности и API](PAYMENT_INBOUND.md).
 
 ## DB-26 inbound — чист domain договор, 04.11.2026
 
@@ -89,7 +81,8 @@ npm.cmd run check:payment-movements
 ```
 
 **8 синтетични domain групи PASS.** Това не е DB/RLS/API/hosted/MVCC приемане и
-не завършва DB-26. Manual-payment migration остава неприложена; този пакет няма SQL.
+самостоятелно не завършва DB-26. Pure helper няма SQL; отделната локална интеграция
+е описана в [PAYMENT_INBOUND](PAYMENT_INBOUND.md). Трите миграции остават неприложени.
 
 ### Изрични входове и сметка
 
@@ -128,14 +121,14 @@ server projections, не произволен клиентски payload:
 `payment_id`, scope/account/currency, `kind='payment_receipt'`, `direction='in'`,
 цялата положителна `amount` и точните integer-string `amount_cents`, дата и произход.
 Стойностите използват съществуващите money validators и BigInt, без float/rounding.
-Самото `id` на бъдещия DB movement се назначава от сървъра; source key не е измислен
+Самото `id` на DB movement се назначава от сървъра; source key не е измислен
 UUID на вече записан ред.
 
 120получени с40отнесени+80свободни → едно намерение за120. След ново отнасяне
 100+20или120+0 изходът е **идентичен**. Allocation state се валидира, но не участва
 в идентичността или съдържанието на движението. Няма втори приход за всеки личен ред.
 Същият payment UUID има същия source key при повторение и различен входен ред.
-Промяна на account/сума под същия key не разрешава втори запис: бъдещият server
+Промяна на account/сума под същия key не разрешава втори запис: локално реализираният server
 трябва да провери immutable input и да върне съществуващ резултат или HTTP409.
 
 ### Компенсация и корекция
@@ -147,7 +140,7 @@ compensation_date,as_of_date,reason})` изисква:
   Само payment ID или липса на движение не е достатъчна за автоматична компенсация.
 - Negative `kind='reversal'` payment с отделен UUID, точен `reversal_of_id` към
   оригиналния payment, същите scope/валута/метод/изходна дата и цялата обратна сума.
-- Същата изрично активна account конфигурация; няма прехвърляне към друга сметка.
+- Точната историческа account конфигурация от original movement snapshot, валидна при първоначалния запис. Текущата сметка може вече да е деактивирана; няма unarchive или прехвърляне. Pure validator получава този доверен snapshot, не променена текуща проекция.
 - Изрична причина и дата от оригиналната дата до `as_of_date`, включително границите.
   Това е ограничение на този първи технически договор, не правило за правно или
   счетоводно backdating. Не се избира тихо датата на оригинала или текущият ден.
@@ -155,10 +148,9 @@ compensation_date,as_of_date,reason})` изисква:
 Резултатът е положителна цяла сума с `direction='out'`, `kind='payment_reversal'`,
 source key по reversal payment UUID и точни `reversal_of_id`/`reversal_of_key` към
 оригиналното движение. Оригиналът остава непроменен. Това е компенсиращ отчетен запис,
-не банков refund или expense payment. Archived account/correction-date policy извън
-тези граници остава блокирана; модулът не я заобикаля чрез друга сметка.
+не банков refund или expense payment. Приетият historical compensation договор използва original stored account/version, current record_payments+correct_finance, explicit date/reason и unique original reversal. Други случаи извън тези граници не се заобикалят чрез друга сметка.
 
-При replacement бъдещата транзакция трябва да свърже стария receipt, компенсацията
+При replacement реализираната локална транзакция свързва стария receipt, компенсацията
 и новия receipt с отделното му изрично избрано account основание. Няма автоматичен
 трансфер, копиране на allocations или промяна на личните начислителни snapshots.
 
@@ -175,44 +167,11 @@ source key по reversal payment UUID и точни `reversal_of_id`/`reversal_o
 1500.03или1000.06EUR в QA историята не доказва получени пари и не се преобразува в cash.
 Domain приемането тук не установява действителното наличие на стари payments hosted.
 
-### Следващ атомарен DB пакет и общ payment/MVCC gate
+### Атомарен DB-26 кандидат и общ payment/MVCC gate
 
-1. Първо зависимият приложен account-configuration пакет, описан по-долу, и
-   проверима конфигурация/provenance, без наследяване от admin роли.
-   Нова отделна миграция; committed20261104080554 не се
-   редактира. Ръчното receipt-only API не трябва да остане bypass за normal postings:
-   versioned atomic write с изричен account или конкретен fail-closed отказ.
-2. Нормално получаване: текущи права + locked account/scope/currency/source → receipt
-   и точно едно inbound движение за цялата сума в една транзакция. Няма частичен receipt
-   без задължителното му posting. Future unique(payment_id)/source key, FK и canonical
-   payload/receipt проверки осигуряват реалната идемпотентност.
-3. Allocation променя само coverage/remainder. Cancellation/replacement атомарно
-   пази оригинала, counter-allocations и съответната whole compensation; exact original
-   FK + unique reversal guard изключват двойна компенсация. Всички financial writes
-   споделят договорения lock order и безопасния HTTP409 конфликтен механизъм.
-4. Общ local gate за receipt+movement+allocations+compensation, след това отделно
-   разрешено fresh hosted preflight на actual историята (последно31), exact hashes/
-   подредените pending manual и бъдещия inbound кандидат, dry-run и проверка на
-   съвместимостта. Няма fixtures или обещание за PASS преди завършената схема.
-5. Ordinary-session API/UI assertions плюс независими PostgreSQL transactions с
-   controlled barrier/observer/waiter: duplicate receipt/posting, two allocations към
-   един остатък, cancellation срещу allocation, duplicate compensation/replacement и
-   payment срещу unpaid correction. Един цял допустим резултат или timely409; няма
-   double cash, orphan posting, overcoverage или частична корекция.
-6. Same-JWT revoke, missing/archived/wrong-scope account и spoofed source откази;
-   непроменени A/B snapshots/demo/personal baseline. Unknown result → exact receipts/
-   movement IDs inspect преди retry. Own-only cleanup със запазена финансовa/audit
-   история и отделен запис за transition resources. Без PH-DEMO-V1 mutations.
+Интеграцията вече е локално реализирана в новата20261104114357. Предходните SQL са непроменени. [PAYMENT_INBOUND](PAYMENT_INBOUND.md) определя всички RPC, constraints/receipts/locks, приетата историческа compensation, новите14локални групи и точния общ hosted/MVCC acceptance план за трите кандидата. Не е изпълняван hosted и няма automatic backfill.
 
-Този план не е DB-26 реализация или разрешение за apply. Account lifecycle е
-реализиран в отделния локален DB-21 кандидат. DB-26 posting RPC/constraints,
-атомарност, transition и hosted/MVCC приемането още предстоят.
-
-### Конфигурация на парични сметки — следващият локален кандидат
-
-DB-21 вече е локално реализиран и проверен, с неприложена20261104110007. [CASH_ACCOUNTS](CASH_ACCOUNTS.md) определя единственото право manage_cash_accounts, explicit org-admin назначения, scoped read-only, неизменима икономическа идентичност, version/reason/history и еднопосочно деактивиране. Това не променя manual-payment allocations и не записва постъпление.
-
-Следва само отделната атомарна payment↔movement DB-26 интеграция и общото hosted/MVCC приемане. Не се backfill-ват старите синтетични плащания автоматично. Текущият domain отказва компенсация през неактивна сметка; историческият correction policy извън тази граница още изисква отделно решение.
+Приложната account конфигурация е отделният локален DB-21 кандидат с manage_cash_accounts; payment права не я редактират. [CASH_ACCOUNTS](CASH_ACCOUNTS.md) остава водещ за конфигурацията. Няма движение от самото създаване/редакция на account.
 
 ## Локално приемане
 

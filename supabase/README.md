@@ -50,6 +50,120 @@ PostgreSQL MVCC или естествения календарен rollover.
 
 ### Бъдещо hosted приемане — отделно разрешение
 
+#### Изпълним B/2 acceptance driver — 04.11.2026
+
+Driver-ът е реализиран и проверен с fake transports/adapters. **Реален hosted/MVCC
+run НЕ е изпълнен.** Предходните описания за несвързан provider/CLI са исторически.
+Няма нови зависимости, SQL миграции или production промяна в този harness пакет.
+
+От B/2 worktree, безопасно/offline по подразбиране:
+
+```powershell
+node scripts/run-financial-coowner-hosted.mjs
+node scripts/plan-financial-coowner-hosted.mjs
+node scripts/check-financial-coowner-provider.mjs
+node scripts/check-financial-coowner-harness.mjs
+```
+
+Последните две команди са само harness проверки с отделни synthetic adapters.
+Те не зареждат env credentials, не използват hosted DB/Auth и не доказват RLS/MVCC.
+Named RPC параметрите се сверяват с действителните локални migration signatures.
+
+**Файлове:** `financial-coowner-run.mjs` пази atomic manifest/baseline/intent/receipt;
+`financial-coowner-provider.mjs` прави concrete preflight/baseline/inspect;
+`financial-coowner-provider-cases.mjs` свързва setup/assertions/native races;
+`financial-coowner-transport.mjs` зарежда credentials и TLS/SDK само след gates;
+`financial-coowner-phases.mjs` координира фазите; `financial-coowner-barrier.mjs`
+използва independent pg.Client sessions; `financial-coowner-lock.mjs` възстановява
+само доказано dead local lock. Те са под scripts/helpers/.
+
+##### Предпоставки за бъдещ изрично разрешен run
+
+- Първо отделно exact apply/post-apply на candidate20261103171619; driver-ът НЕ
+  прилага миграции. Очакваната пълна история включва и вече applied PR#8 handling
+  версията, която не е във финансовия клон. Preflight изисква exact списък версии,
+  локален SQL hash, съществуващи RPC и точния project ref.
+- Reviewed ignored config съдържа само project/org_id/foreign_scope_id,
+  actors.A и actors.B с auth_id/profile_id, и expectedMigrations (целия exact списък).
+  Никакви пароли/URI/ключове в config. Използват се точните съществуващи synthetic
+  профили; организацията и съществуващият активен foreign scope са ИЗВЪН демото.
+  A трябва вече да има org_admin в тази недемо организация, B — активна membership.
+  Driver-ът не активира произволни memberships и не прехвърля org_admin; липсваща
+  предпоставка е конкретен blocker, не access PASS. Активният foreign scope трябва
+  действително да съществува и да не дава нужния финансов достъп на test actor.
+- Original checkout запазва PH-DEMO-V1 manifest. При init се pin-ват защитените IDs;
+  всяка online фаза изисква fresh demo boundary check. Старите hosted QA entrypoints
+  остават блокирани; този scoped driver не отключва legacy guard и не retire-ва demo.
+- Credentials се проверяват/зареждат само при бъдеща online фаза: original root
+  .env.finance-mvcc.local/FINANCE_QA_DATABASE_URL; .env.local/public Supabase URL/key;
+  .env.rls.local/RLS_A_EMAIL,RLS_A_PASSWORD,RLS_B_EMAIL,RLS_B_PASSWORD. Използва се
+  наличният pg helper и официалният CA под .local/financial-hosted-qa/. Existing DB
+  login трябва да има нужните SELECT/own-session cleanup/observer и SET ROLE права;
+  не добавяй GRANT/CREATE ROLE. CLI token не е нужен за driver-а, защото няма apply.
+  TLS е rejectUnauthorized:true; client key е publishable/legacy anon, не operator.
+
+Примерна форма на игнорирания config (замени ID полетата с проверените synthetic IDs
+и пълния действителен списък; това не е готов manifest или измислена fixture история):
+
+```json
+{"project":"qfybswnezdzzahmozikr","org_id":"<non-demo-org-UUID>","foreign_scope_id":"<existing-non-demo-scope-UUID>","actors":{"A":{"auth_id":"<A-Auth-UUID>","profile_id":"<A-profile-UUID>"},"B":{"auth_id":"<B-Auth-UUID>","profile_id":"<B-profile-UUID>"}},"expectedMigrations":["<all-exact-applied-versions-including-B2>"]}
+```
+
+##### Изрични фази, resume и cleanup
+
+След отделно разрешение общите флагове са:
+
+```text
+--online --execute --allow-hosted --allow-mutations --allow-isolated-qa
+--project-ref qfybswnezdzzahmozikr
+--root <original-checkout> --manifest <original-checkout>/.local/b2-run/run.json
+--run <unique-canonical-run-UUID> --phase <phase>
+```
+
+Те се подават на `node scripts/run-financial-coowner-hosted.mjs` от B/2 worktree.
+Не изпълнявай тези флагове като част от offline подготовката.
+
+1. `init --config <ignored-config.json>`: само локален journal и защитени IDs;
+   credentials не се зареждат. Същият init/run/config може безопасно да се довърши
+   след прекъсване, без нов manifest или презаписване на друга история.
+2. `preflight`: pinned project/TLS/история/schema/actors/права и baseline преди
+   mutations. Повторен preflight пази текущата phase, а не връща готов run към setup.
+3. `setup`: маркирана QA сграда/scope с4units/5scoped persons, verified 60/40 и50/50
+   co-owner примери, exact shares и синтетично основание/activation/preview R500.03EUR.
+   M е supplied synthetic decision от preflight деня; actual membership трябва да
+   го покрива. Няма измислена по-ранна membership история при преминаване в нов ден.
+4. `assertions`: positive exact personal/unit/R, incomplete/period gates, foreign
+   scope и forged fields/persons, unsupported ownership mode, stale input/revision,
+   same-JWT revoke (без refresh), replay/business duplicate, unpaid full-batch
+   reversal/replacement и immutable предходни A snapshots. Резултатите на завършените
+   групи се checkpoint-ват; request/config грешка не е permission PASS.
+5. `mvcc`: втори изцяло отделен маркиран4unit/5person fixture за actual original
+   publish/publish; primary fixture за publish/input writer и unpaid correction
+   race. Independent holder/contender/observer PIDs, validated ordinary claims,
+   observed waiter преди release, bounded deadlines и finally на собствените
+   connections. Общият планиран setup е2scopes/8units/10persons, НЕ demo ресурси.
+6. `reconcile`: първо authoritative exact actor/key receipt или конкретните IDs/
+   marker/revisions. Отсъствие на ред само по себе си НЕ доказва rollback. Unknown
+   outcome блокира нов write и cleanup. Lost in-memory JWT window или native race
+   без достатъчно записано waiter/result evidence НЕ се превръщат в PASS; запази
+   състоянието за inspect и отделно явно прегледан нов probe. Няма blind retries.
+7. `cleanup`: само own temporary IDs с exact successful creation receipts;
+   sessions се затварят след scoped roles.403/failed cleanup не маркира resource
+   като closed. Financial/source/batch/reversal/audit history и marked scope records
+   остават в manifest; няма destructive финансово изтриване или broad restore.
+   Предходните A/demo/personal/assignment baseline hashes трябва да останат същите.
+
+Lock recovery: същите explicit флагове плюс `--phase recover-lock --owner-pid <PID>`.
+Изисква exact run/PID/hostname и доказан dead process. Live/unknown/чужд host или
+невалиден lock отказват; age не е критерий. Старият lock се архивира; pending
+операцията не се изчиства. След това първо reconcile, никога blind setup/publish.
+Прекъснат recovery guard/нееднозначен state изисква inspect, не автоматично крадене.
+
+След реален cleanup изчисти временния локален operator URI след сверка. Не трий
+demo credentials/назначения или retained financial/audit rows. Публикуваните QA
+суми са синтетични, не реални клиентски плащания. Natural Publish A rollover04.11+
+остава отделна задача; driver-ът не променя часовника и не го стартира автоматично.
+
 1. Прегледай PH-DEMO-V1 guard/manifest; подготви **отделен** изрично разрешен scope
    и baseline за временните назначения. Не използвай demo ресурси за revocation,
    destructive/concurrency QA. B demo е org_admin+cashier, не pure cashier proof.

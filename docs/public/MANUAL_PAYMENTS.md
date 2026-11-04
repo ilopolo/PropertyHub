@@ -32,8 +32,20 @@ deadlines и finally затваряне. Проверени са duplicate recei
 за един payment и за един личен остатък; двете подредби allocation/reversal; duplicate
 compensation; competing replacements; allocation, което печели срещу прегледана
 unpaid batch correction. Няма двойни/частични postings, overcoverage или променени
-стари charge/party snapshots. Обратната подредба на последния unpaid batch race не е
-отделно hosted доказана; това не е изчерпателно покритие на всички interleavings.
+стари charge/party snapshots. На 04.11.2026 е изпълнен отделно **само обратният unpaid
+race**, без повторение на тези 11 случая: B публикува валидна прегледана unpaid correction
+като holder; independent A allocation към стария party е наблюдаван waiter преди release.
+След holder commit то отказва `PT409/payment_obligation_not_current`. Committed са цели
+original/reversal/replacement batches, по 4 начислителни и 6 лични реда; old snapshots са неизменни.
+Няма allocation или негов operation receipt, а платежният запис от 1.00 EUR остава изцяло неразнесен.
+Двете конкретни подредби вече са hosted доказани; не се твърдят всички interleavings.
+
+Отделният run пази 3 синтетични пакета начисления, 12 начислителни и 18 лични реда, 1 плащане и 1 inbound, без отнасяния.
+Cleanup е PASS: 4 собствени назначения (включително отнетия initial setup grant), 5 собствени сесии,
+деактивирана получаваща сметка и собствен scope/assignment, възстановен membership
+и непроменен защитен baseline; Auth акаунтите остават 7. Финансовата/audit история се пази.
+Операторският DB URI е изчистен; CLI token не е нужен/зареждан. Общите retained counts
+след този run са 24 payments, 24 movements и 10 allocations. Няма нова миграция или product fix.
 
 Реален локален Vite/Edge frontend към hosted проекта на отделен QA порт: receipt
 1.00 EUR → explicit allocation 0.01 → остатък 0.99 → атомарна корекция с нов receipt
@@ -41,7 +53,7 @@ unpaid batch correction. Няма двойни/частични postings, overco
 няма correction действия. Reload/navigation и четири лично прегледани screenshots
 375/1440, light/dark са PASS. Това е feature frontend, не production/live smoke.
 
-Cleanup PASS: шест собствени сметки са деактивирани, девет run назначения са
+Cleanup на първоначалния payment run PASS: шест собствени сметки са деактивирани, девет run назначения са
 оттеглени, временно активираният membership е върнат към baseline. Собствените Auth
 сесии и native транзакции/връзки са затворени. Остават **23 синтетични payment реда**
 (17 receipts: 11 валидни и 6 отменени; 6 reversal реда), 23 movements, 10 allocation
@@ -61,6 +73,23 @@ fixtures са от предходните локални проверки; но�
 main release; текущото приемане **не разрешава merge/deployment**. Не се повтарят
 apply/setup или завършените набори без засегната промяна. За нов run се изискват нов
 marker/baseline, изрично разрешение и exact history inspect, не replay на този manifest.
+
+
+### Legacy upgrade: local-only граница и текущ release
+
+Запазеният локален upgrade fixture съдържа receipt преди inbound миграцията. Проверява
+се, че след apply старият payment row е непроменен, movements остават 0, историческият
+feed го чете и новата компенсация отказва с 23514 вместо да измисля movement. Това е
+**локално PGlite доказателство**, не hosted upgrade на непразна payment база.
+
+При реалния apply payment таблиците бяха празни. Тесният SELECT от обратния race
+потвърди 24 payments, 24 movements и 0 payments без movement. Затова липсата на nonempty
+hosted upgrade тест **не блокира текущия frontend release към тази вече мигрирана база**,
+при запазени fail-closed legacy write входове и без внос/конвертиране на стари receipts.
+Това не е общо разрешение за release или доказателство за реален legacy cutover.
+Преди приемане/конвертиране на исторически платежни записи е нужен отделен контролиран
+manifest/document/account-version/date/duplicate и hosted acceptance gate. Няма backfill
+или историческо преобразуване в този пакет.
 
 ## Права и данни
 

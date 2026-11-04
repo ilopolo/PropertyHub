@@ -10,7 +10,7 @@
 manual payment → explicit allocation/остатък и точно едно цялостно inbound, explicit
 active EUR account/version, неизменима историческа компенсация след деактивиране и
 атомарен replacement. Трите точни миграции са приложени:34 версии. Осем API групи,
-11 native PostgreSQL races с наблюдавани waiters и реален local frontend→hosted UI
+11 native PostgreSQL races с наблюдавани waiters плюс отделният обратен unpaid race, и реален local frontend→hosted UI
 са проверени. Cleanup оттегли само временните права/сесии и деактивира собствените
 сметки; синтетичната финансова/audit история е запазена, protected baseline е непроменен.
 Няма automatic legacy backfill, банково потвърждение, пълен баланс или завършен

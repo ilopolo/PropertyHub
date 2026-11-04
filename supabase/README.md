@@ -14,6 +14,20 @@
 Cleanup пази финансовите/audit записи, старите snapshots и PH-DEMO-V1; временните
 CLI token и DB URI са изчистени. Source frontend още не е в main/production.
 
+### Обратен unpaid race — отделно hosted доказателство,04.11.2026
+
+Само липсващото подреждане е изпълнено: reviewed unpaid correction holder commit →
+наблюдаван independent allocation waiter към стар party → PT409/payment_obligation_not_current.
+Пълни committed reversal/replacement,immutable original,няма allocation или operation receipt,
+платежен остатък 1.00 EUR; verified TLS/officialCA и finally затворени independent connections.
+Първите 11 native случая, 8 API групи/UI и 34 миграции не са повтаряни. Новият marked nondemo scope
+и назначенията му са деактивирани/оттеглени,сметката archived,точният membership върнат;
+audit, 3 batches, 12 charges, 18 parties и 1 payment + movement са запазени. DB URI е изчистен.
+При final SELECT:24 payments, 24 movements, 10 allocations, 0 unposted. Nonempty legacy upgrade
+остава local-only,но не е blocker за текущия frontend към тази мигрирана база без legacy
+receipts; реален historical cutover е отделен acceptance gate,без automatic backfill.
+[Подробности и ограничения](../docs/public/PAYMENT_INBOUND.md).
+
 ### Setup/resume/cleanup за отделно разрешен бъдещ run
 
 Този run е приключен; не изпълнявай повторно apply/setup/cleanup по старите receipts.

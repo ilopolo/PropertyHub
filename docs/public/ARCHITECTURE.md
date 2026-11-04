@@ -17,7 +17,7 @@ account/context, owner и финансови feeds. Той не създава �
 
 Таблото показва разрешени действия без измислени показатели. Финансовите записи
 и действия предхождат разгъваемите технически подробности; preview не създава
-задължения, публикуването ги създава след отделен преглед, ръчните платежни записи са отделен локален кандидат без движение на средства.
+задължения, публикуването ги създава след отделен преглед, ръчните платежни записи и точно едно inbound са отделният ограничен hosted проверен поднабор, без пълен баланс.
 Зареждане, липса на контекст/право, празни записи и техническа грешка са различени.
 `npm run check:demo-ui` проверява локални синтетични роли в реален headless браузър
 с изолиран fixture transport. Това не е ново hosted/RLS/MVCC доказателство и не
@@ -27,19 +27,19 @@ account/context, owner и финансови feeds. Той не създава �
 
 ## Стек и граници
 
-### Атомарен manual payment↔inbound — локален DB-26 кандидат
+### Атомарен manual payment↔inbound — ограничено hosted приемане
 
-Нова20261104114357 добавя immutable money_movements и exact operation receipts. Guarded inbound record/reverse/replace използват съществуващото payment bookkeeping в една transaction; deferred new-payment completeness и unique payment/source/reversal пазят цялото posting. Старите receipt-only writes отказват, allocation/read остават. Compensation извежда exact original account/version дори след deactivation; replacement към explicit ACTIVE account. Няма legacy backfill или пълен баланс. 14локални DB/RLS/upgrade групи и реален UI/service са PASS; **hosted/MVCC няма**. [Договор и общ acceptance план](PAYMENT_INBOUND.md).
+Приложена20261104114357 добавя immutable money_movements и exact operation receipts. Guarded inbound record/reverse/replace използват съществуващото payment bookkeeping в една transaction; deferred new-payment completeness и unique payment/source/reversal пазят цялото posting. Старите receipt-only writes отказват, allocation/read остават. Compensation извежда exact original account/version дори след deactivation; replacement към explicit ACTIVE account. Няма legacy backfill или пълен баланс. 14локални DB/RLS/upgrade групи и реален UI/service са PASS; **8 API групи,11 native PostgreSQL races и tight UI към hosted са PASS**,34 приложени миграции. Financial/audit историята е запазена; временните права/сесии/credentials са изчистени. [Договор и общ acceptance план](PAYMENT_INBOUND.md).
 
-### Парични сметки — локална DB-21 конфигурация
+### Парични сметки — приложена DB-21 конфигурация
 
-Нова20261104110007 добавя cash_accounts, immutable cash_account_versions и private actor/key receipts. Explicit scoped manage_cash_accounts управлява само конфигурация; read_payments/record_payments позволяват scoped historical read без редакция. RPC/RLS/identity/history guards пазят revisions и account identity; няма client DML/delete/auto-account/fund mapping. Finances/workspace и Екип и права използват съществуващите слоеве. Локалното DB/RLS/service/browser приемане не е hosted/MVCC. [Договор и следваща атомарна payment↔movement зависимост](CASH_ACCOUNTS.md).
+Приложена20261104110007 добавя cash_accounts, immutable cash_account_versions и private actor/key receipts. Explicit scoped manage_cash_accounts управлява само конфигурация; read_payments/record_payments позволяват scoped historical read без редакция. RPC/RLS/identity/history guards пазят revisions и account identity; няма client DML/delete/auto-account/fund mapping. Finances/workspace и Екип и права използват съществуващите слоеве. Запазеното локално приемане е допълнено с ordinary-session CRUD/read-only и native config/deactivation vs receipt races; това не е изчерпателен concurrency/load тест. [Договор и следваща атомарна payment↔movement зависимост](CASH_ACCOUNTS.md).
 
-### Manual receipts — локален, неприложен пакет
+### Manual receipts — приложен ограничен пакет
 
-Нова20261104080554 добавя immutable payments/payment_allocations и private actor/key receipts. Guarded record/allocate/reverse/replace RPC проверяват explicit scoped права, revisions, personal remainder и unallocated credit. Payment writes и unpaid publish/correction споделят scope advisory lock; any allocation history блокира unpaid корекция на съответния batch. Старите charge/party snapshots не се променят. Ръчното отчитане не е cash/bank balance или bank confirmation; unique inbound posting по stable payments.id е реализиран в отделния локален DB-26 кандидат по-горе.
+Приложена20261104080554 добавя immutable payments/payment_allocations и private actor/key receipts. Guarded record/allocate/reverse/replace RPC проверяват explicit scoped права, revisions, personal remainder и unallocated credit. Payment writes и unpaid publish/correction споделят scope advisory lock; any allocation history блокира unpaid корекция на съответния batch. Старите charge/party snapshots не се променят. Ръчното отчитане не е cash/bank balance или bank confirmation; unique inbound posting по stable payments.id е реализиран в приложената DB-26 интеграция по-горе.
 
-11локални DB/RLS/domain групи и actual isolated UI/service/build/navigation са PASS; **hosted/MVCC не е изпълнен**. [Договор и бъдещо приемане](MANUAL_PAYMENTS.md). Owner financial projection/paid charge corrections/ledger са извън този ограничен пакет, без да отпадат от MVP.
+11локални DB/RLS/domain групи и actual isolated UI/service/build/navigation са PASS; **общото целево hosted API/UI/native MVCC приемане е PASS**. Frontend остава извън main/production. [Договор и бъдещо приемане](MANUAL_PAYMENTS.md). Owner financial projection/paid charge corrections/ledger са извън този ограничен пакет, без да отпадат от MVP.
 
 ```mermaid
 erDiagram
@@ -51,7 +51,7 @@ erDiagram
 
 ### FND-F05 — publish A/B: ограничено hosted приемане, frontend release предстои
 
-Exact [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) е приложена на 03.11.2026 след single-candidate dry-run/hash gate. При приемането на A backend имаше29 миграции/39 public+private приложни таблици. След B/2 и отделната feed поправка са31 миграции; клонът има30 SQL файла, защото приложената PR #8 версия е отделна. B/2 не добавя таблици. Три public таблици и една private receipt таблица, всичките с RLS. Няма промяна на старите SQL, нови Auth акаунти или deployment. Frontend е draft PR #9, извън main/production.
+Exact [20261103064400](../../supabase/migrations/20261103064400_financial_publish_a.sql) е приложена на 03.11.2026 след single-candidate dry-run/hash gate. При приемането на A backend имаше29 миграции/39 public+private приложни таблици. При B/2 и отделната feed поправка бяха31 миграции; след payment/account/inbound са34; клонът има30 SQL файла, защото приложената PR #8 версия е отделна. B/2 не добавя таблици. Три public таблици и една private receipt таблица, всичките с RLS. Няма промяна на старите SQL, нови Auth акаунти или deployment. Frontend е draft PR #9, извън main/production.
 
 ```mermaid
 erDiagram

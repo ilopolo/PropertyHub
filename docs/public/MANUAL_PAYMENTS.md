@@ -2,9 +2,65 @@
 
 ## Статус и граница — 04.11.2026
 
-Локално проверени manual20261104080554, account20261104110007 и atomic inbound20261104114357 кандидати в draft PR #9. **И трите са неприложени; общ payment/account/hosted/MVCC PASS няма.** Предходните B/2 и Publish A rollover доказателства не доказват новия процес.
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
 
-Ръчното отчитане не е банково потвърждение или получаване през приложението. Плащането и точно едно full inbound вече се записват атомарно в локалния DB-26 кандидат; не се изчислява пълен касов/банков баланс. Няма разходи, фондови движения, банкови услуги, opening balances или owner финансов портал. [Точният интегриран договор и общото бъдещо приемане](PAYMENT_INBOUND.md).
+## Реално hosted приемане — 04.11.2026
+
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
+
+Осем ordinary-session API групи провериха: explicit scoped права и липса на org-admin
+наследяване; цял receipt с точно едно inbound; частично отнасяне/аванс и неизменно
+постъпление; replay/stale HTTP409; чужд scope/подменени данни/direct и legacy write
+откази; историческа компенсация след деактивиране; атомарен replacement с причина
+при друга сметка; successful record → отнето право → отказ със **същия JWT**.
+Реален deferred-constraint failure в отделна native транзакция доказа rollback на
+payment, movement, allocations, operation receipt и audit. Не са заменяни общи функции
+или triggers за теста. Всички използвани сметки са изрично избрани, EUR и method-compatible.
+
+Единадесет native PostgreSQL случая използваха независими holder/contender/observer
+connections, официалния CA и проверен TLS, наблюдаван waiter/blocker преди release,
+deadlines и finally затваряне. Проверени са duplicate receipt; configuration writer
+и stale account revision; двете подредби receipt/deactivation; конкуриращи allocations
+за един payment и за един личен остатък; двете подредби allocation/reversal; duplicate
+compensation; competing replacements; allocation, което печели срещу прегледана
+unpaid batch correction. Няма двойни/частични postings, overcoverage или променени
+стари charge/party snapshots. Обратната подредба на последния unpaid batch race не е
+отделно hosted доказана; това не е изчерпателно покритие на всички interleavings.
+
+Реален локален Vite/Edge frontend към hosted проекта на отделен QA порт: receipt
+1.00 EUR → explicit allocation 0.01 → остатък 0.99 → атомарна корекция с нов receipt
+0.90 по друга активна сметка, без автоматично ново allocation. B с record право
+няма correction действия. Reload/navigation и четири лично прегледани screenshots
+375/1440, light/dark са PASS. Това е feature frontend, не production/live smoke.
+
+Cleanup PASS: шест собствени сметки са деактивирани, девет run назначения са
+оттеглени, временно активираният membership е върнат към baseline. Собствените Auth
+сесии и native транзакции/връзки са затворени. Остават **23 синтетични payment реда**
+(17 receipts: 11 валидни и 6 отменени; 6 reversal реда), 23 movements, 10 allocation
+реда и една непубликувана correction draft. Account versions, snapshots и audit са
+запазени; точният retained-ID manifest е локален. Защитените предишни записи/demo,
+личните записи съвпадат с baseline; Auth акаунтите остават седем, без създаване или изтриване. CLI token/DB URI са изчистени.
+
+Ограничения: ръчен отчет, не банково потвърждение или пълен баланс; няма legacy backfill,
+банкови услуги, opening balances, разходи, трансфери, фондови движения или отчети.
+В hosted базата нямаше предходни payment редове при apply: nonempty legacy upgrade
+остава локално доказан сценарий. Platform-admin-only и read_rules-only отрицателните
+fixtures са от предходните локални проверки; новото hosted admin-denial доказателство
+е с org admin. Повторения с нов key не разпознават автоматично една реална банкова
+транзакция. Пълният payment MVP/owner финансов портал не са обявени за завършени.
+
+Следващ release gate: отделно разрешен общ feature integration/public review и един
+main release; текущото приемане **не разрешава merge/deployment**. Не се повтарят
+apply/setup или завършените набори без засегната промяна. За нов run се изискват нов
+marker/baseline, изрично разрешение и exact history inspect, не replay на този manifest.
 
 ## Права и данни
 
@@ -82,7 +138,7 @@ npm.cmd run check:payment-movements
 
 **8 синтетични domain групи PASS.** Това не е DB/RLS/API/hosted/MVCC приемане и
 самостоятелно не завършва DB-26. Pure helper няма SQL; отделната локална интеграция
-е описана в [PAYMENT_INBOUND](PAYMENT_INBOUND.md). Трите миграции остават неприложени.
+е описана в [PAYMENT_INBOUND](PAYMENT_INBOUND.md). Трите миграции са приложени; общото ограничено hosted приемане е отчетено в началото.
 
 ### Изрични входове и сметка
 
@@ -169,7 +225,7 @@ Domain приемането тук не установява действите�
 
 ### Атомарен DB-26 кандидат и общ payment/MVCC gate
 
-Интеграцията вече е локално реализирана в новата20261104114357. Предходните SQL са непроменени. [PAYMENT_INBOUND](PAYMENT_INBOUND.md) определя всички RPC, constraints/receipts/locks, приетата историческа compensation, новите14локални групи и точния общ hosted/MVCC acceptance план за трите кандидата. Не е изпълняван hosted и няма automatic backfill.
+Интеграцията е реализирана и приложена с20261104114357. Предходните SQL са непроменени. [PAYMENT_INBOUND](PAYMENT_INBOUND.md) определя всички RPC, constraints/receipts/locks, приетата историческа compensation, новите14локални групи и точния общ hosted/MVCC резултат за трите версии. Няма automatic backfill.
 
 Приложната account конфигурация е отделният локален DB-21 кандидат с manage_cash_accounts; payment права не я редактират. [CASH_ACCOUNTS](CASH_ACCOUNTS.md) остава водещ за конфигурацията. Няма движение от самото създаване/редакция на account.
 
@@ -189,7 +245,7 @@ replacement и unpaid конфликт са проверени. Локалнот
 reload/navigation и различаване на technical error от empty;4снимки са прегледани.
 Disposable fixtures не използват PH-DEMO-V1 или потребителския preview4173.
 
-## Следващо hosted/MVCC приемане — само след отделно разрешение
+## Исторически pre-apply hosted/MVCC план — изпълнението е отчетено в началото
 
 1. Fresh pinned project `qfybswnezdzzahmozikr`, actual history, candidate absence/
    hash и съвместимост с текущия live клиент. Запазеният baseline е31applied; клонът

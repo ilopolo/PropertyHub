@@ -1,6 +1,12 @@
 # Парични сметки — DB-21
 
-Локален кандидат, 04.11.2026. Конфигурация на каси и банкови сметки, отделна от
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
+
+ Конфигурация на каси и банкови сметки, отделна от
 фондове, категории, наличности и плащания. Няма банкови интеграции или credentials.
 Операторският setup не е нормалният клиентски процес.
 
@@ -48,7 +54,7 @@ before/after. Деактивирането е еднопосочно, пази �
 
 Нова [миграция 20261104110007](../../supabase/migrations/20261104110007_scoped_cash_accounts.sql),
 SHA-256 `8d62ba590b6c1c970bf87e27b9e9c0c1539412446fd1d709c8de9cfb3ea6a4e0`.
-Тя е **неприложена**, не променя предходни SQL или payment/charge snapshots.
+Тя е **приложена на04.11.2026**, не променя предходни SQL или payment/charge snapshots.
 
 - `cash_account_feed()`: само текущите разрешени scopes, accounts и versions.
 - `save_cash_account(scope,target,expected_revision,request_key,payload,note)`:
@@ -59,9 +65,9 @@ RLS дава само scoped SELECT; клиентският DML е забран�
 време, identity/version/history и проверява текущото право. Actor/key receipt пази
 exact replay; същият ключ с различен вход или stale revision връща `PT409`/HTTP409,
 без автоматичен retry. Scope advisory lock и row lock ограничават конкурентните
-редакции. Това не е доказателство за hosted MVCC до реалното приемане.
+редакции. Самите locks не са доказателство; конфигурация/деактивиране срещу receipt са реално проверени с observed PostgreSQL waiters в общото приемане.
 
-## Приемане и следваща зависимост
+## Запазено локално приемане и исторически план
 
 ```powershell
 npm.cmd run check:cash-accounts
@@ -76,14 +82,14 @@ admin/read_rules/owner отказ, чужд scope, невалидни данни
 две теми, reload/navigation и отделни loading/empty/no-access/no-context/error.
 Това **не е hosted Auth/PostgreSQL/MVCC PASS**. Fixtures не използват постоянния demo.
 
-Атомарната [payment↔movement интеграция](PAYMENT_INBOUND.md) вече е локален кандидат20261104114357. Новото първично постъпление изисква explicit ACTIVE account ID/version. Приетата пълна еднократна историческа compensation използва account ID/version/snapshot от original movement, включително след деактивиране, без activation; current record_payments+correct_finance и explicit date/reason. Replacement изисква отделно избрана ACTIVE account и конкретна причина при друга account ID, не трансфер/refund. Няма automatic backfill.
+Атомарната [payment↔movement интеграция](PAYMENT_INBOUND.md) е приложена и целево hosted проверена с20261104114357. Новото първично постъпление изисква explicit ACTIVE account ID/version. Приетата пълна еднократна историческа compensation използва account ID/version/snapshot от original movement, включително след деактивиране, без activation; current record_payments+correct_finance и explicit date/reason. Replacement изисква отделно избрана ACTIVE account и конкретна причина при друга account ID, не трансфер/refund. Няма automatic backfill.
 
-Общото бъдещо hosted приемане изисква fresh project/history/hash/dry-run и отделно
+Историческият план за общото hosted приемане изискваше fresh project/history/hash/dry-run и отделно
 разрешение за apply. Първо manual payment `20261104080554`, после account config
-`20261104110007`, после inbound20261104114357. И трите остават НЕПРИЛОЖЕНИ; [общият точен план и hashes](PAYMENT_INBOUND.md#общ-hostedmvcc-acceptance-план--не-е-изпълнен).
+`20261104110007`, после inbound20261104114357. Този исторически apply план е изпълнен; трите версии са приложени. [Действителни резултати, ограничения и hashes](PAYMENT_INBOUND.md).
 Проверяват се ordinary-session rights/UI, same-JWT revoke и независими PostgreSQL
 sessions с наблюдавани waiters: edit/edit и edit/deactivate дават един допустим
 резултат и stale409 без изгубена версия; posting/deactivate, duplicate receipt,
 compensation/allocation и unpaid-correction races пазят точните суми/история.
 Cleanup оттегля само собствените временни права/сесии; пази финансовите версии,
-audit и отделните demo/лични записи. Няма hosted операции в текущия пакет.
+audit и отделните demo/лични записи. Историческият локален пакет не е правил hosted операции; последващото общо приемане е отчетено в PAYMENT_INBOUND.

@@ -1,22 +1,45 @@
 # Supabase — setup, схема и проверки
 
-## DB-26 atomic payment↔inbound — локален кандидат
+## Payment/account/inbound — ограничено hosted приемане PASS
 
-[20261104114357_payment_inbound_movements.sql](migrations/20261104114357_payment_inbound_movements.sql) е **НЕПРИЛОЖЕНА**. LF SHA-256 `ef5895232c1b87830d07c4749760d7ae7079e77a1614e03b7e6cae8286821aa1`. Предходните SQL са непроменени. 14нови domain/DB/RLS/upgrade групи,11засегнати manual-payment групи, account compatibility и реален isolated UI/service са локално проверени. **Общ hosted/PostgreSQL/MVCC PASS няма.**
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
 
-Receipt+exact1full inbound са атомарни; allocations не създават cash. Explicit active account/version, immutable historical compensation след deactivation, atomic replacement с причина при различна account. Old receipt-only paths отказват writes; old history/allocations остават, без backfill или доказана наличност. [Пълен договор, точни RPC, трите hashes и общ setup/assertions/MVCC/cleanup план](../docs/public/PAYMENT_INBOUND.md).
+[Точни резултати, ограничения, RPC и hashes](../docs/public/PAYMENT_INBOUND.md).
+Осем ordinary-session API групи,11 native PostgreSQL races с independent connections
+и observed waiters, tight real localfrontend→hosted UI,375/1440две теми са PASS.
+Cleanup пази финансовите/audit записи, старите snapshots и PH-DEMO-V1; временните
+CLI token и DB URI са изчистени. Source frontend още не е в main/production.
 
-Бъдещ exact apply ред след отделно разрешение/fresh history/hash/dry-run: manual20261104080554 → accounts20261104110007 → inbound20261104114357. Никакъв apply/credentials/setup/deployment не е извършен тук. Main/live няма payment UI и остава съвместим; новият frontend се публикува след своите schema зависимости и hosted gate.
+### Setup/resume/cleanup за отделно разрешен бъдещ run
 
+Този run е приключен; не изпълнявай повторно apply/setup/cleanup по старите receipts.
+Нов run: explicit target/project, fresh actual history/hash/schema и нов nondemo marker;
+миграциите20261104080554/20261104110007/20261104114357 вече са приложени.
+За CLI exact-version apply се използва isolated history workdir с вече приложената
+отделна PR #8 версия, без добавяне като pending кандидат. Не се пренаписва история.
+Native connections използват official CA, TLS verification, deadlines и finally cleanup.
+Обикновени QA JWT за assertions; operator само за baseline/observer/точен setup-cleanup.
+Credentials: игнорирани .env.migration.local/SUPABASE_ACCESS_TOKEN (database_write,
+database_pooling_config_read само ако има разрешен нов apply), .env.finance-mvcc.local/
+FINANCE_QA_DATABASE_URL (съществуващ Session pooler5432 operator, SELECT/SET ROLE/
+observer и exact own cleanup), .env.rls.local за ordinary QA. Без нови GRANT/роли/Auth.
 
-## DB-21 парични сметки — локален кандидат
+Преди всеки write: intent с marker/exact IDs/actor/key. Timeout/прекъсване → inspect
+на точния server receipt и засегнатите записи; липса на ред сама не доказва rollback.
+Неизвестен резултат блокира retry. Persisted UI success се продължава по получения
+payment ID, без второ receipt/allocation. Отказ за конфигурация не е authorization PASS.
+Waiter трябва да е наблюдаван преди освобождаване на native barrier; fake/local паралелност
+не е MVCC. Cleanup отнема само run receipts/назначения/сесии, връща baseline membership,
+деактивира собствените accounts и пази financial snapshots/versions/audit. Retained-ID
+manifest и secret-safe journals остават локални. Защитените demo/лични записи не се
+ползват за QA. Няма merge/deploy/нов production trigger от това приемане.
 
-[20261104110007_scoped_cash_accounts.sql](migrations/20261104110007_scoped_cash_accounts.sql) е **НЕПРИЛОЖЕНА**. SHA-256: `8d62ba590b6c1c970bf87e27b9e9c0c1539412446fd1d709c8de9cfb3ea6a4e0`. Предходните SQL файлове са непроменени. Осем DB/domain/RLS групи и изолиран реален UI/service са локално проверени; **hosted/MVCC няма**. Не се конфигурира нищо в hosted проекта с този пакет.
+## DB-26 inbound — само чист domain модул (исторически етап)
 
-`manage_cash_accounts` е explicit scoped manager/cashier subset чрез съществуващия org-admin assignment lifecycle. Не е admin наследяване; read_payments/record_payments четат без управление. Immutable identity/versions, reason/revision, guarded RPC/RLS и deactivation пазят историята. Няма movements или balance. [Пълният договор, RPC, локални команди и бъдещото hosted приемане](../docs/public/CASH_ACCOUNTS.md).
-
-Бъдещият exact apply ред е неприложената manual-payment20261104080554 → account-config20261104110007 → inbound20261104114357. Преди него: fresh target/history/hash/dry-run и отделно разрешение. Main/live не използва тези нови таблици/права; промяната е additive и не променя старите RPC или snapshots. Не пускай новия frontend преди неговата schema зависимост.
-## DB-26 inbound — само чист domain модул
 
 `src/domain/payment-movements.js` подготвя детерминирано цялото постъпление и
 linked whole compensation, с explicit EUR/scope/account и точни евроценти.
@@ -29,12 +52,12 @@ linked whole compensation, с explicit EUR/scope/account и точни евро�
 Allocation не създава ново постъпление. Компенсацията пази оригинала, не е bank refund.
 [Входен договор, controlled transition и следващият атомарен DB/payment gate](../docs/public/MANUAL_PAYMENTS.md#db-26-inbound--чист-domain-договор-04112026).
 
-## Ръчни плащания — локален кандидат, НЕ hosted PASS
+## Ръчни плащания — историческо локално приемане преди общия hosted gate
 
 Нова [20261104080554_manual_payment_allocations.sql](migrations/20261104080554_manual_payment_allocations.sql)
-е **неприложена**, LF-trim SHA256 `0ff4f6091d2d70fb60256c6681a7b0cf7d23ec0dc4d4b487ba98a271e596f5aa`.
-Последният hosted baseline остава31версии. Receipt → explicit personal allocation →
-exact остатък/аванс и append-only reverse/replace са само локално проверени.
+е **приложена на04.11.2026**, LF-trim SHA256 `0ff4f6091d2d70fb60256c6681a7b0cf7d23ec0dc4d4b487ba98a271e596f5aa`.
+Pre-apply baseline беше31версии; текущият проверен baseline е34. Receipt → explicit personal allocation →
+exact остатък/аванс и append-only reverse/replace имат общото целево hosted приемане по-горе.
 11DB/domain/RLS групи и реален isolated UI/service/SDK/HTTP/PGlite процес,
 375/1440две теми/reload/navigation/errorstates, build и11productionpages/assets са PASS.
 PGlite/localparallel не е PostgreSQL/MVCC доказателство.
@@ -67,7 +90,7 @@ dry-run/apply/post-apply → ordinary synthetic API/UI → independent PostgreSQ
 е приложена с hash `fe0002f73c6e9dbdfada07859bb19d99e6a41ce22625d3dc8dd4ad47df76224c`: source feed се материализира
 веднъж вместо повторени authorization scans, които причиниха legacy API timeout.
 Целева локална equivalence проверка пази същите A-only резултати и grants.
-Предходните SQL не са редактирани; няма нови таблици. Actual31 миграции срещу30
+Предходните SQL не са редактирани; няма нови таблици. Исторически B/2 checkpoint:31 миграции срещу30
 SQL файла в този клон (приложената PR #8 версия е отделна). Frontend още е
 draft PR #9, извън main/production; това не е завършен финансов MVP.
 
@@ -255,7 +278,7 @@ B/2 затваря само приетия decimal ordinary-coowner догово
 
 ## FND-F05 — локално публикуване A
 
-**Текущ статус 04.11.2026: Publish A целево hosted API/UI/MVCC и отделен natural rollover PASS.** [20261103064400](migrations/20261103064400_financial_publish_a.sql) е приложена на03.11 с LF-trim SHA256 `15e03bdfd6ca013c5e7711d2acc65dc856724eff51d8e8d8125377c266c1dd45`. Тогава историята е29 версии/39 public+private приложни таблици; текущата история след B/2 и feed поправката е31 версии. Не прилагай старите миграции повторно. Финансовият frontend още е draft PR #9, извън main/production.
+**Текущ статус 04.11.2026: Publish A целево hosted API/UI/MVCC и отделен natural rollover PASS.** [20261103064400](migrations/20261103064400_financial_publish_a.sql) е приложена на03.11 с LF-trim SHA256 `15e03bdfd6ca013c5e7711d2acc65dc856724eff51d8e8d8125377c266c1dd45`. Тогава историята е29 версии/39 public+private приложни таблици; след B/2 и feed поправката бяха31 версии; след payment/account/inbound приемането са34 версии. Не прилагай старите миграции повторно. Финансовият frontend още е draft PR #9, извън main/production.
 
 ### Договор и защита
 

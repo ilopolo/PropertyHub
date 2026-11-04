@@ -1,9 +1,67 @@
 # Ръчно плащане и атомарно постъпление — DB-26
 
-Локално проверен кандидат, 04.11.2026. Трите миграции по-долу са **неприложени**;
-няма payment/account/inbound hosted или PostgreSQL/MVCC PASS. Предходните FND-F05
-доказателства не доказват този процес. Няма банкови интеграции, разходи, трансфери,
-начални салда, фондови движения или претенция за пълен счетоводен/паричен баланс.
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
+
+Няма банкови интеграции, разходи, трансфери, начални салда, фондови движения
+или претенция за пълен счетоводен/паричен баланс.
+
+## Реално hosted приемане — 04.11.2026
+
+**04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**
+Точните версии `20261104080554` → `20261104110007` → `20261104114357` са
+приложени еднократно след проверени hashes и dry-run само с тези кандидати.
+Потвърдени са **34 приложени миграции**. Frontend остава draft PR #9, извън main/production.
+Не са променяни предходни SQL, Auth акаунти, production hosting или Edge функции.
+
+Осем ordinary-session API групи провериха: explicit scoped права и липса на org-admin
+наследяване; цял receipt с точно едно inbound; частично отнасяне/аванс и неизменно
+постъпление; replay/stale HTTP409; чужд scope/подменени данни/direct и legacy write
+откази; историческа компенсация след деактивиране; атомарен replacement с причина
+при друга сметка; successful record → отнето право → отказ със **същия JWT**.
+Реален deferred-constraint failure в отделна native транзакция доказа rollback на
+payment, movement, allocations, operation receipt и audit. Не са заменяни общи функции
+или triggers за теста. Всички използвани сметки са изрично избрани, EUR и method-compatible.
+
+Единадесет native PostgreSQL случая използваха независими holder/contender/observer
+connections, официалния CA и проверен TLS, наблюдаван waiter/blocker преди release,
+deadlines и finally затваряне. Проверени са duplicate receipt; configuration writer
+и stale account revision; двете подредби receipt/deactivation; конкуриращи allocations
+за един payment и за един личен остатък; двете подредби allocation/reversal; duplicate
+compensation; competing replacements; allocation, което печели срещу прегледана
+unpaid batch correction. Няма двойни/частични postings, overcoverage или променени
+стари charge/party snapshots. Обратната подредба на последния unpaid batch race не е
+отделно hosted доказана; това не е изчерпателно покритие на всички interleavings.
+
+Реален локален Vite/Edge frontend към hosted проекта на отделен QA порт: receipt
+1.00 EUR → explicit allocation 0.01 → остатък 0.99 → атомарна корекция с нов receipt
+0.90 по друга активна сметка, без автоматично ново allocation. B с record право
+няма correction действия. Reload/navigation и четири лично прегледани screenshots
+375/1440, light/dark са PASS. Това е feature frontend, не production/live smoke.
+
+Cleanup PASS: шест собствени сметки са деактивирани, девет run назначения са
+оттеглени, временно активираният membership е върнат към baseline. Собствените Auth
+сесии и native транзакции/връзки са затворени. Остават **23 синтетични payment реда**
+(17 receipts: 11 валидни и 6 отменени; 6 reversal реда), 23 movements, 10 allocation
+реда и една непубликувана correction draft. Account versions, snapshots и audit са
+запазени; точният retained-ID manifest е локален. Защитените предишни записи/demo,
+личните записи съвпадат с baseline; Auth акаунтите остават седем, без създаване или изтриване. CLI token/DB URI са изчистени.
+
+Ограничения: ръчен отчет, не банково потвърждение или пълен баланс; няма legacy backfill,
+банкови услуги, opening balances, разходи, трансфери, фондови движения или отчети.
+В hosted базата нямаше предходни payment редове при apply: nonempty legacy upgrade
+остава локално доказан сценарий. Platform-admin-only и read_rules-only отрицателните
+fixtures са от предходните локални проверки; новото hosted admin-denial доказателство
+е с org admin. Повторения с нов key не разпознават автоматично една реална банкова
+транзакция. Пълният payment MVP/owner финансов портал не са обявени за завършени.
+
+Следващ release gate: отделно разрешен общ feature integration/public review и един
+main release; текущото приемане **не разрешава merge/deployment**. Не се повтарят
+apply/setup или завършените набори без засегната промяна. За нов run се изискват нов
+marker/baseline, изрично разрешение и exact history inspect, не replay на този manifest.
 
 ## Атомарност и права
 
@@ -119,9 +177,9 @@ JavaScript аритметика. Pure domain модулът остава неп�
 375/1440 light/dark, reload/navigation и техническа грешка отделно от empty.
 Транспортът използва local Auth/PGlite; това **не е hosted/MVCC доказателство**.
 
-## Общ hosted/MVCC acceptance план — не е изпълнен
+## Исторически pre-apply план и hashes — изпълнението е отчетено по-горе
 
-След отделно разрешение, fresh target `qfybswnezdzzahmozikr`, actual history (last
+Историческите предусловия са: отделно разрешение, fresh target `qfybswnezdzzahmozikr`, actual history (last
 saved31), live compatibility и single expected ordered dry-run. LF SHA-256 включва
 целия файл след CRLF→LF, без trim; старият manual LF-trim hash е запазен отделно.
 

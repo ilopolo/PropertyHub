@@ -1,6 +1,6 @@
 # Реализирана архитектура
 
-## P1 лична финансова проекция — локално проверена
+## P1 лична финансова проекция — ограничено hosted приемане
 
 Account workspace има отделни owner-finances domain/service/controller/UI/BG модули.
 `my_financial_access` е boolean navigation capability; `my_financial_history` проверява
@@ -8,9 +8,13 @@ Account workspace има отделни owner-finances domain/service/controller
 published party snapshots и signed allocations. Няма current-ownership gate за D18
 историята, admin наследяване или owner SELECT върху базовите финансови таблици.
 Whitelist DTO изключва receipt totals/payer/bank/doc refs/raw notes/foreign parties.
-Историческите отменящи/заменени редове не участват в текущия сбор. Неприложена SQL
-версия `20261104182905`;10 DB/RLS/DTO и9 реални локални UI/service групи PASS, без
-hosted/MVCC/production твърдение. [Договор и отделен acceptance gate](OWNER_FINANCES.md).
+Историческите отменящи/заменени редове не участват в текущия сбор. SQL версия
+`20261104182905` е приложена след exact hash/dry-run; общо35 backend версии.
+Запазени са10 DB/RLS/DTO и9 локални UI/service групи;6 ordinary-JWT API и6 тесни
+frontend→hosted UI/приемателни групи PASS. Seller без текущ имот/QA staff SELECT,
+mixed40от100, whitelist, signed reversal, same-JWT link revoke и exact cleanup са
+проверени. Нов native race не е нужен за непроменените writers; няма нов MVCC или
+production claim. [Договор, доказателства и ограничения](OWNER_FINANCES.md).
 
 За устойчивия ръчен demo е добавен локален QA предпазител: обичайните hosted QA
 entrypoints спират преди login/setup/cleanup при липсващ или защитен demo manifest.

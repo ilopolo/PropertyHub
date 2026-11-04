@@ -1,5 +1,55 @@
 # Моите финанси — личен read-only преглед
 
+## Ограничено hosted приемане PASS — 04.11.2026
+
+Точната `20261104182905_owner_financial_projection.sql` е приложена еднократно след
+fresh34-version baseline, candidate absence и dry-run единствено с нея. SHA-256:
+`240cc08bfed5aeeeea95ffe8577467668ebbeb67b51340da1a441cba9cf4a9d3`.
+Native read-only inspect потвърди **35 версии**, петте точни function bodies и grants:
+authenticated може guarded history/access; anon и direct internal identity helper са
+затворени. Няма други миграции, стар SQL edit или продуктова поправка в този пакет.
+
+Шест ordinary-JWT/API и шест тесни frontend→hosted UI/приемателни групи PASS:
+
+- Само личните published parties и signed allocations; mixed payment100/40/60 връща
+  own40 без receipt total/ID, чужд payer/contact/account/document/note или foreign parts.
+- Съсобственик на същия обект, foreign person/scope/unit filter, staff-only/noidentity
+  и owner direct SELECT изолация. Подменен person input се отказва по RPC signature;
+  това не се брои за самостоятелно RLS доказателство. Няма права от payer label/рольово име.
+- Истински отделен synthetic seller/buyer интервал M03.11→T04.11: seller е с0current
+  units и без QA staff SELECT, но запазва личния snapshot; buyer не наследява неговия дълг.
+- Original/unpaid replacement/reversal са проследими и само current личните редове
+  влизат в сбора. Първоначално personal112.51−coverage40.00=remaining72.51 EUR;
+  signed40/−40 след компенсацията възстановява remaining112.51, без скрита история.
+- Committed identity-link revoke → нов API/UI403 със същия непроменен JWT; няма refresh
+  или нов login между доказаните read/revoke/read стъпки.
+- Valid identity без партии е real empty, включително при payer-person на неразнесен
+  аванс0.10 без лично beneficiary основание. Staff без identity е real noidentity.
+  Controlled500 проверява само UI error≠empty; не е hosted authorization доказателство.
+  Mobile/desktop375/1440, двете теми/reload/dashboard са проверени,4screenshots прегледани.
+
+Setup използва съществуващите A/B/OWNER профили в нов маркиран NONDEMO scope.
+Existing self-verifier delegation правилно отказа; използван е отделен explicit B
+verifier, без self-verification/директен SQL за owner link или промяна на authority.
+Само новите own synthetic unit-membership periods имат изрично подаден предходен ден
+с journal/audit, за да е реално приложим seller fixture; не са редактирани стари записи.
+
+Cleanup е потвърден с отделна actual SELECT сверка:0 активни own роли/links/sessions/
+останали native connections;7 роли и3 identity links отнети,11 собствени Auth сесии
+затворени, own account archived и scope/assignment inactive. Exact nondemo membership
+baseline е възстановен. Старите snapshots/лични/demo записи и7Auth са запазени.
+Остават маркирани synthetic3batches/12charges/18parties,3payments/3movements/4allocations
+и audit: original100 е компенсиран, allocations40/60/−40/−60 са история;0.10 е валиден
+неразнесен QA аванс без owner attribution. Подробните IDs/journal са локални, извън Git.
+Временните CLI token и DB URI са изчистени; ordinary QA паролите/server secrets са запазени.
+
+Това затваря P1 hosted access/UI gate, **не production release или пълния owner MVP**.
+Няма нов native MVCC race: read-only проекцията не променя writers/lock contracts, чиито
+предишни доказателства са запазени. Invalid profile/person-revision/session отрицателните
+варианти остават локално доказани; тук е добавен real same-JWT link-revocation runtime.
+Няма standalone advance beneficiary, owner payment, funds/reports/export/notifications,
+exact rational/СИО разширяване или общ as-of engine.
+
 ## Договор P1 преди DDL — 04.11.2026
 
 Локална реализация върху FND-F05 published parties и explicit payment allocations.
@@ -48,9 +98,10 @@ Loading/noidentity/empty/error са отделни състояния; UI не �
 
 Официална техническа основа: [database functions](https://supabase.com/docs/guides/database/functions)
 и [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
-## Локално приемане и граници
+## Запазено локално приемане на checkpoint8f4134a
 
-Неприложена миграция: `20261104182905_owner_financial_projection.sql`.
+Към този локален checkpoint миграцията `20261104182905` беше неприложена; текущият
+hosted резултат е записан по-горе.
 `npm run check:owner-finances`:10 целеви локални DB/RLS/DTO групи PASS.
 `npm run check:owner-finances-browser`:9 тесни реални UI/service групи PASS:
 SDK/HTTP към disposable PGlite и симулиран Auth, съсобственик40/60, foreign filter403,
@@ -66,11 +117,14 @@ Production build в отделна директория и navigation/assets н�
 Няма нов owner payment writer, advance beneficiary, funds/reports/export или пълен
 owner финансов MVP. Предишните SQL файлове и финансовите write пътища са непроменени.
 
-## Тесен бъдещ hosted gate — изисква отделно разрешение
+## Запазен setup/resume/cleanup план за отделно разрешен нов run
+
+Текущият run е приключен и проверен. Не повтаряй apply/setup/cleanup по старите receipts.
+Точките по-долу пазят първоначалния план; нов run изисква fresh baseline и нов marker.
 
 1. Read-only baseline на точния проект, действителна история, липса на candidate и
-   съвпаднал SQL hash. Последно34 applied версии, без свежа hosted сверка в P1.
-   Dry-run/apply само на новия candidate след съвместимост с live; без повторение на
+   съвпаднал SQL hash. След P1 са потвърдени35 applied версии, включително20261104182905.
+   Тази версия не се прилага повторно. Нов candidate изисква отделно разрешение; без повторение на
    старите financial/Auth/Storage/signal набори.
 2. Отделен маркиран NONDEMO run с baseline/manifest/намерение преди writes; съществуващи
    ordinary QA identities и минимални временни явни verifier/financial назначения.
@@ -87,8 +141,9 @@ owner финансов MVP. Предишните SQL файлове и фина�
    да бъдат затваряни. Access boolean не замества реалния RPC отказ.
    Тесен local frontend→hosted UI на отделен QA порт/профил, error≠empty, reload.
    Read-only projection не заявява нов MVCC writer gate; real hosted session/RLS runtime
-   още трябва да е доказан. Local mocks/PGlite не го заменят.
+   е доказан в горния ограничен обхват. Local mocks/PGlite сами не го заменят.
 5. Inspect след unknown outcome преди retry; cleanup само на exact own receipts за
    временни назначения/връзки/сесии. Financial snapshots/allocations/audit история се
    запазват с marker/IDs/status. Baseline на защитените записи се сравнява. Само бъдещи
-   изрично разрешени операторски credentials се изчистват след употреба; P1 не ги чете.
+   изрично разрешени операторски credentials се изчистват след употреба, без стойности
+   в journal/логове. При unknown write първо inspect на точните IDs/receipts, без blind retry.

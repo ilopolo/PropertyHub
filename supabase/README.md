@@ -1,16 +1,22 @@
 # Supabase — setup, схема и проверки
 
-## P1 „Моите финанси“ — локален пакет, без hosted apply
+## P1 „Моите финанси“ — ограничено hosted API/UI PASS,04.11.2026
 
-Candidate `20261104182905_owner_financial_projection.sql`, SHA-256
+Приложена еднократно `20261104182905_owner_financial_projection.sql`, SHA-256
 `240cc08bfed5aeeeea95ffe8577467668ebbeb67b51340da1a441cba9cf4a9d3`.
 Добавя guarded read-only history/boolean capability, не таблици, writers или owner
 SELECT grants. `npm run check:owner-finances` и `npm run check:owner-finances-browser`
 проверяват само disposable локални synthetic данни, без credentials/hosted заявки.
-10 DB/RLS/DTO и9 UI/service групи PASS; isolated build/navigation и visual review
-се записват отделно. [DTO/access, setup/baseline/assertions/cleanup и ограничения](../docs/public/OWNER_FINANCES.md).
-Тази версия трябва да е приложена и hosted access gate да е затворен преди общ release
-на P1 frontend. Последно backend има34 applied версии; този пакет не ги сверява hosted.
+Локалните10 DB/RLS/DTO и9 UI/service групи са запазени. Новите6 ordinary-JWT API и6
+тесни frontend→hosted UI/приемателни групи PASS;4 актуални375/1440 light/dark screenshots
+са прегледани. Fresh history/grants/function bodies PASS: **35 приложени версии**.
+Cleanup:7 run роли,3 own identity links и11 own Auth сесии затворени; own account/scope/
+assignment retired, exact nondemo membership baseline възстановен. Запазени3 batches,
+3 payments/3 movements/4 allocation реда и audit; protected baseline/7Auth/PH-DEMO-V1
+непроменени. CLI token/DB URI са изчистени; няма нов product fix/SQL или native race.
+[DTO/access, точни резултати и setup/resume/cleanup ограничения](../docs/public/OWNER_FINANCES.md).
+P1 hosted gate е затворен в този ограничен обхват. Frontend остава draft PR9 извън
+main/production; общ release се разрешава отделно и изисква combined integration review.
 Не преизпълнявай старите payment/financial успешни набори без засегната промяна.
 
 ## Payment/account/inbound — ограничено hosted приемане PASS

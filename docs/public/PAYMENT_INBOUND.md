@@ -1,3 +1,14 @@
+## P4a dependency — само локална аналитична интеграция
+
+Нова неприложена20261104221711 добавя фондови версии/пълни разбивки и exactmirror
+trigger приexistingpayment_reversal insert. Историческите payment/movement/account
+snapshots/сумите иличнитеallocations не се презаписват; rollbackнаmirror отказвацелия
+paymentcorrectionпакет. Unclassifiedoriginal не получавафиктивналиния; replacement
+оставанеотнесен. Нямановmoney/transfer/refund/backfill. Scopedpaymentrights са запазени.
+P4a13DB+9UIPASS иboundedhistorical-accountcompensationregression са локални; предходният
+hostedpaymentPASS по-долу остава доказателство за предходнияcontract, не за новияtrigger.
+СледваP4ahosted/MVCCacceptance предиclaimзаdeployedfundintegration. [Договор](FUNDS.md).
+
 # Ръчно плащане и атомарно постъпление — DB-26
 
 **04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**

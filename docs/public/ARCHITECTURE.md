@@ -1,5 +1,17 @@
 # Реализирана архитектура
 
+## P4a — локални фондове и аналитичност
+
+Fund domain/BG → service → controller/UI → guarded privateRPC/publicinvoker сRLS.
+Четири новиpublicтаблици:funds/fund_versions/fund_classifications/fund_movement_lines;
+privatefund_operations заexactreceipts. Immutable history/snapshots, currentwholeversion
+иdirectionотсъществуващотоmovement. Новtrigger наmoney_movement insert включваexact
+mirror вexistingpaymentcompensationtransaction, безредакциянастаритеSQL/оригинали.
+Read/manage/config/record/correct са изричниscopedcapabilities, безadminнаследяване.
+Нова20261104221711 НЕПРИЛОЖЕНА; standaloneбезP2compatibilityпроверена локално.
+13DB+9UI/build/navigationPASS не еhosted/MVCC. [DTO,инварианти,граници](FUNDS.md).
+
+
 ## P2 — owner category и празен ticket-only контекст
 
 [Договор и приемане](TICKET_CREATION.md): mandatory explicit9category → domain/service/UI

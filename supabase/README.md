@@ -1,3 +1,66 @@
+## P4a — фондове и аналитичност, само локално
+
+Нова **НЕПРИЛОЖЕНА** [20261104221711_scoped_fund_analytics.sql](migrations/20261104221711_scoped_fund_analytics.sql),
+SHA256`be4b780750f26db23f0e23a628825056fdb595ee0b48a97ffd1b2d5338b31cce`. Техническият timestamp е генериран от CLI и е запазен.
+След последното P1 hostedприемане са доказани35applied; branchима37SQL, защото има
+още P2candidate и P4acandidate. Нямаfreshhostedhistory в тази локална задача.
+[Пълен договор/локални резултати](../docs/public/FUNDS.md).13DB+9UI/4visual/build/navigation
+PASS не е hosted/MVCCPASS. P4b/expenses/openings/transfers/reports не са добавени.
+
+### Отделно бъдещо разрешено acceptance, не изпълнявай сега
+
+1. Freshread-only exactproject qfybswnezdzzahmozikr, действителнаhistory/schema/grants,
+   candidateabsence/sourcehash иliveclientcompatibility. Credentials самоpresence,
+   при нужда един grouped request заignored CLI token/database_write+poolingread,
+   existing independent PostgreSQL SessionpoolerURI/официаленCA/TLSverify и ordinary
+   existingQAcredentials; не логвай стойности. БезCREATE ROLE/GRANT/Authaccounts.
+2. Използвай установения exact-apply helper/изолиран временен CLI workdir с actual
+   applied SQL и **само P4acandidate**. PendingP2`20261104212948` се изключва изрично
+   от pending комплекта; не се пропуска чрез ръчно пренаписване наhistory. Изведи
+   exactmanifest/hashes предиdry-run; той трябва да показвасамо20261104221711. Ако
+   друго еpending/неизвестно, спри и свери. Нямаrename/editoldSQL. Preapplycheckpoint;
+   еднократенapplyсамоследотделноразрешение, postinspectbodies/grants/history. Unknown
+   outcome→inspectпредиretry. LocalstandaloneбезP2иunchangedoldreceipt са доказани.
+3. P4a е съвместим с текущия старклиент: не променя create-ticket, normalreceiptAPI,
+   manualallocationилинеотнесенreversal, нямаnewrequiredpaymentfundfield. Новmirror
+   е server-onlytrigger за вечекласифициранreceipt. P2не еdependency; неговият
+   mandatorycategory/old3argclientcutoverblocker остава отделен. Localnewfeaturefrontend
+   може да срещне knownmissingP2ticket_contexts, докатоP2не еприложена: това не еfund
+   denyPASS и не се скрива катоуспех; fundRPC/navigation/UIсе доказватпоотделно.
+4. FreshNONDEMOmarker/manifest/exactIDs/baseline предиwrite: existingAuth/profile,
+   currentorg/member/assignment/scope/session иточнивременни appsubsets, собствен EUR
+   bank/cash,2funds/general+repair, syntheticbasis иreceipts/allocations отновияrun.
+   PH-DEMO-V1/privateстаритеpayments/charge/party/accountsnapshot hashes се пазят.
+   Нямаautomaticbackfill настаритеsyntheticдвижения; journalintent/receipts иinspect
+   следunknownresult. Не се възстановяват всички стари назначения.
+5. OrdinaryJWT/API:read/manage/record/correctsubsets, noadmininheritance/foreignscope/
+   existingforeignsource/directDML/spoofsourceamountfundversions, configbankbasisgate,
+   exact100=60+40 приallocated80+unallocated20, nosecondmovement, incomplete/duplicate
+   denials, current/staleHTTP409, samekey/newkeybusinessduplicate, confighistory/deactivate.
+   Minimalfundread нямаreceipt/payer/bankreference; configonlyнямаanalytics/payment
+   grant. SameunchangedJWTfund/recordrevokeотказваследващатазаявка; configошибка не е
+   authorizationPASS. Mirrorlatestversion/inactivefund, replacementunclassified,
+   canceledsourceban, noanalyticoriginal и fullrollback приcontrolledmirrorfailure.
+6. Native independent PostgreSQL holder/contender/observer с deadlines и finally:
+   observe exact waiter **преди barrier release** заclassify/classify(same/differentkey),
+   fundedit/deactivate срещуclassify; classify/reversal иanalyticcorrect/reversal
+   **в двете подреждания**. Използвайexisting scopeadvisorykeys/точнитеsource rows за
+   контролираноизчакване, не arbitraryparallelHTTP. Успехът евалидносериализиранsnapshot
+   илиPT409/договоренотказ: еднаcurrentверсия, exactmirrorнаwinnerlatestversion,
+   недопуснатоотнасянекъмreversedsource, no duplicate/partialcash/payment/allocations/
+   fundlines/audits. Не терминирай чуждPID. PGlite/fakeconnections не саPG/MVCCPASS.
+7. Tightlocalfrontend→hosted наотделенQAport/profile/build: scopedlist/config,
+   wholeclassification/correction/history, existingpaymentUI→exactmirrorrefresh,
+   unclassified/revoked/error≠empty,375/1440/2themes/reload. Preview4173/root37f00c8/
+   PH-DEMO-V1 не се пипат. Не повтаряйfullfinancial/Auth/Storage/signalнабори; само
+   конкретно засегнататаcompensationregression.
+8. Cleanupсамоexactrunreceipts: revokeownappsubsets/links, restorebaselinecontext,
+   deactivateownfunds/accounts, closeownAuth/nativeсесии/транзакции. Пазиfundversions/
+   classifications/mirrors/payment/movement/allocations/audit; документирайточните
+   retainedIDs/current/compensated/unclassifiedstatuses. Actualprotectedbaseline/
+   cleanupSELECT; изчисти временнияoperator token/URI, запазиordinaryQAcredentials.
+   Нямаdestructivetruncate, hostedcorrectivemigrationбезотделноразрешение, merge/deploy.
+
 # Supabase — setup, схема и проверки
 
 ## P2 — само локален кандидат: owner category / ticket-only contexts

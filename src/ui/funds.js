@@ -1,0 +1,43 @@
+import {financeState,financeDetails} from './finance-help.js';
+import {bindWorkspaceScope} from './workspace-context.js';
+import {exactFundSplit} from '../domain/funds.js';
+import {fundsBg as bg} from '../i18n/funds-bg.js';
+const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+function field(form,name,label,value='',options){const box=el('label',label,'form-label d-block mb-3'),n=el(options?'select':'input','','form-control');n.name=name;n.required=true;if(options)for(const[v,t]of options){const o=el('option',t);o.value=v;n.append(o);}n.value=value;box.append(n);form.append(box);return n;}
+const stamp=v=>new Date(v).toLocaleString('bg-BG',{timeZone:'Europe/Sofia'});
+function submit(form,label,fn){const error=el('p','','text-danger');error.setAttribute('role','alert');const button=el('button',label,'btn btn-primary');form.append(error,button);form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;button.disabled=true;error.textContent='';try{await fn();}catch(e){error.textContent=e.code==='PT409'?'Данните са променени или постъплението е отменено. Обнови и прегледай отново.':e.code==='42501'?'Нямаш текущо право за тази операция.':e.code==='23514'?'Провери цялата сума, фондовете, сметката, версиите и основанието.':e.message||'Записът не е потвърден. Обнови преди повторение.';}finally{button.disabled=false;}};}
+export function renderFunds(root,data,actions){
+ root.replaceChildren();root.dataset.state='ready';root.append(el('h2',bg.title),el('p',bg.intro,'alert alert-info'));
+ if(!data.scopes.length){financeState(root,'no-access',bg.noAccess);return;}
+ const scope=field(root,'fund_scope','Обхват за фондове',root.dataset.scope||data.scopes[0].id,data.scopes.map(s=>[s.id,s.label])),body=el('div');root.append(body);
+ function render(){body.replaceChildren();const s=data.scopes.find(s=>s.id===scope.value);if(!s){financeState(body,'no-context',bg.noContext);return;}root.dataset.scope=s.id;
+ const funds=data.funds.filter(f=>f.scope_id===s.id),accounts=data.accounts.filter(a=>a.scope_id===s.id),movements=data.movements.filter(m=>m.scope_id===s.id),active=funds.filter(f=>!f.archived_at);
+ body.append(el('p',bg.limitation,'small'));
+ if(!funds.length)financeState(body,'empty',bg.empty);
+ function configuration(f){const form=el('form','','border-top pt-3');form.dataset.fundForm=f?.id||'new';form.append(el('h3',f?'Промени конфигурацията':'Нов фонд','h5'));
+ const code=f?null:field(form,'code','Постоянен код (латиница)'),kind=f?null:field(form,'kind','Вид фонд','',[['','Избери изрично'],['general','Друго изрично предназначение'],['repair_renewal','Ремонт и обновяване']]);if(code){code.pattern='[a-z][a-z0-9_]{0,39}';code.maxLength=40;}
+ const label=field(form,'label','Име на фонда',f?.label),purpose=field(form,'purpose','Предназначение',f?.purpose),basis=field(form,'basis_reference','Решение / документно основание',f?.basis_reference);label.maxLength=160;purpose.maxLength=500;basis.maxLength=1000;
+ const opts=[['','Избери изрично'],['none','Без ограничение до една сметка — EUR в този обхват'],...accounts.filter(a=>!a.archived_at||a.id===f?.account_id).map(a=>[a.id,`${a.label} · ${a.account_type==='bank'?'Банка':'Каса'} · версия ${a.revision}${a.archived_at?' · деактивирана':''}`])];
+ const account=field(form,'account_id','Допустима сметка / ограничение',f?(f.account_id||'none'):'',opts),reason=field(form,'note','Причина за конфигурацията');reason.maxLength=1000;
+ form.append(el('p','За „Ремонт и обновяване“ посочи специалното банково предназначение и относимото основание. Въвеждането не удостоверява реално решение, банков титуляр или наличност. Промяната на ограничение не прехвърля пари.','small'));
+ const key=crypto.randomUUID();submit(form,f?'Запази конфигурацията':'Създай фонда',()=>{const a=accounts.find(a=>a.id===account.value),payload={label:label.value,purpose:purpose.value,basis_reference:basis.value,account_id:account.value==='none'?null:account.value,account_revision:account.value==='none'?null:a?.revision};if(!f)Object.assign(payload,{code:code.value,kind:kind.value,currency:'EUR'});return actions.save(s.id,f?.id||null,f?.revision||0,key,payload,reason.value);});return form;
+ }
+ for(const f of funds){const card=el('article','','card card-body mb-3');card.dataset.fund=f.id;card.append(el('h3',f.label,'h5'),el('p',`${f.archived_at?'Деактивиран':'Активен'} · EUR · версия ${f.revision}`),el('p',f.purpose),el('p',`Основание: ${f.basis_reference}`,'small'));
+ if(s.can_manage&&!f.archived_at){card.append(configuration(f));const form=el('form','','mt-3');form.dataset.fundDeactivate=f.id;const note=field(form,'note','Причина за деактивиране'),key=crypto.randomUUID();submit(form,'Деактивирай фонда',()=>actions.deactivate(s.id,f.id,f.revision,key,note.value));card.append(form);}
+ const history=data.history.filter(h=>h.fund_id===f.id);if(history.length){const details=financeDetails('История на фонда');for(const h of history)details.append(el('p',`Версия ${h.revision} · ${stamp(h.recorded_at)} · ${h.snapshot.label} · ${h.reason}`,'small'));card.append(details);}body.append(card);}
+ if(s.can_manage)body.append(configuration(null));
+ if(s.can_read_analytics){body.append(el('h3','Предназначение на записаните постъпления','h4'));if(!movements.length)financeState(body,'empty','Още няма записани движения за аналитичен преглед.');
+ for(const m of movements){const card=el('article','','card card-body mb-3');card.dataset.fundMovement=m.id;
+ const versions=data.classifications.filter(c=>c.movement_id===m.id).sort((a,b)=>a.revision-b.revision),current=versions.at(-1),closed=m.is_reversed||m.kind==='payment_reversal';
+ card.append(el('h4',`${m.amount} EUR · ${m.movement_date}`,'h5'),el('p',closed?'Компенсирано — не е текуща наличност':current?`Отнесено по фонд · версия ${current.revision}`:bg.unclassified));
+ if(current)for(const line of current.lines)card.append(el('p',`${line.fund_snapshot.label} · ${line.amount} EUR · фондова версия ${line.fund_revision}`));
+ if(s.can_classify&&!closed&&(!current||s.can_correct)){const form=el('form','','border-top pt-3');form.dataset.fundSplit=m.id;form.append(el('h5',current?'Коригирай чрез нова цяла версия':'Отнеси цялото постъпление','h6'),el('p','Посочи всяка част изрично. Използват се показаните текущи фондови конфигурации; сборът трябва да е цялото постъпление.','small'));
+ const rows=el('div');form.append(rows);function row(seed){const box=el('div','','border-bottom mb-3');box.dataset.fundLine='true';const fund=field(box,'fund_id','Фонд',seed?.fund_id||'',[['','Избери фонд'],...active.map(f=>[f.id,`${f.label} · версия ${f.revision}`])]),amount=field(box,'amount','Сума EUR',seed?.amount||'');amount.inputMode='decimal';const remove=el('button','Премахни реда','btn btn-sm btn-outline-secondary mb-3');remove.type='button';remove.onclick=()=>box.remove();box.append(remove);rows.append(box);return{fund,amount};}
+ for(const line of current?.lines||[null])row(line);const add=el('button','Добави фондов ред','btn btn-outline-secondary mb-3');add.type='button';add.onclick=()=>row();form.append(add);const note=field(form,'note','Основание за отнасянето'),key=crypto.randomUUID();note.maxLength=1000;
+ submit(form,current?'Запази новата разбивка':'Потвърди цялата разбивка',()=>{const lines=[...rows.children].map(box=>{const id=box.querySelector('[name=fund_id]').value;return{fund_id:id,fund_revision:active.find(f=>f.id===id)?.revision,amount:box.querySelector('[name=amount]').value};});return actions.classify(s.id,m.id,current?.revision||0,key,exactFundSplit(m.amount,lines),note.value);});card.append(form);}
+ if(versions.length){const history=financeDetails('История на отнасянето');for(const v of versions){history.append(el('p',`Версия ${v.revision} · ${stamp(v.recorded_at)} · ${v.mirror_of_id?'Огледало на компенсация':'Изрично отнасяне'} · ${v.reason}`,'small'));for(const line of v.lines)history.append(el('p',`${line.fund_snapshot.label} · ${line.amount} EUR`,'small'));}card.append(history);}body.append(card);
+ }}
+ body.append(financeDetails('Какво означава аналитичното отнасяне',el('p','Фондът е предназначение, сметката показва къде е отчетено постъплението, а категорията описва вида операция. Не определяме личен получател на аванс. При компенсация пазим оригиналната история и точно огледало; новото replacement постъпление изисква ново изрично отнасяне.','small'),el('p','Липсващите начални данни и неразпределените движения остават видими. Няма автоматично историческо попълване, фондов трансфер, банков refund или официален отчет.','small')));
+ }
+ bindWorkspaceScope(scope,render);
+}

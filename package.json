@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:owner-finances": "node scripts/check-owner-finances.mjs",
+    "check:owner-finances-browser": "node scripts/check-owner-finances-browser.mjs",
     "check:payment-inbound": "node scripts/check-payment-inbound.mjs",
     "check:payment-inbound-browser": "node scripts/check-manual-payments-browser.mjs",
     "check:cash-accounts": "node scripts/check-cash-accounts.mjs",

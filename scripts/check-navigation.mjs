@@ -37,5 +37,5 @@ async function inspect(path) {
     }
   }
 }
-await inspect('dist');
+await inspect(process.env.CHECK_BUILD_DIR || 'dist');
 console.log(`PASS: ${pages.length} production HTML pages, linked routes/assets; no private package directories in dist. Browser behavior is checked separately.`);

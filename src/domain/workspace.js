@@ -18,5 +18,5 @@ export function workspaceModel(account,admin,feeds,now=Date.now()){
   for(const t of feeds.tickets||[])if(t.can_manage)add(t.scope_id,t.scope_label,'staff','tickets');
   // Only a scope confirmed by a current server feed can enable an empty staff inbox link.
   for(const c of contexts.values())if(c.mode==='staff'&&roles.some(r=>r.scope_id===c.id&&r.permissions.includes('manage_tickets')))c.tickets=true;
-  return {signedIn:true,platform:Boolean(admin?.platform),organizations:admin?.adminOrganizations||[],name:account.profile.display_name,profileId:account.profile.id,contexts:[...contexts.values()]};
+  return {signedIn:true,platform:Boolean(admin?.platform),ownerFinance:feeds.ownerFinance===true,organizations:admin?.adminOrganizations||[],name:account.profile.display_name,profileId:account.profile.id,contexts:[...contexts.values()]};
 }

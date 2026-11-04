@@ -1,5 +1,18 @@
 # Supabase — setup, схема и проверки
 
+## P1 „Моите финанси“ — локален пакет, без hosted apply
+
+Candidate `20261104182905_owner_financial_projection.sql`, SHA-256
+`240cc08bfed5aeeeea95ffe8577467668ebbeb67b51340da1a441cba9cf4a9d3`.
+Добавя guarded read-only history/boolean capability, не таблици, writers или owner
+SELECT grants. `npm run check:owner-finances` и `npm run check:owner-finances-browser`
+проверяват само disposable локални synthetic данни, без credentials/hosted заявки.
+10 DB/RLS/DTO и9 UI/service групи PASS; isolated build/navigation и visual review
+се записват отделно. [DTO/access, setup/baseline/assertions/cleanup и ограничения](../docs/public/OWNER_FINANCES.md).
+Тази версия трябва да е приложена и hosted access gate да е затворен преди общ release
+на P1 frontend. Последно backend има34 applied версии; този пакет не ги сверява hosted.
+Не преизпълнявай старите payment/financial успешни набори без засегната промяна.
+
 ## Payment/account/inbound — ограничено hosted приемане PASS
 
 **04.11.2026: ограничено hosted API/UI/native PostgreSQL MVCC приемане PASS.**

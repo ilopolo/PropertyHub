@@ -9,10 +9,11 @@ export function renderWorkspace({model:m,errors},context,menu,links,add,dashboar
   if(m.contexts.some(c=>c.tickets))actions.push(['pages/tickets.html','Сигнали']);
   if(m.contexts.some(c=>c.finance))actions.push(['pages/finances.html','Финанси']);
   if(m.contexts.some(c=>c.mode==='owner'))actions.push(['pages/account.html#owner-home','Моите имоти']);
+  if(m.ownerFinance)actions.push(['pages/account.html#my-finances','Моите финанси']);
   for(const n of document.querySelectorAll('[data-workspace-registry]'))n.hidden=!m.contexts.some(c=>c.registry);
   actions.forEach(([p,t])=>add(links,p,t));
   if(!m.signedIn){context.append(el('span','Влез в акаунта си, за да видиш разрешените дейности. '));add(context,'pages/login.html','Вход');}
-  else if(!m.contexts.length){context.append(el('span',errors.length?'Достъпът не е зареден изцяло. Това не означава липса на данни. ':m.platform?'Платформен достъп. За работа със сграда е нужно отделно служебно назначение. ':'Нямаш оперативен контекст. За работа със сграда е нужно служебно назначение или отделно проверен собствен достъп. '));add(context,'pages/account.html','Към акаунта и достъпа');}
+  else if(!m.contexts.length){context.append(el('span',errors.length?'Достъпът не е зареден изцяло. Това не означава липса на данни. ':m.ownerFinance?'Достъпна е твоята лична финансова история. Нямаш текущ оперативен контекст. ':m.platform?'Платформен достъп. За работа със сграда е нужно отделно служебно назначение. ':'Нямаш оперативен контекст. За работа със сграда е нужно служебно назначение или отделно проверен собствен достъп. '));add(context,'pages/account.html','Към акаунта и достъпа');}
   else{
     const label=el('label','Текущ контекст','form-label me-2'),select=el('select','','form-select workspace-select');select.id='workspace-scope';label.htmlFor=select.id;
     m.contexts.forEach(c=>{const o=el('option',[c.organization,c.label,c.mode==='owner'?'Моите имоти':'Служебен'].filter(Boolean).join(' · '));o.value=c.key;select.append(o);});

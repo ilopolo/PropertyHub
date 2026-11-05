@@ -1,4 +1,37 @@
-## P4a — фондове и аналитичност, само локално
+<a id="p4a-funds-hosted"></a>
+## P4a — фондове и аналитичност, ограничено hosted приемане
+
+На05.11.2026 exact `20261104221711_scoped_fund_analytics.sql` е приложена еднократно,
+SHA256`be4b780750f26db23f0e23a628825056fdb595ee0b48a97ffd1b2d5338b31cce`.
+Fresh preflight потвърди35версии; isolated dry-run показа само P4a при запазени
+exact applied SQL копия. Actual post-apply/final history има **36версии**, без P2.
+Не прилагай P4a повторно и не редактирай applied SQL/history. Източникът на release
+схемата е миграционната история; feature клонът не изолира hosted проекта.
+
+**PASS:**6ordinary-JWT API групи/14targeted denials,8native независими PostgreSQL
+holder/contender/observer случая с observed waiter преди release, committed exact
+split/history/mirror/replay/compensation assertions и реален local frontend→hosted UI.
+Визуално прегледани375/1440light/dark снимки, exact cleanup/baseline и operator
+credential clearing PASS. [Договор/резултати/ограничения](../docs/public/FUNDS.md).
+
+Приемането не е production deployment или завършен финансов MVP. Main/live остава
+b5d9409; frontend е draft PR9. P2`20261104212948` остава **неприложена**: старият live
+клиент не подава category и е необходим съгласуван frontend cutover + тесен hosted
+category/ticket-only тест. Не включвай P2 тихо във финансов apply, не отслабвай избора.
+Public fund wrappers са auth-only; private mirror helper няма authenticated/anon
+EXECUTE. Не се предоставят нови DB GRANT/роли или Auth акаунти при acceptance.
+
+Cleanup пази синтетичната financial/audit история; private manifest съдържа exact
+retained IDs/statuses. Запазени23payments/23movements/2allocations/18classification
+версии/6mirrors;20funds/2accounts archived,5own roles revoked,14own sessions closed,
+7Auth акаунта/protected baseline непроменени. Няма backfill/реални плащания/движения
+на фондови средства. Forced trigger failure е local-only; hosted fault DDL не е правен.
+При бъдещ applied SQL дефект се създава нова коригираща миграция; hosted apply изисква
+отделно изрично разрешение. Следва P4b само след отделно възлагане; без merge/deploy тук.
+
+### Исторически локален checkpoint и изпълнен acceptance план
+
+Следващите локални статуси са запазена история **преди** hosted run-а по-горе.
 
 Нова **НЕПРИЛОЖЕНА** [20261104221711_scoped_fund_analytics.sql](migrations/20261104221711_scoped_fund_analytics.sql),
 SHA256`be4b780750f26db23f0e23a628825056fdb595ee0b48a97ffd1b2d5338b31cce`. Техническият timestamp е генериран от CLI и е запазен.
@@ -7,7 +40,7 @@ SHA256`be4b780750f26db23f0e23a628825056fdb595ee0b48a97ffd1b2d5338b31cce`. Тех
 [Пълен договор/локални резултати](../docs/public/FUNDS.md).13DB+9UI/4visual/build/navigation
 PASS не е hosted/MVCCPASS. P4b/expenses/openings/transfers/reports не са добавени.
 
-### Отделно бъдещо разрешено acceptance, не изпълнявай сега
+### Исторически acceptance план — изпълнен в ограничения обхват по-горе
 
 1. Freshread-only exactproject qfybswnezdzzahmozikr, действителнаhistory/schema/grants,
    candidateabsence/sourcehash иliveclientcompatibility. Credentials самоpresence,
@@ -40,7 +73,8 @@ PASS не е hosted/MVCCPASS. P4b/expenses/openings/transfers/reports не са 
    Minimalfundread нямаreceipt/payer/bankreference; configonlyнямаanalytics/payment
    grant. SameunchangedJWTfund/recordrevokeотказваследващатазаявка; configошибка не е
    authorizationPASS. Mirrorlatestversion/inactivefund, replacementunclassified,
-   canceledsourceban, noanalyticoriginal и fullrollback приcontrolledmirrorfailure.
+   canceledsourceban, noanalyticoriginal и fullrollback приcontrolledmirrorfailure
+   (последното forced-trigger доказателство остава local-only; не е инжектирано hosted).
 6. Native independent PostgreSQL holder/contender/observer с deadlines и finally:
    observe exact waiter **преди barrier release** заclassify/classify(same/differentkey),
    fundedit/deactivate срещуclassify; classify/reversal иanalyticcorrect/reversal

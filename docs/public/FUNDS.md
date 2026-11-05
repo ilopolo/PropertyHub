@@ -2,10 +2,12 @@
 
 ## Статус
 
-Локално проверен пакет върху финансовия feature PR #9. Новата
-`20261104221711_scoped_fund_analytics.sql` е **неприложена**. Няма hosted/MVCC или
-production PASS. Предходните SQL файлове, payment/charge/account snapshots и личната
-P1 справка не са променяни. P4b разходи/изходящи плащания не са реализирани.
+Ограничено **hosted API/UI/native PostgreSQL MVCC приемане PASS на05.11.2026** върху
+финансовия draft PR #9. `20261104221711_scoped_fund_analytics.sql` е приложена точно
+веднъж след fresh35-version preflight и exact single-candidate dry-run. Потвърдени са
+36версии; P2 `20261104212948` остава неприложена и изисква отделен frontend cutover.
+Frontend още не е в main/production. Предходните SQL и старите payment/charge/account
+snapshots са неизменни. P4b разходи/изходящи плащания не са реализирани.
 
 ## Приети права и граници
 
@@ -112,4 +114,30 @@ bank selector е само id/label/type/currency/revision/status в разреш
 набори не са повторени; само необходимата засегната payment-compensation regression.
 Preview4173, PH-DEMO-V1 и личните записи/credentials не са засягани.
 
-Следва отделно разрешеното [hosted/MVCC приемане](../../supabase/README.md#p4a--фондове-и-аналитичност-само-локално).
+## Ограничено hosted приемане — 05.11.2026
+
+- Шест ordinary-JWT API групи и14целеви отказа: изрични права без admin наследяване,
+  minimal read без receipt/payer, foreign scope/direct DML/spoof и невалидни версии,
+  exact100=60+40 при80personal allocation+20unallocated, immutable correction50+50,
+  replay/business duplicate/stale HTTP409 и same-JWT revoke. Не се прави второ движение.
+- Осем native случая с независими PostgreSQL holder/contender/observer и наблюдаван
+  waiter преди release: classify/reversal и analytic-correction/reversal в двете
+  подреждания, deactivate/classify в двете подреждания, same-key и different-key duplicate.
+  Крайните committed revisions/суми/огледала са проверени без double/partial records.
+- Реален отделен local frontend→hosted UI: фондcreate/edit/history, whole2.00split,
+  correction1.25+0.75, same-JWT revoke, inactive-fund compensation и exact mirror.
+  Четири375/1440light/dark снимки са визуално прегледани; user preview/demo са запазени.
+- Actual cleanup:20own фонда и2сметки архивирани,5временни роли оттеглени, точната
+  membership възстановена,14own сесии затворени и0native връзки оставени. Baseline
+  hashes на старите профили/права/scopes/финансови snapshots/версии и7Auth акаунта
+  съвпадат. Временните CLI token/DB URI са изчистени. Няма нови Auth акаунти/DB роли.
+- Запазени маркирани синтетични23payments/23movements/2allocations/18classification
+  версии, включително6mirrors:7active receipts,8reversed originals и8reversal records.
+  Това не са реални клиентски пари, банкови потвърждения или фондов баланс. Exact IDs,
+  status/receipts/baseline са в частния run manifest и не се публикуват.
+
+Forced mirror-trigger failure остава **local-only**, без fault injection в hosted.
+Hosted line-guard refusal е проверен без частичен classification. P2 missing endpoint
+и старият charge-feed fallback не са обща регресия или P4a PASS за други модули.
+Плащания/сметки/FND-F05 старите набори не са повторени. Следва отделният P4b пакет,
+без да се обявява завършен финансов MVP. [Release инструкции](../../supabase/README.md#p4a-funds-hosted).

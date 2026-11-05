@@ -1,3 +1,9 @@
+## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
+
+Нова НЕПРИЛОЖЕНА `20261105131317_monthly_management_equal_tariff.sql`, SHA256 `ef089cecd7c553264504e5047eeb5cd0f94d72328d84dc6099bef91945ce21ba`. 16 локални DB/domain/RLS и8 UI/service групи PASS, отделен ci/build/navigation; не hosted/native MVCC. Старите SQL са неизменени; последното запазено hosted доказателство е37 версии. P2 20261104212948 остава изключен frontend-cutover blocker. Не прилагай всички pending миграции автоматично.
+
+[Точни DTO/RPC/права и future hosted план](../docs/public/MONTHLY_MANAGEMENT.md). Scoped prepare_rules/publish_rules/manage_registry/prepare_charges/publish_charges и correct_finance остават изрични; няма нови права или admin inheritance. Само нови typed adapters към общия immutable charge engine; няма стар backfill/clock override или payment промени. Локално npm run check:monthly-management и check:monthly-management-browser.
+
 <a id="p4b-expenses-hosted"></a>
 ## P4b — exact apply и ограничено hosted приемане
 

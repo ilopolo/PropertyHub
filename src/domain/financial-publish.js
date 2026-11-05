@@ -8,8 +8,8 @@ export function chargeClaim(p){
  const result={preview_id:id(p.preview_id),liability_date:p.liability_date?registryDate(p.liability_date):null,replaces_batch_id:p.replaces_batch_id?id(p.replaces_batch_id):null};
  for(const k of keys.slice(2,6))result[k]=p[k]==null||p[k]===''?null:previewNote(p[k]);
  if(p.publication_model!=null){
-  if(!['sole-owner-v1','ordinary-coowner-v1'].includes(p.publication_model))throw Error('Неподдържан режим на публикуване.');
-  if(p.publication_model==='ordinary-coowner-v1')result.publication_model=p.publication_model;
+  if(!['sole-owner-v1','ordinary-coowner-v1','monthly-owner-occupant-v1'].includes(p.publication_model))throw Error('Неподдържан режим на публикуване.');
+  if(p.publication_model!=='sole-owner-v1')result.publication_model=p.publication_model;
  }
  return result;
 }

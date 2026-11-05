@@ -6,6 +6,8 @@
 
 ## Реално състояние
 
+**P5 CALC-04 — локален PASS:** изрично одобрена положителна месечна ставка в цели EUR центове × пълен проверен състав. Само приключил календарен месец и поддържаният единствен owner/occupant случай, отделно прегледана лична отговорност. 16 DB/domain/RLS и 8 реални localhost UI/service групи, 4 визуални 375/1440 light/dark снимки, изолиран offline ci/build/navigation PASS. Новата `20261105131317_monthly_management_equal_tariff.sql` е **НЕПРИЛОЖЕНА**; hosted/MVCC/production не са доказани за CALC-04. Последното запазено hosted доказателство остава37 версии, P2 е отделен pending cutover. [Договор и бъдещ acceptance план](docs/public/MONTHLY_MANAGEMENT.md).
+
 **Разходи P4b — ограничено hosted API/UI/MVCC PASS (05.11.2026):** document → partial/full отчетено изходящо плащане → точно едно outbound и цяла фондова разбивка, историческа компенсация и атомарен replacement. 8 API +2 rights/setup +1 source regression групи/22 отказа, 11 независими PostgreSQL observed-waiter случая и реален UI/4 визуални снимки PASS. Exact `20261105094824` е приложена: **37 backend версии**, P2 остава неприложена. Cleanup/baseline и credential clearing PASS; синтетичната история е запазена. Attachment, банков превод и пълен баланс не са реализирани. Frontend още е draft PR #9. [Договор, резултати и ограничения](docs/public/EXPENSES.md).
 
 **Фондове P4a — ограничено hosted API/UI/MVCC PASS (05.11.2026):** конфигурация с

@@ -1,5 +1,11 @@
 # Реализирана архитектура
 
+## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
+
+Typed domain/service/controller/UI/BG → guarded monthly adapters → съществуващи resolutions/rule versions/immutable previews и общ save/review/publish engine. Нов monthly_context_reviews пази explicit whole-month registry completeness source; новата категория е equal_units/TARIFF, без FND-F05 rounding/qualification. Snapshot/claim модел monthly-owner-occupant-v1, точни q/N×q и исторически parties; старите FND feeds са изолирани, публичните charge v2 подписи са запазени. Person contacts/raw registry evidence не се връщат в новия финансов DTO.
+
+16 DB/domain/RLS +8 реални локални UI/service групи, 4 визуални mobile/desktop/две теми, offline ci/build/navigation PASS. Миграция 20261105131317_monthly_management_equal_tariff.sql е неприложена; hosted/MVCC не са доказани. [Договор, права, ограничения и бъдещ план](MONTHLY_MANAGEMENT.md).
+
 ## P4b — разходен процес, ограничено hosted приемане
 
 Expense domain/BG → service/controller/UI → public invoker/private guarded RPC. Нови expenses/expense_versions/expense_payments и private exact operation receipts. Typed XOR source в money_movements отделя incoming payment от outgoing expense settlement; един settlement задължително има едно movement и immutable whole fund set в същата транзакция. Historical reversal използва оригиналните account/fund версии, replacement изисква нов избор. Document revision и settlement counter сериализират edit/pay/reverse. Existing incoming guard/feed са запазени, с изрична source изолация.

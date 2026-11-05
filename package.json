@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:expenses": "node scripts/check-expenses.mjs",
+    "check:expenses-browser": "node scripts/check-expenses-browser.mjs",
     "check:funds": "node scripts/check-funds.mjs",
     "check:funds-browser": "node scripts/check-funds-browser.mjs",
     "check:ticket-creation-db": "node scripts/check-ticket-creation-db.mjs",

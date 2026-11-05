@@ -1,5 +1,14 @@
 # Реализирана архитектура
 
+## P4b — локален разходен процес
+
+Expense domain/BG → service/controller/UI → public invoker/private guarded RPC. Нови expenses/expense_versions/expense_payments и private exact operation receipts. Typed XOR source в money_movements отделя incoming payment от outgoing expense settlement; един settlement задължително има едно movement и immutable whole fund set в същата транзакция. Historical reversal използва оригиналните account/fund версии, replacement изисква нов избор. Document revision и settlement counter сериализират edit/pay/reverse. Existing incoming guard/feed са запазени, с изрична source изолация.
+
+P4b е локално реализиран и приет на 05.11.2026: 15 DB/domain/RLS и 9 реални UI/service групи PASS, четири визуално прегледани 375/1440 light/dark снимки, изолиран offline npm ci, build и navigation (11 HTML входа) PASS. Disposable PGlite/simulated Auth и localhost HTTP не са hosted/native PostgreSQL MVCC доказателство. Нова НЕПРИЛОЖЕНА `20261105094824_expense_outbound.sql`, SHA256 `41808df5ade89a89ecb6c4ed873170f5f95e4c3b6ce22698ebcef1de7f7cef78`. Последното запазено hosted доказателство остава 36 версии; не е fresh preflight. P2 20261104212948 остава неприложен отделен frontend-cutover blocker. Main/live b5d9409; PR8 отделен/unmerged; P4b е в draft PR9, извън production.
+
+[DTO, права, ограничения и бъдещо приемане](EXPENSES.md).
+
+
 ## P4a — фондове и аналитичност
 
 Fund domain/BG → service → controller/UI → guarded privateRPC/publicinvoker сRLS.

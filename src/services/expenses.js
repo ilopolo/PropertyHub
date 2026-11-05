@@ -1,0 +1,9 @@
+import{getClient,unwrap}from'./supabase.js';
+import{expenseDocument,expenseSettlement,expenseFundSplit,expenseNote,expenseFeedData}from'../domain/expenses.js';
+import{paymentAccountSelection,paymentCompensationDate,paymentAccountChangeReason}from'../domain/payment-inbound.js';
+const rpc=async(name,p)=>unwrap(await getClient().rpc(name,p).retry(false));
+export const expenseFeed=async()=>expenseFeedData(await rpc('expense_feed'));
+export const saveExpense=(scope,record,payload,key,note)=>rpc('save_expense',{scope,target:record?.id??null,expected_revision:record?.revision??0,expected_settlement_revision:record?.settlement_revision??0,request_key:key,payload:expenseDocument(payload),note:expenseNote(note)});
+export const payExpense=(scope,record,payload,key,note,account,lines)=>rpc('pay_expense',{scope,target:record.id,expected_revision:record.revision,expected_settlement_revision:record.settlement_revision,...paymentAccountSelection(account),lines:expenseFundSplit(payload.amount,lines),request_key:key,payload:expenseSettlement(payload),note:expenseNote(note)});
+export const reverseExpensePayment=(scope,record,payment,key,note,date)=>rpc('reverse_expense_payment',{scope,target:payment.id,expected_revision:payment.payment_revision,expected_settlement_revision:record.settlement_revision,compensation_date:paymentCompensationDate(date),request_key:key,note:expenseNote(note)});
+export const replaceExpensePayment=(scope,record,payment,payload,key,note,account,lines,date,changeReason)=>rpc('replace_expense_payment',{scope,target:payment.id,expected_revision:payment.payment_revision,expected_settlement_revision:record.settlement_revision,compensation_date:paymentCompensationDate(date),...paymentAccountSelection(account),account_change_reason:paymentAccountChangeReason(changeReason),lines:expenseFundSplit(payload.amount,lines),request_key:key,payload:expenseSettlement(payload),note:expenseNote(note)});

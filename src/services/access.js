@@ -14,6 +14,8 @@ export async function revokeScopeSetup(request) { return unwrap(await getClient(
 export async function completeScopeSetup(requestId, address, entrance, provenance) { return unwrap(await getClient().rpc('complete_scope_setup', { request_id: requestId, address, entrance_code: entrance || null, ...provenance })); }
 export async function organizationStaff(org) { return unwrap(await getClient().rpc('organization_staff', { org })); }
 export async function assignStaff(org, authId, scope, role) {
+  const expenseRole={expense_manager:['manager',['record_expenses']],expense_cashier:['cashier',['record_expenses']],expense_reader_manager:['manager',['read_expenses']],expense_reader_cashier:['cashier',['read_expenses']],expense_reader_controller:['controller',['read_expenses']],expense_corrector_manager:['manager',['record_expenses','correct_finance']],expense_corrector_cashier:['cashier',['record_expenses','correct_finance']]}[role];
+  if(expenseRole)return unwrap(await getClient().rpc('assign_staff_role',{org,target_auth_user_id:authId,scope,role:expenseRole[0],permissions:expenseRole[1]}).retry(false));
   const fundRole={fund_manager:['manager','manage_funds'],fund_cashier:['cashier','manage_funds'],fund_reader_manager:['manager','read_funds'],fund_reader_cashier:['cashier','read_funds'],fund_reader_controller:['controller','read_funds']}[role];
   if(fundRole)return unwrap(await getClient().rpc('assign_staff_role',{org,target_auth_user_id:authId,scope,role:fundRole[0],permissions:[fundRole[1]]}).retry(false));
   const accountRole = {cash_account_manager:'manager',cash_account_cashier:'cashier'}[role];

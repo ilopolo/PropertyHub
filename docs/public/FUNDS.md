@@ -7,7 +7,7 @@
 веднъж след fresh35-version preflight и exact single-candidate dry-run. Потвърдени са
 36версии; P2 `20261104212948` остава неприложена и изисква отделен frontend cutover.
 Frontend още не е в main/production. Предходните SQL и старите payment/charge/account
-snapshots са неизменни. P4b разходи/изходящи плащания не са реализирани.
+snapshots са неизменни. P4b има отделно **локално** приемане, без hosted apply: [разходи](EXPENSES.md). P4a PASS не е доказателство за новия P4b път.
 
 ## Приети права и граници
 

@@ -7,7 +7,7 @@
 веднъж след fresh35-version preflight и exact single-candidate dry-run. Потвърдени са
 36версии; P2 `20261104212948` остава неприложена и изисква отделен frontend cutover.
 Frontend още не е в main/production. Предходните SQL и старите payment/charge/account
-snapshots са неизменни. P4b има отделно **локално** приемане, без hosted apply: [разходи](EXPENSES.md). P4a PASS не е доказателство за новия P4b път.
+snapshots са неизменни. P4b има отделно ограничено hosted API/UI/MVCC приемане с 37 backend версии: [разходи](EXPENSES.md). P4a PASS не е използван като заместител на новия P4b gate.
 
 ## Приети права и граници
 
@@ -139,5 +139,5 @@ Preview4173, PH-DEMO-V1 и личните записи/credentials не са з�
 Forced mirror-trigger failure остава **local-only**, без fault injection в hosted.
 Hosted line-guard refusal е проверен без частичен classification. P2 missing endpoint
 и старият charge-feed fallback не са обща регресия или P4a PASS за други модули.
-Плащания/сметки/FND-F05 старите набори не са повторени. Следва отделният P4b пакет,
-без да се обявява завършен финансов MVP. [Release инструкции](../../supabase/README.md#p4a-funds-hosted).
+Плащания/сметки/FND-F05 старите набори не са повторени. P4b има отделно ограничено hosted
+приемане; това не е завършен финансов MVP. [Release инструкции](../../supabase/README.md#p4a-funds-hosted).

@@ -6,7 +6,7 @@
 
 ## Реално състояние
 
-**Разходи P4b — само локално приемане PASS (05.11.2026):** разходен документ → изрично частично/пълно отчетено плащане → едно outbound движение и цяла фондова разбивка, версии/историческа компенсация и атомарен replacement. Изрични scoped права, без admin наследяване. 15 DB/domain/RLS и9 реални локални UI/service групи, 4 визуални снимки, build/navigation PASS. `20261105094824` е НЕПРИЛОЖЕНА; hosted/MVCC предстои. Attachment и пълен финансов баланс не са реализирани. [Договор и тесен acceptance план](docs/public/EXPENSES.md).
+**Разходи P4b — ограничено hosted API/UI/MVCC PASS (05.11.2026):** document → partial/full отчетено изходящо плащане → точно едно outbound и цяла фондова разбивка, историческа компенсация и атомарен replacement. 8 API +2 rights/setup +1 source regression групи/22 отказа, 11 независими PostgreSQL observed-waiter случая и реален UI/4 визуални снимки PASS. Exact `20261105094824` е приложена: **37 backend версии**, P2 остава неприложена. Cleanup/baseline и credential clearing PASS; синтетичната история е запазена. Attachment, банков превод и пълен баланс не са реализирани. Frontend още е draft PR #9. [Договор, резултати и ограничения](docs/public/EXPENSES.md).
 
 **Фондове P4a — ограничено hosted API/UI/MVCC PASS (05.11.2026):** конфигурация с
 изрични scoped права, пълно отнасяне на записано inbound по фондове, проследими версии

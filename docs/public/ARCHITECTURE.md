@@ -1,12 +1,16 @@
 # Реализирана архитектура
 
-## P4b — локален разходен процес
+## P4b — разходен процес, ограничено hosted приемане
 
 Expense domain/BG → service/controller/UI → public invoker/private guarded RPC. Нови expenses/expense_versions/expense_payments и private exact operation receipts. Typed XOR source в money_movements отделя incoming payment от outgoing expense settlement; един settlement задължително има едно movement и immutable whole fund set в същата транзакция. Historical reversal използва оригиналните account/fund версии, replacement изисква нов избор. Document revision и settlement counter сериализират edit/pay/reverse. Existing incoming guard/feed са запазени, с изрична source изолация.
 
-P4b е локално реализиран и приет на 05.11.2026: 15 DB/domain/RLS и 9 реални UI/service групи PASS, четири визуално прегледани 375/1440 light/dark снимки, изолиран offline npm ci, build и navigation (11 HTML входа) PASS. Disposable PGlite/simulated Auth и localhost HTTP не са hosted/native PostgreSQL MVCC доказателство. Нова НЕПРИЛОЖЕНА `20261105094824_expense_outbound.sql`, SHA256 `41808df5ade89a89ecb6c4ed873170f5f95e4c3b6ce22698ebcef1de7f7cef78`. Последното запазено hosted доказателство остава 36 версии; не е fresh preflight. P2 20261104212948 остава неприложен отделен frontend-cutover blocker. Main/live b5d9409; PR8 отделен/unmerged; P4b е в draft PR9, извън production.
+P4b има ограничено **hosted API/UI/native PostgreSQL MVCC приемане PASS на 05.11.2026**. Exact `20261105094824_expense_outbound.sql` е приложена еднократно след fresh36-version preflight и изолиран single-candidate dry-run; SHA256 `41808df5ade89a89ecb6c4ed873170f5f95e4c3b6ce22698ebcef1de7f7cef78`. Actual post-apply/final history е **37 версии**, без P2 `20261104212948`. Предходните SQL не са редактирани. Frontend е draft PR #9, извън main/production; main/live остава b5d9409, PR #8 отделен/unmerged.
 
-[DTO, права, ограничения и бъдещо приемане](EXPENSES.md).
+Доказани са 8 P4b ordinary-JWT API групи, 2 setup/rights проверки и 1 тясна source/account regression група, с 22 очаквани отказа; 11 native случая с независими holder/contender/observer връзки и наблюдаван waiter **преди** освобождаване на бариерата; реален отделен frontend→hosted UI и четири визуално прегледани 375/1440 light/dark снимки. Предходните 15 DB/domain/RLS и 9 локални UI/service групи са запазени без повторение. Local/PGlite/simulated Auth не са използвани като native MVCC доказателство.
+
+Exact cleanup и отделна read-only baseline сверка са PASS: 5 собствени сметки и 5 фонда са деактивирани със запазени версии; 6 временни роли са оттеглени, точната B membership е възстановена, 17 собствени Auth сесии са затворени и няма останали native връзки. Старите payment/charge/party/account/fund snapshots, allocations, PH-DEMO-V1, личните записи и 7-те Auth акаунта са запазени. Временните operator CLI token/DB URI са изчистени; ordinary QA credentials не са променяни.
+
+[DTO, права, доказателства и ограничения](EXPENSES.md).
 
 
 ## P4a — фондове и аналитичност

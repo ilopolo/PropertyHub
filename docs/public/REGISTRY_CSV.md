@@ -26,14 +26,37 @@ observer вижда holder като blocker; holder commit освобождав�
 и [function snapshot semantics](https://www.postgresql.org/docs/current/xfunc-volatility.html)
 подкрепят локалното възпроизвеждане на проблема.
 
-Нова **НЕПРИЛОЖЕНА** `20261106185945_registry_csv_current_rights.sql` добавя затворен
-private live-time predicate само за CSV stage/commit проверките преди/след locks.
+**Окончателен локален кандидат, неприложен:**
+`20261106185945_registry_csv_current_rights.sql`, LF SHA256
+`7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
+Завършилата read-only hosted сверка потвърждава 39 версии и отсъствие на тази
+миграция **преди** редакцията ѝ. Зависимостите са приложената първоначална P6a
+миграция и съществуващите registry/access функции. CALC остава изключен.
+Разрешението за предишния hash `8152525c…acf8` **не важи** за променения кандидат.
+
+Корекцията добавя затворен private live-time predicate само за CSV stage/commit
+проверките преди/след locks. `VOLATILE` PL/pgSQL helper получава нов snapshot за
+своя SELECT и сравнява правата с действителен `clock_timestamp()` при всяко извикване;
+самото повторение на стария transaction-clock helper не решава проблема.
 Не променя общия финансов/registry guard, публичните RPC подписи, права, snapshots
 или вече приложен SQL. Няма директен authenticated/anon EXECUTE на новия helper.
-Четири целеви локални групи възпроизвеждат стария дефект, проверяват expired
-prepare/commit refusal без частичен запис, helper ACL и валиден commit/replay.
-13-те засегнати P6a DB/RLS групи са повторени успешно с корекцията. Това **не е**
-hosted/MVCC доказателство за поправката.
+Отделно е установен **локален staging replay пропуск** в първия вариант на
+корекцията: след advisory wait съществуващият job се връща преди post-scope guard.
+Контролирана локална проба с реалния predicate и изтичане на правото след entry
+проверките връща job при вече false live permission; new-job контролата отказва.
+Това не е hosted/native MVCC доказателство за втория проблем.
+
+Окончателният кандидат проверява prepare+read отново **веднага след advisory lock**,
+преди replay return и request-mismatch branch. Новият staging път пази и проверката
+след scope lock. Commit проверява след advisory/job/scope locks преди връщане на
+committed receipt, stale/conflict откази и всички записи. Read-only staging
+list/detail/request и export остават с текущите си explicit права; signatures,
+grants и RLS са неизменени. Не се прави общ access refactor.
+
+Локално са PASS: 8 wait-exit групи за разрешени/отказани replay, mismatch, нов
+staging и commit; 4 current-rights групи за стария clock дефект/helper ACL; 13
+засегнати P6a DB/RLS групи. Локалните expiry hooks са само в disposable fixture,
+без реални независими сесии или наблюдаван waiter. Това **не е** hosted/MVCC PASS.
 
 Cleanup е PASS с отделна read-only проверка: 9 временни назначения са оттеглени,
 6 собствени сесии са затворени, защитеният baseline и 7 Auth акаунта са непроменени.
@@ -42,6 +65,12 @@ Cleanup е PASS с отделна read-only проверка: 9 временни
 защитен unit archive RPC; обектите остават active, без direct-SQL lifecycle обход.
 Exact IDs/receipts са само в игнорирания run journal. Временните operator credentials
 са изчистени. PH-DEMO-V1, личните записи и preview4173 са запазени.
+
+Corrective-only продължението е спряно **преди apply** при локалния review. Read-only
+сверката е завършила, клиентският процес е приключил след rollback/end; няма отделен
+по-късен server-observer receipt за връзката. Няма нов setup, application записи,
+назначения или Auth сесии. Предоставените временни credentials са изчистени отново;
+старият run cleanup не е повторен. Нов hosted UI/export процес не е започвал.
 
 ## Поддържан процес
 
@@ -159,10 +188,13 @@ Supabase hosted Auth/RLS или PostgreSQL MVCC доказателство.
 fresh 39-version history/hash/compatibility gate → изолирана история с **единствен**
 candidate `20261106185945_registry_csv_current_rights.sql` (P6a вече applied, CALC
 изключен) → exact dry-run/apply/inspect → fresh nondemo baseline/own grants →
-повторение само на проваления revoke/waiting-commit native случай и тясната засегната
-ordinary-JWT regression → реален UI/export-byte/mobile/desktop/light/dark процес →
+проваления revoke/waiting-commit native случай **и** staging replay след advisory wait
+с committed revoke, exact отказ и липса на частични записи; отделен разрешен commit
+при запазени права; тясна засегната ordinary-JWT regression → реален UI/export-byte/
+mobile/desktop/light/dark процес →
 exact cleanup. Старите request keys/committed резултати не се replay-ват като setup;
-новият run има нов marker. Допълнителният hosted apply не е разрешен в приключилия run.
+новият run има нов marker. Нужен е нов изричен apply gate за окончателния hash;
+старото разрешение за различен hash не се използва.
 
 Първоначален приемателен план:
 

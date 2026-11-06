@@ -8,8 +8,12 @@ P2 applied/CALC excluded, guarded RPC grants и затворени import tables
 и8native races са PASS; revoke/waiting-commit е FAIL. Hosted UI/export не е изпълнен.
 Нова20261106185945_registry_csv_current_rights.sql е **НЕПРИЛОЖЕНА**, с CSV-only
 live-time write predicate, без промяна на общите guards или предходния SQL.
-LF SHA256: `8152525c92772118e33094d609f2a19c0c79b084ed7ffe1ede00a84ee012acf8`.
-Целевите4local regression и13affected DB/RLS групи са PASS; това не е hosted/MVCC PASS.
+Окончателен LF SHA256: `7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
+Завършил read-only preflight потвърди39версии и неприложеност преди редакцията.
+Нов post-advisory stage guard преди replay/mismatch затваря отделен локално доказан
+пропуск. Старото разрешение за hash815252…acf8 не важи за този променен кандидат.
+8wait-exit/4current-rights/13affected DB/RLS локални групи са PASS, не hosted/MVCC PASS.
+Няма corrective dry-run/apply/setup; временните operator credentials са изчистени.
 Cleanup/read-only baseline/temporary credential clearing са потвърдени; financial,
 audit/import историята и ясно маркираните QA units са запазени.
 След отделно разрешение: exact39actual applied versions + самоcorrective candidate,

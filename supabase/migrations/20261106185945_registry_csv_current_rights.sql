@@ -26,6 +26,8 @@ declare actor uuid:=private.actor();j public.import_jobs;packet_hash text;rec re
  if jsonb_array_length(rows) not between 1 and 200 or octet_length(rows::text)>262144 then raise exception 'registry_csv_limit' using errcode='23514';end if;
  packet_hash:=encode(sha256(convert_to(rows::text,'UTF8')),'hex');
  perform pg_advisory_xact_lock(hashtextextended(actor::text||':registry-stage:'||request_key::text,0));
+ -- The advisory lock can wait, including on a replay. Recheck BEFORE any early return.
+ if not(private.registry_csv_current_permission(scope,'prepare_registry_import') and private.registry_csv_current_permission(scope,'read_registry')) then raise exception 'registry_csv_prepare_revoked' using errcode='42501';end if;
  select * into j from public.import_jobs x where x.created_by=actor and x.request_key=stage_registry_units.request_key;
  if j.id is not null then
   if j.scope_id<>scope or j.source_hash<>packet_hash then raise exception 'registry_csv_request_mismatch' using errcode='PT409';end if;

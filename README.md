@@ -3,8 +3,11 @@
 **P6a CSV обекти — hosted FAIL, извън production:** точната миграция20261106170356
 е приложена; backend историята е39версии. 7ordinary-JWT API групи и8native races са
 PASS; revoke/waiting-commit race еFAIL. Hosted UI/export остава непроверен.
-Нова локално проверена20261106185945 корекция е **неприложена** и изисква отделно
-разрешение. Cleanup/baseline/credential clearing са потвърдени. Няма deployment,
+Корекция20261106185945 е **неприложена**. След локално открит staging replay пропуск
+тя е допълнена с post-advisory проверка; окончателният hash изисква ново разрешение.
+8 wait-exit,4 current-rights и13 DB/RLS локални групи са PASS. Read-only сверка
+потвърждава39версии; corrective apply/setup не са започвали, credentials са изчистени.
+Първоначалният cleanup/baseline е запазен. Няма deployment,
 CALC apply, historical backdating или claim за общ hosted/MVCC PASS.
 [Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
 

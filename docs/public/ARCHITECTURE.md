@@ -13,7 +13,12 @@ contexts за релевантните explicit permission hints, не staging/e
 P6a schema е приложена (39 версии), но acceptance е FAIL: revoke по време на scope
 wait не се отразява правилно чрез transaction-stable clock. Новият локален CSV-only
 live-time guard е в неприложена corrective миграция20261106185945; общите финансови
-guards не са променени. Hosted UI/export и corrective native rerun остават gates.
+guards не са променени. Тя включва и post-advisory stage guard преди replay/mismatch
+early exits; това затваря отделен локално доказан пропуск. Кандидатът е неприложен
+и hash-ът е променен след review, затова старото apply разрешение не важи.
+8wait-exit/4current-rights/13DB локални групи са PASS; hosted UI/export и native
+waiting-commit/staging-replay приемането остават gates. Read-only продължението не
+е променило backend историята от39версии и не е създавало setup или записи.
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

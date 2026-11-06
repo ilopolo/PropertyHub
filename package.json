@@ -98,7 +98,8 @@
     "check:registry-csv-domain": "node scripts/check-registry-csv-domain.mjs",
     "check:registry-csv-db": "node scripts/check-registry-csv-db.mjs",
     "check:registry-csv-browser": "node scripts/check-registry-csv-browser.mjs",
-    "check:registry-csv-current-rights": "node scripts/check-registry-csv-current-rights.mjs"
+    "check:registry-csv-current-rights": "node scripts/check-registry-csv-current-rights.mjs",
+    "check:registry-csv-wait-exits": "node scripts/check-registry-csv-wait-exits.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

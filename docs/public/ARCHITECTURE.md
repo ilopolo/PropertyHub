@@ -21,6 +21,22 @@ Expense metadata/reference не е файлов attachment; ръчно отче�
 Точният [cutover/recovery ред](../../supabase/README.md#interim-finance-p2-release)
 е отделен от описанията на вече приетите модули по-долу.
 
+## Общ UI слой на release кандидата
+
+Тринадесет Vite HTML входа включват помощ по роли и демонстрационни контакти.
+`src/ui/shell.js` представя текущия workspace и постоянните session действия;
+административните връзки използват съществуващия capability модел. При logout,
+смяна на профил и връщане от browser history се премахва старото представяне и
+се зарежда текущата сесия чрез съществуващия Auth service. Това не е authorization
+заместител. `field-help.js` добавя видими пояснения и aria-describedby, а
+`public-errors.js` ограничава показването на сурови технически грешки.
+Нито един финансов service write, домейн изчисление, migration или Edge boundary
+не е променен от този presentation пакет. Не е повторено hosted/MVCC приемане.
+
+Contact controller показва единствено escaped локален пример — без send/store
+операция, backend, външен provider или измислен получател. SVG/PNG branding assets
+са локални, с варианти за двете теми, без runtime font dependency.
+
 ## P4b — разходен процес, ограничено hosted приемане
 
 Expense domain/BG → service/controller/UI → public invoker/private guarded RPC. Нови expenses/expense_versions/expense_payments и private exact operation receipts. Typed XOR source в money_movements отделя incoming payment от outgoing expense settlement; един settlement задължително има едно movement и immutable whole fund set в същата транзакция. Historical reversal използва оригиналните account/fund версии, replacement изисква нов избор. Document revision и settlement counter сериализират edit/pay/reverse. Existing incoming guard/feed са запазени, с изрична source изолация.

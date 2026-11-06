@@ -1,3 +1,4 @@
+import {userError} from './public-text.js';
 import {assessPersistedShares} from '../domain/unit-share-records.js';
 import {shareStates,shareLimit,shareReasons} from '../i18n/unit-shares-bg.js';
 import {registryToday} from '../domain/registry.js';
@@ -9,7 +10,7 @@ function field(parent,name,label,value='',{type='text',required=true,choices,max
 }
 const button=(parent,text,cls='btn btn-primary')=>{const b=el('button',text,cls);parent.append(b);return b;};
 const read=parent=>Object.fromEntries([...parent.querySelectorAll('input,select,textarea')].map(n=>[n.name,n.value||null]));
-function action(form,run){form.addEventListener('submit',async e=>{e.preventDefault();const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);let error=form.querySelector('[role=alert]');if(!error){error=el('p','','text-danger text-break mt-2');error.setAttribute('role','alert');form.append(error);}error.textContent='';try{await run();}catch(e){error.textContent=e.code==='PT409'?'Конфликт на версията. Презареди набора преди нова редакция.':e.code?'Операцията е отказана. Провери правата, участниците, периодите, източниците и точните стойности.':e.message;}finally{buttons.forEach(b=>b.disabled=false);}});}
+function action(form,run){form.addEventListener('submit',async e=>{e.preventDefault();const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);let error=form.querySelector('[role=alert]');if(!error){error=el('p','','text-danger text-break mt-2');error.setAttribute('role','alert');form.append(error);}error.textContent='';try{await run();}catch(e){error.textContent=e.code==='PT409'?'Конфликт на версията. Презареди набора преди нова редакция.':e.code?'Операцията е отказана. Провери правата, участниците, периодите, източниците и точните стойности.':userError(e);}finally{buttons.forEach(b=>b.disabled=false);}});}
 function provenance(parent,p={}){
  field(parent,'source_kind','Вид източник',p.source_kind||'document',{choices:[['document','Документ'],['declaration','Декларация']]});
  field(parent,'source_reference','Източник',p.source_reference,{max:200});field(parent,'known_from','Известно от',p.known_from||registryToday(),{type:'date'});field(parent,'history_note','Ограничения на известната история',p.history_note,{type:'textarea'});

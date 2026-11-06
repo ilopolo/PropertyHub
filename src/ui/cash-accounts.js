@@ -1,6 +1,8 @@
+import {userError} from '../i18n/public-errors.js';
+import {humanText} from './public-text.js';
 import {financeState,financeDetails} from './finance-help.js';
 import {bindWorkspaceScope} from './workspace-context.js';
-const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=humanText(text);n.className=cls;return n;};
 function field(form,name,label,value='',options){
  const box=el('label',label,'form-label d-block mb-3'),n=el(options?'select':'input','','form-control');n.name=name;
  if(options)for(const[v,label]of options){const o=el('option',label);o.value=v;n.append(o);}
@@ -12,7 +14,7 @@ export function renderCashAccounts(root,data,actions){
  const scope=field(root,'account_scope','Обхват за парични сметки',root.dataset.scope||data.scopes[0].id,data.scopes.map(s=>[s.id,s.label])),body=el('div');root.append(body);
  function submit(form,label,fn){
   const error=el('p','','text-danger');error.setAttribute('role','alert');const button=el('button',label,'btn btn-primary');form.append(error,button);
-  form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;button.disabled=true;error.textContent='';try{await fn();}catch(e){error.textContent=e.code==='PT409'?'Сметката е променена или деактивирана. Натисни „Обнови“ и прегледай текущата версия.':e.code==='42501'?'Нямаш текущо право за тази операция.':e.code==='23514'?'Провери вида, EUR, името, предназначението, реквизитите и причината.':e.message||'Операцията не е потвърдена. Обнови преди повторение.';}finally{button.disabled=false;}};
+  form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;button.disabled=true;error.textContent='';try{await fn();}catch(e){error.textContent=e.code==='PT409'?'Сметката е променена или деактивирана. Натисни „Обнови“ и прегледай текущата версия.':e.code==='42501'?'Нямаш текущо право за тази операция.':e.code==='23514'?'Провери вида, EUR, името, предназначението, реквизитите и причината.':userError(e,"Операцията не е потвърдена. Обнови преди повторение.");}finally{button.disabled=false;}};
  }
  function render(){
   body.replaceChildren();const s=data.scopes.find(s=>s.id===scope.value);if(!s){financeState(body,'no-context','Нямаш достъп до парични сметки в избрания контекст. Избери разрешен обхват.');return;}root.dataset.scope=s.id;

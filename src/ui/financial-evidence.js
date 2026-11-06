@@ -1,14 +1,15 @@
+import {humanText} from './public-text.js';
 import {evidenceSchema,evidenceTextFields,moneyFields} from '../domain/financial-evidence.js';
 import {evidenceLabels as labels,evidenceStatus,evidenceDisclaimer,evidenceUnitTypes} from '../i18n/financial-evidence-bg.js';
 import {supportedResolutionType} from '../domain/financial-drafts.js';
 import {financialDraftsBg} from '../i18n/financial-drafts-bg.js';
-const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;};
+const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=humanText(text);if(cls)e.className=cls;return e;};
 const option=(select,value,label)=>{const o=el('option',label);o.value=value;select.append(o);};
 export function appendFinancialEvidence(card,b){
  card.append(el('p',evidenceStatus[b.verification_status]||evidenceStatus.needs_review,'fw-bold'));
  if(b.reviewed_at)card.append(el('p',`Преглед на редакция ${b.reviewed_revision} · ${new Date(b.reviewed_at).toLocaleString('bg-BG')} · ${b.review_note}`,'small text-break'));
  const gaps=b.evidence_gaps||[];card.append(el('p',gaps.length?'Структурни липси: '+gaps.map(k=>labels[k]||'Историческо основание').join('; '):'Структурните полета са попълнени. Това не е юридическа валидация.','small'));
- if(b.evidence?.record_kind)card.append(el('p',b.evidence.record_kind==='synthetic'?'Синтетично основание — само за техническа проверка':'Клиентско основание — заявени данни','badge text-bg-secondary text-wrap'));
+ if(b.evidence?.record_kind)card.append(el('p',b.evidence.record_kind==='synthetic'?'Демонстрационно основание — не е реален клиентски документ':'Клиентско основание — заявени данни','badge text-bg-secondary text-wrap'));
  const details=el('details'),summary=el('summary','Данни от основанието и финансиране'),dl=el('dl','','mt-2');details.append(summary,el('p',evidenceDisclaimer,'small'),dl);
  if(b.reviewed_by)dl.append(el('dt','Проверяващ (идентификатор)','small'),el('dd',b.reviewed_by,'small text-break'));
  for(const k of [...moneyFields,...evidenceTextFields].filter(k=>k!=='record_kind'))dl.append(el('dt',labels[k],'small'),el('dd',b.evidence?.[k]??'Неизвестно / непопълнено','small text-break'));

@@ -1,5 +1,6 @@
+import {humanText} from './public-text.js';
 import {setWorkspaceScope} from './workspace-context.js';
-const el=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+const el=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=humanText(text);n.className=cls;return n;};
 export function renderWorkspace({model:m,errors},context,menu,links,add,dashboard){
   context.replaceChildren();context.dataset.state=errors.length?'partial':!m.signedIn?'signed-out':m.contexts.length?'ready':'no-context';
   if(m.platform)add(menu,'pages/platform-admin.html','Управление на PropertyHub');
@@ -21,11 +22,11 @@ export function renderWorkspace({model:m,errors},context,menu,links,add,dashboar
     const key='propertyhub.workspace.'+m.profileId;let saved;try{saved=sessionStorage.getItem(key);}catch{}
     if(m.contexts.some(c=>c.key===saved))select.value=saved;
     const fullLabel=el('p','','d-sm-none mt-2 mb-0');
-    const remember=c=>{select.value=c.key;fullLabel.textContent=[c.organization,c.label,c.mode==='owner'?'Моите имоти':'Служебен'].filter(Boolean).join(' · ');try{sessionStorage.setItem(key,c.key);}catch{}};
+    const remember=c=>{select.value=c.key;fullLabel.textContent=humanText([c.organization,c.label,c.mode==='owner'?'Моите имоти':'Служебен'].filter(Boolean).join(' · '));try{sessionStorage.setItem(key,c.key);}catch{}};
     select.addEventListener('change',()=>{const c=m.contexts.find(c=>c.key===select.value);remember(c);setWorkspaceScope(c.id);});
     window.addEventListener('workspace-scope',e=>{const c=m.contexts.find(c=>c.id===e.detail&&c.mode===m.contexts.find(x=>x.key===select.value)?.mode)||m.contexts.find(c=>c.id===e.detail);if(c)remember(c);});
     context.append(label,select,fullLabel);remember(m.contexts.find(c=>c.key===select.value));setWorkspaceScope(m.contexts.find(c=>c.key===select.value).id);
   }
   if(errors.length)context.append(el('p','Част от услугите не отговориха. Обнови страницата, преди да продължиш.','text-warning mt-2 mb-0'));
-  if(dashboard){dashboard.replaceChildren();dashboard.dataset.state=errors.length?'partial':'ready';dashboard.append(el('h2','Твоите дейности','h4'));if(!actions.length)dashboard.append(el('p',m.platform?'Отвори „Управление на PropertyHub“ от менюто „Акаунт“.':m.signedIn?'Все още няма разрешени оперативни дейности. Провери достъпа в акаунта си.':'Влез, за да заредиш разрешените дейности.'));actions.forEach(([p,t])=>add(dashboard,p,t));if(m.organizations.length)add(dashboard,'pages/organization-admin.html','Екип и права');}
+  if(dashboard){dashboard.replaceChildren();dashboard.dataset.state=errors.length?'partial':'ready';dashboard.append(el('h2','Твоите дейности','h4'));if(!actions.length)dashboard.append(el('p',m.platform?'Отвори „Управление на PropertyHub“ от менюто „Профил“.':m.signedIn?'Все още няма разрешени оперативни дейности. Провери достъпа в акаунта си.':'Влез, за да заредиш разрешените дейности.'));actions.forEach(([p,t])=>add(dashboard,p,t));if(m.organizations.length)add(dashboard,'pages/organization-admin.html','Екип и права');}
 }

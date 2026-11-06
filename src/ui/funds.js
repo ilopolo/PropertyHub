@@ -1,11 +1,13 @@
+import {userError} from '../i18n/public-errors.js';
+import {humanText} from './public-text.js';
 import {financeState,financeDetails} from './finance-help.js';
 import {bindWorkspaceScope} from './workspace-context.js';
 import {exactFundSplit} from '../domain/funds.js';
 import {fundsBg as bg} from '../i18n/funds-bg.js';
-const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=humanText(text);n.className=cls;return n;};
 function field(form,name,label,value='',options){const box=el('label',label,'form-label d-block mb-3'),n=el(options?'select':'input','','form-control');n.name=name;n.required=true;if(options)for(const[v,t]of options){const o=el('option',t);o.value=v;n.append(o);}n.value=value;box.append(n);form.append(box);return n;}
 const stamp=v=>new Date(v).toLocaleString('bg-BG',{timeZone:'Europe/Sofia'});
-function submit(form,label,fn){const error=el('p','','text-danger');error.setAttribute('role','alert');const button=el('button',label,'btn btn-primary');form.append(error,button);form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;button.disabled=true;error.textContent='';try{await fn();}catch(e){error.textContent=e.code==='PT409'?'Данните са променени или постъплението е отменено. Обнови и прегледай отново.':e.code==='42501'?'Нямаш текущо право за тази операция.':e.code==='23514'?'Провери цялата сума, фондовете, сметката, версиите и основанието.':e.message||'Записът не е потвърден. Обнови преди повторение.';}finally{button.disabled=false;}};}
+function submit(form,label,fn){const error=el('p','','text-danger');error.setAttribute('role','alert');const button=el('button',label,'btn btn-primary');form.append(error,button);form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;button.disabled=true;error.textContent='';try{await fn();}catch(e){error.textContent=e.code==='PT409'?'Данните са променени или постъплението е отменено. Обнови и прегледай отново.':e.code==='42501'?'Нямаш текущо право за тази операция.':e.code==='23514'?'Провери цялата сума, фондовете, сметката, версиите и основанието.':userError(e,"Записът не е потвърден. Обнови преди повторение.");}finally{button.disabled=false;}};}
 export function renderFunds(root,data,actions){
  root.replaceChildren();root.dataset.state='ready';root.append(el('h2',bg.title),el('p',bg.intro,'alert alert-info'));
  if(!data.scopes.length){financeState(root,'no-access',bg.noAccess);return;}

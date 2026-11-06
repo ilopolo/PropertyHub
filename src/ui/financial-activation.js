@@ -1,7 +1,8 @@
+import {humanText} from './public-text.js';
 import {applicabilitySchema,applicabilityFields} from '../domain/financial-activation.js';
 import {applicabilityLabels,activationLimit} from '../i18n/financial-activation-bg.js';
 import {financialDraftsBg as t} from '../i18n/financial-drafts-bg.js';
-const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;};
+const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=humanText(text);if(cls)e.className=cls;return e;};
 const opt=(s,v,t)=>{const o=el('option',t);o.value=v;s.append(o);};
 export function renderFinancialActivation(root,scope,bases,rules,onSave){
  const help=document.createElement('details'),summary=el('summary','Условия за преглед и активация');help.append(summary,el('p',activationLimit,'alert alert-warning'));root.append(help);

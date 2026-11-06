@@ -1,3 +1,5 @@
+import {humanText} from '../ui/public-text.js';
+import {leaveSessionPresentation} from '../ui/shell.js';
 import './main.js';
 import { loadAccount, logout, updateProfile, loadPasswordRecovery, resetPassword, changePassword } from '../services/auth.js';
 import { requestOrganization, listRequests, reviseRequest, closeRequest } from '../services/access.js';
@@ -49,7 +51,7 @@ async function refresh() {
   contexts.replaceChildren();
   for (const context of account.contexts) {
     const li = document.createElement('li');
-    li.textContent = `${context.organization_name} · ${context.scope_label}`;
+    li.textContent = humanText(`${context.organization_name} · ${context.scope_label}`);
     contexts.append(li);
   }
   if (!account.contexts.length) contexts.textContent = 'Все още няма разрешени управленски обхвати.';
@@ -76,7 +78,7 @@ bindForm('#organization-request', async data => {
 });
 document.querySelector('#logout').addEventListener('click', async event => {
   event.currentTarget.disabled = true;
-  try { await logout(); location.replace(new URL('pages/account.html', new URL(import.meta.env.BASE_URL, location.origin))); }
+  try { await logout(); leaveSessionPresentation(); }
   catch(error) { message(authError(error), true); event.currentTarget.disabled = false; }
 });
 const callback = readAuthCallback(new URL(location.href));

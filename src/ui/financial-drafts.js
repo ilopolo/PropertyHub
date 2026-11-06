@@ -1,3 +1,4 @@
+import {humanText} from './public-text.js';
 import {financeDetails,financeState} from './finance-help.js';
 import {bindWorkspaceScope} from './workspace-context.js';
 import {financialDraftsBg as t} from '../i18n/financial-drafts-bg.js';
@@ -6,7 +7,7 @@ import {repairParameters,supportedRepairCategoryId,supportedResolutionType} from
 import {appendFinancialEvidence,renderFinancialEvidenceEditors} from './financial-evidence.js';
 import {renderFinancialActivation} from './financial-activation.js';
 import {syntheticActivationLabel} from '../i18n/financial-activation-bg.js';
-const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;};
+const el=(tag,text='',cls='')=>{const e=document.createElement(tag);e.textContent=humanText(text);if(cls)e.className=cls;return e;};
 const option=(s,value,text)=>{const o=el('option',text);o.value=value;s.append(o);};
 const period=(a,b)=>`${calendarLabel(a)} — ${b?calendarLabel(b)+' (без този ден)':'без записан край'}`;
 export function renderFinancialDrafts(root,data,onSave){

@@ -1,3 +1,74 @@
+<a id="interim-finance-p2-release"></a>
+## Междинен release — SQL и frontend cutover, 06.11.2026
+
+Това е **подготовка**, без apply/merge/deploy. Product source е пред-CALC `b47ad97`
+в `release/finance-p2-interim`. PR8 `20261102080729` вече е в приложената история и
+Git ancestry на кандидата; не се дублира. CALC `20261105131317` е изключен, включително
+от release migration директорията. Исторически registry процес не се добавя за QA.
+
+Последният действителен server read е 06.11.2026, 11:28:29 UTC, exact project
+`qfybswnezdzzahmozikr`, official-CA TLS, READ ONLY: **37 версии**, без P2 и CALC.
+Локалният release съдържа тези непроменени 37 SQL файла и единствен очакван pending:
+
+`20261104212948_owner_ticket_category_contexts.sql`
+SHA256 `8e1864f898a5d2cef02b3aabdc46e151193f0100cb1c47733bc7a864400fa98f`.
+
+Непосредствено преди бъдещия apply е нужен нов read-only project/history/hash/body/
+grant preflight. Snapshot от предишен run не е безсрочно разрешение. Изолираната CLI
+история трябва да съдържа **всички точни приложени версии + само P2**; неизвестна
+версия/различен hash/друг pending кандидат спира операцията. Не се преименува,
+пропуска или прилага повторно вече приложен SQL. Dry-run в този review не е изпълняван.
+
+### Съгласуван кратък прозорец
+
+1. Преди прозореца: проверен candidate SHA, build/navigation/public review, Git/merge
+   eligibility, съществуваща Netlify production конфигурация и готов тесен P2 QA run с
+   nondemo baseline/точни роли/owner link/сесии. Без нови Auth акаунти или demo промени.
+   Локалните QA dist с synthetic public localhost config **не се deploy-ват**; Netlify
+   production build използва съществуващите публични project URL/publishable variables.
+2. Обявява се временно прекъсване само на новото owner подаване. След изрично
+   разрешение и exact single-candidate dry-run се прилага P2 веднъж. Проверяват се
+   migration receipt, schema/function bodies/grants, без blind retry при unknown.
+3. Предварително подготвеният кратък ordinary-JWT/API и local-frontend→hosted P2 тест
+   трябва да мине: девет категории и refusal/atomicity, old NULL rows/history, staff
+   reason/revision, minimal empty ticket-only context и same-JWT revoke. Грешка или
+   липсваща схема не е PASS; financial/Auth/Storage/MVCC наборите не се рестартират.
+4. Само след успешните gates се разрешава merge на **release PR към main**, не на PR9.
+   Един production build/deploy трябва да произлезе от новия main commit. Следи се
+   точният published deploy/commit до ready; без паралелен CLI deploy или автоматичен retry.
+   Live smoke: публични маршрути/assets/CSP, login/role navigation, P1 read, P2 category
+   и ticket-only empty/error/no-access, финансови read екрани. Няма live финансови writes.
+5. Exact own QA cleanup пази ticket/handling/audit историята и връща само временните
+   назначения/връзки/контекст към baseline; затваря собствените сесии и чисти временни
+   операторски credentials. PH-DEMO-V1 и личните записи не са QA targets.
+
+### Failure и recovery
+
+Старият live client извиква `create_ticket(unit,title,description)`. След P2 валидният
+owner получава `23514` / `Ticket category required; update client`, без частичен ticket.
+Няма автоматично „Друго“. Старите отворени tabs остават със стар JS до reload; HTML е
+no-store и asset имената са versioned. Новият frontend преди P2 също не е съвместим —
+липсват четириаргументният RPC и ticket_contexts. Затова няма безрисков несъгласуван ред.
+
+При отказ преди apply старият frontend/DB договор остава действащ. При unknown apply
+първо actual inspect на history/DDL/grants, никога повторение на сляпо. При defect или
+неуспешен frontend build след потвърден apply owner create остава контролирано
+недостъпен; recovery е forward към проверения P2-compatible client или отделно
+разрешена нова коригираща миграция. Само frontend rollback към `b5d9409` **не решава**
+новия DB договор. Не се редактира приложена миграция и не се връща категория-less write.
+Неуспешен hosted gate спира merge; не се обявява production PASS или автоматичен retry.
+
+Release preparation commit и draft PR title използват `[skip netlify]`, за да няма
+branch/PR preview build. За бъдещия разрешен production merge точният **merge commit
+message трябва да е без skip marker**, докато draft PR title може да остане със skip,
+за да не се задейства отделен preview. Проверява се конкретният merge метод/message;
+не се създава празен commit само за build. Това следва [Netlify skip-deploy договора](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/#skip-a-deploy).
+Бюджет/резерв се сверяват отделно при действително release разрешение; съобщените
+43 кредита не са fresh измерване или гаранция. Този review не прави budget заявка.
+
+Непокрити остават CALC-04 hosted приемането, expense attachment, други начислителни
+сценарии, отчети/импорт/експорт/начални салда и останалият приет MVP обхват.
+
 <a id="p4b-expenses-hosted"></a>
 ## P4b — exact apply и ограничено hosted приемане
 

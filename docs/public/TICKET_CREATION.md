@@ -1,5 +1,20 @@
 # Създаване на сигнал и ticket-only контекст — P2
 
+## Междинен release review, 06.11.2026
+
+Пред-CALC кандидатът `b47ad97` е проверен в отделен release worktree. Повторени са само
+тесните P2 интеграции:10 DB/RLS и9 localhost UI/service групи,375/1440 в двете теми,
+осем визуално прегледани снимки. Production-chunk smoke допълнително доказва P2 create
+и празен ticket-only context заедно с P1/financial read екрани; това е local HTTP/PGlite
+със simulated Auth, **не hosted приемане**. P2 остава неприложена до съгласувания
+[frontend cutover](../../supabase/README.md#interim-finance-p2-release).
+
+Browser runner-ът използва изрично отделни5187/54366, със забрана за4173/5173.
+Локалният HTTP bridge обслужва QA-origin CORS, а pure download handler се извиква без
+Origin само в тази bounded attachment проверка. Production Edge/CORS кодът е непроменен;
+неговото hosted приемане се пази и не се твърди, че този localhost smoke го повтаря.
+Release QA dist използва synthetic public localhost config и не е artifact за deploy.
+
 ## Договор преди DDL, 04.11.2026
 
 PR #8 е dependency: exact `4e0e37efbbb223b97ed8ccf9542ecf199de7f65d` е включен чрез

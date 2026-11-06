@@ -6,6 +6,26 @@
 
 ## Реално състояние
 
+**Междинен release кандидат — 06.11.2026:** `release/finance-p2-interim` използва
+провереното пред-CALC съдържание `b47ad97`: registry, сигнали и техните attachments,
+P1 „Моите финанси“, P2 категории/ticket-only контекст, финансовата основа,
+payments/accounts/inbound, фондове P4a и разходи P4b. Историята на PR #8 е включена;
+PR #8 и финансовият PR #9 остават отделни и unmerged. Това е кандидат, **не deployment**;
+текущият Netlify production е потвърден на `b5d9409`.
+
+CALC-04 не е в кода или миграциите на този release и остава приет, неприключен MVP
+обхват. Expense attachment, останалите начислителни методи, начални салда/пълен баланс,
+отчети, импорт/експорт и останалите непокрити MVP процеси не се обявяват за готови.
+Единствената очаквана pending миграция е P2 `20261104212948`; нейният hosted тест и
+съгласуван frontend cutover предстоят. [Ред и recovery ограничения](supabase/README.md#interim-finance-p2-release).
+
+Кандидатът има изолиран clean install/build, navigation/assets за 11 HTML входа,
+10 тесни P2 DB/RLS и 9 localhost UI/service групи, осем прегледани mobile/desktop
+снимки в двете теми и четири допълнителни проверки през действителните build chunks.
+Те не заменят P2 hosted приемането. Приетите финансови hosted/MVCC доказателства
+по-долу се използват повторно; production и пълният университетски MVP не са приети
+само от тази локална release проверка.
+
 **Разходи P4b — ограничено hosted API/UI/MVCC PASS (05.11.2026):** document → partial/full отчетено изходящо плащане → точно едно outbound и цяла фондова разбивка, историческа компенсация и атомарен replacement. 8 API +2 rights/setup +1 source regression групи/22 отказа, 11 независими PostgreSQL observed-waiter случая и реален UI/4 визуални снимки PASS. Exact `20261105094824` е приложена: **37 backend версии**, P2 остава неприложена. Cleanup/baseline и credential clearing PASS; синтетичната история е запазена. Attachment, банков превод и пълен баланс не са реализирани. Frontend още е draft PR #9. [Договор, резултати и ограничения](docs/public/EXPENSES.md).
 
 **Фондове P4a — ограничено hosted API/UI/MVCC PASS (05.11.2026):** конфигурация с

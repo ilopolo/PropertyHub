@@ -1,5 +1,26 @@
 # Реализирана архитектура
 
+## Граница на междинния release, 06.11.2026
+
+Release кандидатът е отделният `release/finance-p2-interim`, с продуктовото съдържание
+на `b47ad97` и запазена PR8/P2 история. Финансовият клон/PR9 продължава отделно;
+неговият последващ CALC-04 commit не е включен. Няма monthly-management код или
+миграция в този кандидат. Приетият CALC-04 MVP обхват остава неприключен.
+
+Включени са registry/owner/ticket/attachment, P1 personal projection, P2 category и
+empty ticket context, FND-F05, payments/accounts/inbound, P4a funds и P4b expenses.
+Приложените 37 backend версии са сверени чрез read-only evidence от 06.11.2026;
+P2 е единственият очакван pending кандидат и изисква нов preflight и frontend cutover.
+Clean install/build/navigation, тесните P2 и built-chunk интеграции са локално PASS;
+P2 hosted и крайният live smoke предстоят. Netlify production остава `b5d9409`.
+
+Expense metadata/reference не е файлов attachment; ръчно отчетените inbound/outbound
+не са банкови преводи или потвърждения. Непълна аналитичност и липсващи начални салда
+не дават доказан пълен баланс. Отчети, останалите начислителни методи и другият
+непокрит приет MVP обхват не се реализират или отлагат мълчаливо чрез този release.
+Точният [cutover/recovery ред](../../supabase/README.md#interim-finance-p2-release)
+е отделен от описанията на вече приетите модули по-долу.
+
 ## P4b — разходен процес, ограничено hosted приемане
 
 Expense domain/BG → service/controller/UI → public invoker/private guarded RPC. Нови expenses/expense_versions/expense_payments и private exact operation receipts. Typed XOR source в money_movements отделя incoming payment от outgoing expense settlement; един settlement задължително има едно movement и immutable whole fund set в същата транзакция. Historical reversal използва оригиналните account/fund версии, replacement изисква нов избор. Document revision и settlement counter сериализират edit/pay/reverse. Existing incoming guard/feed са запазени, с изрична source изолация.

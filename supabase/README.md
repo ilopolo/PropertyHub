@@ -1,8 +1,103 @@
+## Интеграция на main във финансовия клон, 06.11.2026
+
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
 ## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
 
-Нова НЕПРИЛОЖЕНА `20261105131317_monthly_management_equal_tariff.sql`, SHA256 `ef089cecd7c553264504e5047eeb5cd0f94d72328d84dc6099bef91945ce21ba`. 16 локални DB/domain/RLS и8 UI/service групи PASS, отделен ci/build/navigation; не hosted/native MVCC. Старите SQL са неизменени; последното запазено hosted доказателство е37 версии. P2 20261104212948 остава изключен frontend-cutover blocker. Не прилагай всички pending миграции автоматично.
+Нова НЕПРИЛОЖЕНА `20261105131317_monthly_management_equal_tariff.sql`, SHA256 `ef089cecd7c553264504e5047eeb5cd0f94d72328d84dc6099bef91945ce21ba`. 16 локални DB/domain/RLS и8 UI/service групи PASS, отделен ci/build/navigation; не hosted/native MVCC. Старите SQL са неизменени; последното запазено hosted доказателство е38 версии с приложена и production приета P2. Старият P2 frontend-cutover blocker е затворен; CALC остава блокиран от липсващ допустим октомврийски fixture. Не прилагай всички pending миграции автоматично.
 
 [Точни DTO/RPC/права и future hosted план](../docs/public/MONTHLY_MANAGEMENT.md). Scoped prepare_rules/publish_rules/manage_registry/prepare_charges/publish_charges и correct_finance остават изрични; няма нови права или admin inheritance. Само нови typed adapters към общия immutable charge engine; няма стар backfill/clock override или payment промени. Локално npm run check:monthly-management и check:monthly-management-browser.
+
+<a id="interim-finance-p2-release"></a>
+## Междинен release — SQL и frontend cutover, 06.11.2026
+
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
+
+Fresh exact project/history/hash/grants/compatibility preflight е PASS. Изолираната
+CLI история съдържаше 37-те точни вече приложени версии и само P2 като кандидат;
+dry-run и еднократен apply са потвърдени с actual post-apply schema/grants/history.
+Нито PR8 SQL, нито P4a/P4b са повторно приложени; CALC е изключен. Не повтаряй apply.
+
+P2 LF/Git SHA256: `1048e7f5fd9d9fe92c7c5ca6a707e8c4af4623e8a7d2c690b3cd5f46df6b396d`.
+Disk/CRLF SHA256: `8e1864f898a5d2cef02b3aabdc46e151193f0100cb1c47733bc7a864400fa98f`.
+Public/private guarded wrappers са auth-only, без anon EXECUTE; legacy three-argument
+create отказва изрично. Няма нови PostgreSQL роли, Auth акаунти или извънмиграционни GRANT.
+
+Пет ordinary-JWT API групи, шест frontend→hosted UI и шест actual production smoke
+групи са PASS; 13 маршрута/CSP, 26 assets и 14 production снимки са проверени.
+Exact cleanup плюс отделна read-only сверка са PASS: 12 QA сигнала/13 събития остават
+като история, само временните app права/identity link/сесии са оттеглени. Защитеният
+baseline, финансовите записи и седемте Auth акаунта са непроменени. Operator CLI token
+и DB URI са изчистени; demo и потребителският preview не са променяни.
+
+Apply 14:52:00 UTC → published 15:13:55 UTC (около 22 минути). Двете тесни UI поправки
+са включени преди единствената automatic публикация; няма manual deploy или покупка.
+Финалната документационна публикация използва `[skip netlify]`, без втори deploy.
+CALC, expense attachment и останалите непокрити MVP процеси не са production PASS.
+
+Следният ред пази изпълнения cutover/recovery договор, не е команда за повторение.
+По-старите migration counts/„frontend предстои“ в отделните dated пакети са история.
+
+### Изпълнен съгласуван прозорец — запазен ред
+
+1. Преди прозореца: проверен candidate SHA, build/navigation/public review, Git/merge
+   eligibility, съществуваща Netlify production конфигурация и готов тесен P2 QA run с
+   nondemo baseline/точни роли/owner link/сесии. Без нови Auth акаунти или demo промени.
+   Локалните QA dist с synthetic public localhost config **не се deploy-ват**; Netlify
+   production build използва съществуващите публични project URL/publishable variables.
+2. Обявява се временно прекъсване само на новото owner подаване. След изрично
+   разрешение и exact single-candidate dry-run се прилага P2 веднъж. Проверяват се
+   migration receipt, schema/function bodies/grants, без blind retry при unknown.
+3. Предварително подготвеният кратък ordinary-JWT/API и local-frontend→hosted P2 тест
+   трябва да мине: девет категории и refusal/atomicity, old NULL rows/history, staff
+   reason/revision, minimal empty ticket-only context и same-JWT revoke. Грешка или
+   липсваща схема не е PASS; financial/Auth/Storage/MVCC наборите не се рестартират.
+4. Само след успешните gates се разрешава merge на **release PR към main**, не на PR9.
+   Един production build/deploy трябва да произлезе от новия main commit. Следи се
+   точният published deploy/commit до ready; без паралелен CLI deploy или автоматичен retry.
+   Live smoke: публични маршрути/assets/CSP, login/role navigation, P1 read, P2 category
+   и ticket-only empty/error/no-access, финансови read екрани. Няма live финансови writes.
+5. Exact own QA cleanup пази ticket/handling/audit историята и връща само временните
+   назначения/връзки/контекст към baseline; затваря собствените сесии и чисти временни
+   операторски credentials. PH-DEMO-V1 и личните записи не са QA targets.
+
+### Failure и recovery
+
+Старият live client извиква `create_ticket(unit,title,description)`. След P2 валидният
+owner получава `23514` / `Ticket category required; update client`, без частичен ticket.
+Няма автоматично „Друго“. Старите отворени tabs остават със стар JS до reload; HTML е
+no-store и asset имената са versioned. Новият frontend преди P2 също не е съвместим —
+липсват четириаргументният RPC и ticket_contexts. Затова няма безрисков несъгласуван ред.
+
+При отказ преди apply старият frontend/DB договор остава действащ. При unknown apply
+първо actual inspect на history/DDL/grants, никога повторение на сляпо. При defect или
+неуспешен frontend build след потвърден apply owner create остава контролирано
+недостъпен; recovery е forward към проверения P2-compatible client или отделно
+разрешена нова коригираща миграция. Само frontend rollback към `b5d9409` **не решава**
+новия DB договор. Не се редактира приложена миграция и не се връща категория-less write.
+Неуспешен hosted gate спира merge; не се обявява production PASS или автоматичен retry.
+
+Release preparation commit и draft PR title използват `[skip netlify]`, за да няма
+branch/PR preview build. За бъдещия разрешен production merge точният **merge commit
+message трябва да е без skip marker**, докато draft PR title може да остане със skip,
+за да не се задейства отделен preview. Проверява се конкретният merge метод/message;
+не се създава празен commit само за build. Това следва [Netlify skip-deploy договора](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/#skip-a-deploy).
+Бюджет/резерв се сверяват отделно при действително release разрешение; съобщените
+43 кредита не са fresh измерване или гаранция. Този review не прави budget заявка.
+
+Непокрити остават CALC-04 hosted приемането, expense attachment, други начислителни
+сценарии, отчети/импорт/експорт/начални салда и останалият приет MVP обхват.
 
 <a id="p4b-expenses-hosted"></a>
 ## P4b — exact apply и ограничено hosted приемане

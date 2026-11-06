@@ -3,8 +3,10 @@ import '../styles/main.css';
 import { initializeShell } from '../ui/shell.js';
 import { modules } from '../domain/modules.js';
 import { getBackendStatus } from '../services/config.js';
+import {initializeFieldHelp} from '../ui/field-help.js';
 
 initializeShell();
+initializeFieldHelp();
 const status = document.querySelector('#backend-status');
 if (status) status.textContent = getBackendStatus();
 const catalog = document.querySelector('#module-catalog');
@@ -17,7 +19,7 @@ if (catalog) {
     if (module.available) label.href = import.meta.env.BASE_URL + module.href;
     const state = document.createElement('span');
     state.className = 'badge text-bg-secondary';
-    state.textContent = module.available ? 'Основа' : 'Предстои';
+    state.textContent = module.available ? 'Според достъпа' : 'В разработка';
     item.append(label, state);
     catalog.append(item);
   }

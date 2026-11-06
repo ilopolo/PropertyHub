@@ -29,7 +29,7 @@ export function authError(error) {
   if (error.code === 'weak_password') return recoveryBg.weak;
   if (error.code === 'same_password') return recoveryBg.same;
   if (error.status === 429 || String(error.code).includes('rate_limit')) return authBg.rateLimit;
-  if (error.message === 'Липсва конфигурация за връзката.' || error.message === 'Невалиден публичен ключ.') return error.message;
+  if (error.message === 'Липсва конфигурация за връзката.' || error.message === 'Невалиден публичен ключ.') return 'Услугата не може да се зареди. Опитай по-късно или потърси отговорния администратор.';
   if (['invalid_credentials', 'email_not_confirmed'].includes(error.code)) return authBg.credentials;
   if (error.code === '42501') return authBg.denied;
   if (['23514', '23505', '23P01', '23503'].includes(error.code)) return authBg.invalid;

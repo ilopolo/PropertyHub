@@ -1,5 +1,6 @@
+import {humanText} from './public-text.js';
 import{ownerFinanceBg as bg}from'../i18n/owner-finances-bg.js';
-const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=humanText(text);n.className=cls;return n;};
 const money=v=>v===null?'Не е текущо задължение':v.replace('.',',')+' EUR';
 const sofia=new Intl.DateTimeFormat('bg-BG',{timeZone:'Europe/Sofia',day:'2-digit',month:'2-digit',year:'numeric'});
 const date=v=>v?(v.includes('T')?sofia.format(new Date(v)):v.split('-').reverse().join('.')):'Няма данни';

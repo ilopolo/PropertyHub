@@ -1,16 +1,17 @@
+import {humanText} from './public-text.js';
 import {financeDetails,financeState} from './finance-help.js';
 import {bindWorkspaceScope} from './workspace-context.js';
 import {previewLimit,previewRounding,previewError} from '../i18n/financial-preview-bg.js';
 import {registryToday} from '../domain/registry.js';
-const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
+const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=humanText(text);n.className=cls;return n;};
 function field(form,name,title,choices){const label=el('label',title,'form-label d-block mb-3'),n=el(choices?'select':'input','','form-control');n.name=name;n.required=true;if(choices)for(const[v,t]of choices){const o=el('option',t);o.value=v;n.append(o);}label.append(n);form.append(label);return n;}
 export function renderFinancialPreview(root,data,actions){
- root.replaceChildren();root.className='mt-4 text-break';root.dataset.state='ready';root.append(el('h2','Изчисли сумите по имоти'),el('p',previewLimit,'alert alert-info'));const help=financeDetails('Метод и използвани данни',el('p','FND-F05 — целево набиране за одобрен основен ремонт.','small'),el('p',previewRounding,'small'));root.append(help);
+ root.replaceChildren();root.className='mt-4 text-break';root.dataset.state='ready';root.append(el('h2','Изчисли сумите по имоти'),el('p',previewLimit,'alert alert-info'));const help=financeDetails('Метод и използвани данни',el('p','Целево набиране за одобрен основен ремонт.','small'),el('p',previewRounding,'small'));root.append(help);
  if(!data.scopes.length){financeState(root,'no-access','Нямаш финансов достъп за изчислителен преглед.');root.append(help);return;}
  const scope=field(root,'preview_scope','Финансов обхват',data.scopes.map(s=>[s.id,s.label]));if(data.scopes.some(s=>s.id===root.dataset.scope))scope.value=root.dataset.scope;
  const body=el('div');root.insertBefore(scope.parentElement,help);root.insertBefore(body,help);
  function render(){const s=data.scopes.find(s=>s.id===scope.value);body.replaceChildren();if(!s){financeState(body,'no-access','Нямаш достъп до изчисление за избрания контекст.');return;}root.dataset.scope=s.id;const previews=data.previews.filter(p=>p.scope_id===s.id);
-  for(const p of previews){const card=el('article','','card card-body mb-3');card.dataset.preview=p.id;card.append(el('h3','Запазен преглед — не е задължение','h5'),el('p',`Дата: ${p.reference_date} · R: ${p.inputs.collection_amount} EUR`,'fw-bold'),el('p',`${p.recorded_at} · ${p.note}`,'small'));
+  for(const p of previews){const card=el('article','','card card-body mb-3');card.dataset.preview=p.id;card.append(el('h3','Запазен преглед — не е задължение','h5'),el('p',`Дата: ${p.reference_date} · Обща сума за набиране: ${p.inputs.collection_amount} EUR`,'fw-bold'),el('p',`${p.recorded_at} · ${p.note}`,'small'));
    card.append(el('p',`Основание: ${p.inputs.activation_snapshot.basis.reference} · решение от ${p.inputs.activation_snapshot.basis.meeting_date}`),el('p',`Знаменател: ${p.inputs.share_snapshot.common_parts_reference}`,'small'));
    for(const row of p.result.rows){const input=p.inputs.units.find(u=>u.unit_id===row.unit_id),line=el('div','','border rounded p-3 mb-2');line.dataset.previewUnit=row.unit_id;
     line.append(el('h4',`Обект ${input.unit_number}: ${row.amount} EUR`,'h6'),el('p',`${input.percentage}% · ${row.residual_cent?'получава +1 остатъчен цент':'без остатъчен цент'}`),financeDetails('Подробности за закръглянето',el('p',`Цели центове надолу: ${row.floor_cents}; точен дробен остатък: ${row.remainder_numerator}/${row.remainder_denominator} цент`,'small')),el('p','Собственици само като контекст: '+input.owners_context.map(o=>`${o.label} (съсобственически дял ${o.fraction})`).join('; '),'small'));card.append(line);

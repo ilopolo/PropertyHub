@@ -1,10 +1,68 @@
 # Реализирана архитектура
 
+## Интеграция на main във финансовия клон, 06.11.2026
+
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
 ## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
 
 Typed domain/service/controller/UI/BG → guarded monthly adapters → съществуващи resolutions/rule versions/immutable previews и общ save/review/publish engine. Нов monthly_context_reviews пази explicit whole-month registry completeness source; новата категория е equal_units/TARIFF, без FND-F05 rounding/qualification. Snapshot/claim модел monthly-owner-occupant-v1, точни q/N×q и исторически parties; старите FND feeds са изолирани, публичните charge v2 подписи са запазени. Person contacts/raw registry evidence не се връщат в новия финансов DTO.
 
 16 DB/domain/RLS +8 реални локални UI/service групи, 4 визуални mobile/desktop/две теми, offline ci/build/navigation PASS. Миграция 20261105131317_monthly_management_equal_tariff.sql е неприложена; hosted/MVCC не са доказани. [Договор, права, ограничения и бъдещ план](MONTHLY_MANAGEMENT.md).
+
+## Междинен production release, 06.11.2026
+
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
+
+Пред-CALC основата b47ad97 с PR8/P2 историята и UI/branding/help е публикувана чрез
+PR #10. Registry/owner/ticket/attachments, P1, FND-F05, payments/accounts/inbound,
+P4a funds и P4b expenses са включени. CALC код/миграция липсват от release tree.
+
+Header discovery първо използва минималните guarded проекции и scoped draft feed;
+допълнителните финансови feeds се извикват само за непокритите разрешени контексти.
+Current role metadata е само hint за заявката; capability идва от server response.
+Няма права от admin име, stale-role cache или промяна на финансовите write пътища.
+Дългите workspace контексти са ограничени до ширината на екрана.
+
+P2 hosted API (5 групи), frontend→hosted UI (6 групи) и actual production smoke
+(6 групи, 13 маршрута/CSP, 26 assets, 14 визуално прегледани снимки) са PASS.
+Шестте fake discovery проверки са само локални. Не са повторени старите native
+financial/Auth/Storage набори. Cleanup/baseline и credential clearing са потвърдени.
+
+Expense reference не е attachment; отчетните плащания не са банкови преводи или
+потвърждения. Missing opening data/непълна аналитичност не е пълен баланс. CALC,
+останалите методи, отчети и другият приет непокрит MVP обхват остават незавършени.
+[Изпълнен cutover/recovery ред](../../supabase/README.md#interim-finance-p2-release).
+
+Следващите раздели пазят датите и резултатите от отделните етапи; по-старите
+„frontend извън production“ и migration counts са исторически, не текущ статус.
+
+## Общ UI слой на публикувания release
+
+Тринадесет Vite HTML входа включват помощ по роли и демонстрационни контакти.
+`src/ui/shell.js` представя текущия workspace и постоянните session действия;
+административните връзки използват съществуващия capability модел. При logout,
+смяна на профил и връщане от browser history се премахва старото представяне и
+се зарежда текущата сесия чрез съществуващия Auth service. Това не е authorization
+заместител. `field-help.js` добавя видими пояснения и aria-describedby, а
+`public-errors.js` ограничава показването на сурови технически грешки.
+Нито един финансов service write, домейн изчисление, migration или Edge boundary
+не е променен от този presentation пакет. Не е повторено hosted/MVCC приемане.
+
+Contact controller показва единствено escaped локален пример — без send/store
+операция, backend, външен provider или измислен получател. SVG/PNG branding assets
+са локални, с варианти за двете теми, без runtime font dependency.
 
 ## P4b — разходен процес, ограничено hosted приемане
 

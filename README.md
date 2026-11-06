@@ -1,12 +1,69 @@
 # PropertyHub
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Единадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+## Интеграция на main във финансовия клон, 06.11.2026
 
-[Хранилище](https://github.com/ilopolo/PropertyHub) · [Ранна live версия](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Тринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+
+[Хранилище](https://github.com/ilopolo/PropertyHub) · [Live приложение](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 
 ## Реално състояние
 
-**P5 CALC-04 — локален PASS:** изрично одобрена положителна месечна ставка в цели EUR центове × пълен проверен състав. Само приключил календарен месец и поддържаният единствен owner/occupant случай, отделно прегледана лична отговорност. 16 DB/domain/RLS и 8 реални localhost UI/service групи, 4 визуални 375/1440 light/dark снимки, изолиран offline ci/build/navigation PASS. Новата `20261105131317_monthly_management_equal_tariff.sql` е **НЕПРИЛОЖЕНА**; hosted/MVCC/production не са доказани за CALC-04. Последното запазено hosted доказателство остава37 версии, P2 е отделен pending cutover. [Договор и бъдещ acceptance план](docs/public/MONTHLY_MANAGEMENT.md).
+**P5 CALC-04 — локален PASS:** изрично одобрена положителна месечна ставка в цели EUR центове × пълен проверен състав. Само приключил календарен месец и поддържаният единствен owner/occupant случай, отделно прегледана лична отговорност. 16 DB/domain/RLS и 8 реални localhost UI/service групи, 4 визуални 375/1440 light/dark снимки, изолиран offline ci/build/navigation PASS. Новата `20261105131317_monthly_management_equal_tariff.sql` е **НЕПРИЛОЖЕНА**; hosted/MVCC/production не са доказани за CALC-04. Последното запазено hosted доказателство е38 версии, включително production приетата P2. CALC hosted остава блокиран: липсва допустим пълен октомврийски fixture. [Договор и бъдещ acceptance план](docs/public/MONTHLY_MANAGEMENT.md).
+
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
+
+Включени са registry/signal/attachment процесите, P1 „Моите финанси“, P2 explicit
+категория и ticket-only навигация, FND-F05, payments/accounts/inbound, P4a и P4b,
+както и логото, помощта и демонстрационните контакти. PR #8 историята е включена;
+GitHub отчита PR #8 като merged чрез включената история; финансовият PR #9 остава отворен с неприключения CALC-04.
+
+P2 hosted ordinary-JWT приемане: пет групи PASS, включително деветте категории,
+anti-spoof/atomic откази, запазена NULL/history, празен ticket-only scope без registry
+и revoke със същия JWT. Шест local-frontend→hosted UI групи и шест actual production
+smoke групи PASS. Проверени са 13 production маршрута/CSP, 26 assets и 14 действителни
+production снимки на 375/1440 px в двете теми, личната справка, logout/profile switch.
+Cleanup и отделната read-only baseline сверка са PASS; временните права/връзки/сесии
+са оттеглени, историята е запазена, operator credentials са изчистени.
+
+Предишните финансови/Auth/Storage/MVCC доказателства са използвани повторно;
+този release smoke не е нов пълен финансов/MVCC набор. CALC-04, expense attachment,
+останалите начислителни методи, начални салда/пълен баланс, отчети, импорт/експорт
+и другите непокрити приети MVP процеси остават незавършени.
+[Изпълнен cutover и recovery ограничения](supabase/README.md#interim-finance-p2-release).
+
+### История на предходните локални и hosted приемания
+
+Числата и статусите по-долу са за датата на съответния пакет. Старите изрази
+„frontend предстои“/„P2 неприложена“ описват онези checkpoints; текущият production
+статус е горният. Frontend на приетите тук модули вече е публикуван чрез PR #10.
+
+**Пред-release UI/branding/help — локално проверен пакет:** общ header с постоянно
+достижими „Табло“, „Акаунт“ и „Изход“ след вход, отделно профилно административно меню,
+текущ контекст, помощ по роли и видими пояснения към сложни полета. Личните финансови
+справки се запазват. При logout или смяна на профил старото представяне се скрива и
+страницата зарежда текущата сесия; server authorization и финансовите write операции
+не са променени. Помощта и контактният екран увеличават HTML входовете на13.
+Контактната форма е само локална демонстрация, без получател, изпращане или съхраняване;
+в нея не трябва да се въвеждат реални лични данни. Бъдещите идеи са отделени от
+неприключените приети MVP модули. [Лого и права](docs/public/BRANDING.md),
+[third-party notices](public/third-party-notices.txt). Не е въведен нов проектен лиценз.
+Девет целеви UI/service групи с локални синтетични данни, build/navigation за13HTML
+и13 визуално прегледани снимки покриват375/1440px, двете теми, logout/смяна на профил,
+състоянията и запазеното действие за разходен документ. Това е локално приемане;
+не е нов hosted Auth/финансов тест или production smoke.
 
 **Разходи P4b — ограничено hosted API/UI/MVCC PASS (05.11.2026):** document → partial/full отчетено изходящо плащане → точно едно outbound и цяла фондова разбивка, историческа компенсация и атомарен replacement. 8 API +2 rights/setup +1 source regression групи/22 отказа, 11 независими PostgreSQL observed-waiter случая и реален UI/4 визуални снимки PASS. Exact `20261105094824` е приложена: **37 backend версии**, P2 остава неприложена. Cleanup/baseline и credential clearing PASS; синтетичната история е запазена. Attachment, банков превод и пълен баланс не са реализирани. Frontend още е draft PR #9. [Договор, резултати и ограничения](docs/public/EXPENSES.md).
 

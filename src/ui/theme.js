@@ -6,6 +6,7 @@ export function initializeTheme(button) {
   const preferred = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const apply = theme => {
     document.documentElement.dataset.bsTheme = theme;
+    for(const icon of document.querySelectorAll('link[data-brand-icon]'))icon.href=import.meta.env.BASE_URL+'branding/'+(icon.type==='image/png'?(theme==='dark'?'favicon-dark-32.png':'favicon-32.png'):(theme==='dark'?'icon-dark.svg':'icon-light.svg'));
     const action = theme === 'dark' ? bg.lightTheme : bg.theme;
     button.textContent = `◐ ${action}`;
     button.title = action;

@@ -1,5 +1,25 @@
 # Месечно управление поравно на обект — CALC-04
 
+## След release интеграцията, 06.11.2026
+
+Main f8f39aa е интегриран във финансовия клон със запазена история. CALC кодът,
+договорът и exact миграция 20261105131317 са запазени. Последното hosted доказателство
+е38 приложени версии, включително P2; P2 category cutover и production приемането са
+приключени. Старият P2 pending blocker в историческия план по-долу е затворен.
+
+CALC остава само локално приет: няма допустим четириобектен full-October hosted
+fixture. Не е добавен исторически registry процес, backdating, clock override или
+DB bypass. Няма CALC hosted apply/API/MVCC PASS и тази Git интеграция не го доказва.
+Навигацията използва текущи guarded scopes, без monthly history feed в header;
+отварянето на модула прави собствени server проверки. Общият renderer пази
+отделните monthly/FND режими, L и личния review, с актуалния release UI/session слой.
+
+При интеграцията:10 fake discovery групи,8 local CALC UI/service групи и тесният
+съществуващ non-monthly publication browser regression са PASS. Branding/session
+проверките са9 групи; build/navigation/assets са локални. Това не повтаря или заменя
+предходните16DB/8UI резултати или бъдещо PostgreSQL/MVCC приемане.
+
+
 Първата ограничена реализация е локално проверена. Hosted/API/native PostgreSQL MVCC и production приемане още няма; миграцията е неприложена.
 
 Само TARIFF: изрично одобрена положителна ставка в цели EUR центове за обект и месец. Всеки обект получава същата ставка; общата сума е броят обекти × ставката. Не се използва POOL, разпределяне на остатък или политиката на FND-F05.

@@ -1,6 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
 let client;
+let identity, revision = 0;
+const identityListeners = new Set();
+export const sessionRevision = () => revision;
+export const sameSession = version => version === revision;
+export function onSessionIdentity(listener) {
+  identityListeners.add(listener);
+  if (identity !== undefined) listener({userId:identity,changed:false,initial:true});
+  return () => identityListeners.delete(listener);
+}
+function observeIdentity(session) {
+  const userId=session?.user?.id||null,initial=identity===undefined,changed=!initial&&identity!==userId;
+  if(changed)revision++;
+  identity=userId;
+  for(const listener of identityListeners)listener({userId,initial,changed});
+}
 const recoveryKey = 'propertyhub.password-recovery-user';
 const recoveryRequestKey = 'propertyhub.password-recovery-requested';
 // A tab-local UI hint only. Auth validates the session and password update server-side.
@@ -15,14 +30,12 @@ export function getClient() {
   if (!url || !key) throw new Error('Липсва конфигурация за връзката.');
   if (!key.startsWith('sb_publishable_')) throw new Error('Невалиден публичен ключ.');
   client = createClient(url, key, { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
-  // Clear rendered data in other open tabs when this browser signs out.
+  // One SDK subscription owns identity changes, including anonymous -> signed in.
   client.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') sessionStorage.setItem(recoveryKey, session.user.id);
     // The SDK also emits SIGNED_IN on reload/focus; preserve the same recovery tab.
     if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' && !isRecoverySession(session?.user.id)) clearRecoverySession();
-    if (event === 'SIGNED_OUT') setTimeout(() => {
-      location.replace(new URL('pages/account.html', new URL(import.meta.env.BASE_URL, location.origin)));
-    }, 0);
+    observeIdentity(session);
   });
   return client;
 }

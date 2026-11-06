@@ -1,4 +1,5 @@
 import { authError } from '../i18n/auth-bg.js';
+import { humanText } from './public-text.js';
 
 export function message(text, danger = false) {
   const node = document.querySelector('#message');
@@ -22,6 +23,6 @@ export function bindForm(id, action) {
 export function option(select, value, label) {
   const node = document.createElement('option');
   node.value = value;
-  node.textContent = label;
+  node.textContent = humanText(label);
   select.append(node);
 }

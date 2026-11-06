@@ -14,6 +14,7 @@ import { showOccupancy } from './occupancy.js';
 import {showOwnerVerification,hideOwnerVerification} from './owner-access.js';
 import {showUnitFiles,canManageFiles} from './unit-files.js';
 import {showUnitShares,hideUnitShares,canReadUnitShares} from './unit-shares.js';
+import {humanText} from '../ui/public-text.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -60,12 +61,12 @@ async function showUnits() {
   if (revision !== loadRevision) return;
   document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
   if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';
-  document.querySelector('#registry-status').textContent='Разрешен служебен контекст: '+context.scope_label;
+  document.querySelector('#registry-status').textContent='Разрешен служебен контекст: '+humanText(context.scope_label);
   const types = { apartment:'Апартамент',shop:'Магазин',office:'Офис',garage:'Гараж',other:'Обект' };
   for (const unit of units) {
     const li = document.createElement('li'); li.className = 'list-group-item text-break';
     const text = document.createElement('p');
-    text.textContent = `${types[unit.unit_type]} ${unit.unit_number} · ${unit.floor ? `етаж ${unit.floor}` : 'етаж неизвестен'} · ${unit.area == null ? 'площ неизвестна' : `${unit.area} m²`} · ${unit.verification_status === 'verified' ? 'проверени въведени стойности' : 'нужен преглед'} · Известно от: ${unit.known_from || 'неустановена дата'} · ${unit.source_reference || 'неустановен източник'}`;
+    text.textContent = humanText(`${types[unit.unit_type]} ${unit.unit_number} · ${unit.floor ? `етаж ${unit.floor}` : 'етаж неизвестен'} · ${unit.area == null ? 'площ неизвестна' : `${unit.area} m²`} · ${unit.verification_status === 'verified' ? 'проверени въведени стойности' : 'нужен преглед'} · Известно от: ${unit.known_from || 'неустановена дата'} · ${unit.source_reference || 'неустановен източник'}`);
     li.dataset.unitId = unit.id;
     li.append(text, unitDetails(unit));
     if (canManage && unit.verification_status !== 'verified') {

@@ -1,4 +1,4 @@
-import { getClient, unwrap, isRecoverySession, clearRecoverySession, markRecoveryRequested } from './supabase.js';
+import { getClient, unwrap, isRecoverySession, clearRecoverySession, markRecoveryRequested, sessionRevision, sameSession } from './supabase.js';
 import { requireNewPassword } from '../domain/password.js';
 
 export const callbackUrl = () => new URL('pages/account.html', new URL(import.meta.env.BASE_URL, location.origin)).href;
@@ -43,18 +43,28 @@ export async function changePassword(password) {
   unwrap(await getClient().auth.updateUser({ password }));
 }
 export async function loadAccount({ensureProfile=true}={}) {
+  const version=sessionRevision();
+  const current=()=>{if(!sameSession(version))throw Object.assign(new Error('Session changed'),{code:'SESSION_CHANGED'});};
   const { data: { session }, error } = await getClient().auth.getSession();
+  current();
   if (error) throw error;
   if (!session) return null;
   const { user } = unwrap(await getClient().auth.getUser());
+  current();
+  if(user.id!==session.user.id)throw Object.assign(new Error('Session changed'),{code:'SESSION_CHANGED'});
   if (!user.email_confirmed_at) throw new Error('Потвърди имейла си преди достъп.');
   // Metadata supplies a display label only. All permissions come from current DB grants.
   const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 100).trim() : '';
   if(ensureProfile) unwrap(await getClient().rpc('ensure_profile', { display_name: name || 'Потребител' }));
+  current();
   const profile = unwrap(await getClient().from('profiles').select('id,display_name,status,theme').single());
+  current();
   const roles = unwrap(await getClient().from('user_roles').select('id,role_code,membership_id,scope_id,permissions,valid_from,valid_to'));
+  current();
   const organizations = unwrap(await getClient().from('organizations').select('id,name,organization_kind,status'));
+  current();
   const contexts = unwrap(await getClient().rpc('my_contexts'));
+  current();
   return { user, profile, roles, organizations, contexts };
 }
 export async function updateProfile(displayName) {

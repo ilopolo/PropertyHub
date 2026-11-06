@@ -234,12 +234,17 @@ workspace/assignment service regression и public review. PGlite/симулир�
 HTTP request interception и локално последователни competing requests **не са**
 Supabase hosted Auth/RLS или PostgreSQL MVCC доказателство.
 
-Двете P6a миграции вече са приложени. Не ги прилагай повторно и не replay-вай старите
-QA keys като нов setup. Следва преглед на draft PR #11 и отделно разрешена нормална
-Git интеграция към финансовия клон; main/live release остава отделен gate. При бъдещ
-release fresh историята трябва да отчете 40 приложени версии и неприложения CALC,
-без автоматично прилагане на всички local pending файлове. Пълният import/export MVP
-не е завършен само с unit CSV.
+Двете P6a миграции вече са приложени. Не ги прилагай повторно и не използвай старите
+QA ключове за нов setup. Приетият P6a е интегриран с нормален merge във финансовия
+клон; production публикацията остава отделен gate. Последните 40 приложени версии
+са запазено доказателство, не свеж release preflight. CALC миграцията е неприложена;
+не се прилагат автоматично всички локални pending файлове.
+
+Ограниченият последващ source review установи сходни authorization рискове извън CSV:
+transaction-clock проверки след изчакване, staff grant authority само преди lock и
+metadata/preview replay преди повторна проверка. Те са отделни от двата поправени CSV
+дефекта и изискват собствен corrective пакет; статичният преглед и локалните проби не
+са hosted/MVCC приемане. Пълният import/export MVP не е завършен само с unit CSV.
 
 Първоначалният план по-долу е запазена история/обхват, а не команда за повторение:
 

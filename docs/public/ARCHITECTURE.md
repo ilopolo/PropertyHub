@@ -1,27 +1,37 @@
 # Реализирана архитектура
 
-## Граница на междинния release, 06.11.2026
+## Междинен production release, 06.11.2026
 
-Release кандидатът е отделният `release/finance-p2-interim`, с продуктовото съдържание
-на `b47ad97` и запазена PR8/P2 история. Финансовият клон/PR9 продължава отделно;
-неговият последващ CALC-04 commit не е включен. Няма monthly-management код или
-миграция в този кандидат. Приетият CALC-04 MVP обхват остава неприключен.
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
 
-Включени са registry/owner/ticket/attachment, P1 personal projection, P2 category и
-empty ticket context, FND-F05, payments/accounts/inbound, P4a funds и P4b expenses.
-Приложените 37 backend версии са сверени чрез read-only evidence от 06.11.2026;
-P2 е единственият очакван pending кандидат и изисква нов preflight и frontend cutover.
-Clean install/build/navigation, тесните P2 и built-chunk интеграции са локално PASS;
-P2 hosted и крайният live smoke предстоят. Netlify production остава `b5d9409`.
+Пред-CALC основата b47ad97 с PR8/P2 историята и UI/branding/help е публикувана чрез
+PR #10. Registry/owner/ticket/attachments, P1, FND-F05, payments/accounts/inbound,
+P4a funds и P4b expenses са включени. CALC код/миграция липсват от release tree.
 
-Expense metadata/reference не е файлов attachment; ръчно отчетените inbound/outbound
-не са банкови преводи или потвърждения. Непълна аналитичност и липсващи начални салда
-не дават доказан пълен баланс. Отчети, останалите начислителни методи и другият
-непокрит приет MVP обхват не се реализират или отлагат мълчаливо чрез този release.
-Точният [cutover/recovery ред](../../supabase/README.md#interim-finance-p2-release)
-е отделен от описанията на вече приетите модули по-долу.
+Header discovery първо използва минималните guarded проекции и scoped draft feed;
+допълнителните финансови feeds се извикват само за непокритите разрешени контексти.
+Current role metadata е само hint за заявката; capability идва от server response.
+Няма права от admin име, stale-role cache или промяна на финансовите write пътища.
+Дългите workspace контексти са ограничени до ширината на екрана.
 
-## Общ UI слой на release кандидата
+P2 hosted API (5 групи), frontend→hosted UI (6 групи) и actual production smoke
+(6 групи, 13 маршрута/CSP, 26 assets, 14 визуално прегледани снимки) са PASS.
+Шестте fake discovery проверки са само локални. Не са повторени старите native
+financial/Auth/Storage набори. Cleanup/baseline и credential clearing са потвърдени.
+
+Expense reference не е attachment; отчетните плащания не са банкови преводи или
+потвърждения. Missing opening data/непълна аналитичност не е пълен баланс. CALC,
+останалите методи, отчети и другият приет непокрит MVP обхват остават незавършени.
+[Изпълнен cutover/recovery ред](../../supabase/README.md#interim-finance-p2-release).
+
+Следващите раздели пазят датите и резултатите от отделните етапи; по-старите
+„frontend извън production“ и migration counts са исторически, не текущ статус.
+
+## Общ UI слой на публикувания release
 
 Тринадесет Vite HTML входа включват помощ по роли и демонстрационни контакти.
 `src/ui/shell.js` представя текущия workspace и постоянните session действия;

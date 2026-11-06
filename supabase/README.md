@@ -1,25 +1,38 @@
 <a id="interim-finance-p2-release"></a>
 ## Междинен release — SQL и frontend cutover, 06.11.2026
 
-Това е **подготовка**, без apply/merge/deploy. Product source е пред-CALC `b47ad97`
-в `release/finance-p2-interim`. PR8 `20261102080729` вече е в приложената история и
-Git ancestry на кандидата; не се дублира. CALC `20261105131317` е изключен, включително
-от release migration директорията. Исторически registry процес не се добавя за QA.
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
 
-Последният действителен server read е 06.11.2026, 11:28:29 UTC, exact project
-`qfybswnezdzzahmozikr`, official-CA TLS, READ ONLY: **37 версии**, без P2 и CALC.
-Локалният release съдържа тези непроменени 37 SQL файла и единствен очакван pending:
+Fresh exact project/history/hash/grants/compatibility preflight е PASS. Изолираната
+CLI история съдържаше 37-те точни вече приложени версии и само P2 като кандидат;
+dry-run и еднократен apply са потвърдени с actual post-apply schema/grants/history.
+Нито PR8 SQL, нито P4a/P4b са повторно приложени; CALC е изключен. Не повтаряй apply.
 
-`20261104212948_owner_ticket_category_contexts.sql`
-SHA256 `8e1864f898a5d2cef02b3aabdc46e151193f0100cb1c47733bc7a864400fa98f`.
+P2 LF/Git SHA256: `1048e7f5fd9d9fe92c7c5ca6a707e8c4af4623e8a7d2c690b3cd5f46df6b396d`.
+Disk/CRLF SHA256: `8e1864f898a5d2cef02b3aabdc46e151193f0100cb1c47733bc7a864400fa98f`.
+Public/private guarded wrappers са auth-only, без anon EXECUTE; legacy three-argument
+create отказва изрично. Няма нови PostgreSQL роли, Auth акаунти или извънмиграционни GRANT.
 
-Непосредствено преди бъдещия apply е нужен нов read-only project/history/hash/body/
-grant preflight. Snapshot от предишен run не е безсрочно разрешение. Изолираната CLI
-история трябва да съдържа **всички точни приложени версии + само P2**; неизвестна
-версия/различен hash/друг pending кандидат спира операцията. Не се преименува,
-пропуска или прилага повторно вече приложен SQL. Dry-run в този review не е изпълняван.
+Пет ordinary-JWT API групи, шест frontend→hosted UI и шест actual production smoke
+групи са PASS; 13 маршрута/CSP, 26 assets и 14 production снимки са проверени.
+Exact cleanup плюс отделна read-only сверка са PASS: 12 QA сигнала/13 събития остават
+като история, само временните app права/identity link/сесии са оттеглени. Защитеният
+baseline, финансовите записи и седемте Auth акаунта са непроменени. Operator CLI token
+и DB URI са изчистени; demo и потребителският preview не са променяни.
 
-### Съгласуван кратък прозорец
+Apply 14:52:00 UTC → published 15:13:55 UTC (около 22 минути). Двете тесни UI поправки
+са включени преди единствената automatic публикация; няма manual deploy или покупка.
+Финалната документационна публикация използва `[skip netlify]`, без втори deploy.
+CALC, expense attachment и останалите непокрити MVP процеси не са production PASS.
+
+Следният ред пази изпълнения cutover/recovery договор, не е команда за повторение.
+По-старите migration counts/„frontend предстои“ в отделните dated пакети са история.
+
+### Изпълнен съгласуван прозорец — запазен ред
 
 1. Преди прозореца: проверен candidate SHA, build/navigation/public review, Git/merge
    eligibility, съществуваща Netlify production конфигурация и готов тесен P2 QA run с

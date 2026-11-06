@@ -2,29 +2,40 @@
 
 Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Тринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
-[Хранилище](https://github.com/ilopolo/PropertyHub) · [Ранна live версия](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
+[Хранилище](https://github.com/ilopolo/PropertyHub) · [Live приложение](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 
 ## Реално състояние
 
-**Междинен release кандидат — 06.11.2026:** `release/finance-p2-interim` използва
-проверената пред-CALC основа `b47ad97` с последващия UI/branding/help пакет: registry, сигнали и техните attachments,
-P1 „Моите финанси“, P2 категории/ticket-only контекст, финансовата основа,
-payments/accounts/inbound, фондове P4a и разходи P4b. Историята на PR #8 е включена;
-PR #8 и финансовият PR #9 остават отделни и unmerged. Това е кандидат, **не deployment**;
-текущият Netlify production е потвърден на `b5d9409`.
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
 
-CALC-04 не е в кода или миграциите на този release и остава приет, неприключен MVP
-обхват. Expense attachment, останалите начислителни методи, начални салда/пълен баланс,
-отчети, импорт/експорт и останалите непокрити MVP процеси не се обявяват за готови.
-Единствената очаквана pending миграция е P2 `20261104212948`; нейният hosted тест и
-съгласуван frontend cutover предстоят. [Ред и recovery ограничения](supabase/README.md#interim-finance-p2-release).
+Включени са registry/signal/attachment процесите, P1 „Моите финанси“, P2 explicit
+категория и ticket-only навигация, FND-F05, payments/accounts/inbound, P4a и P4b,
+както и логото, помощта и демонстрационните контакти. PR #8 историята е включена;
+PR #8 остава отделен, а финансовият PR #9 остава отворен с неприключения CALC-04.
 
-Кандидатът има изолиран clean install/build, navigation/assets за 11 HTML входа,
-10 тесни P2 DB/RLS и 9 localhost UI/service групи, осем прегледани mobile/desktop
-снимки в двете теми и четири допълнителни проверки през действителните build chunks.
-Те не заменят P2 hosted приемането. Приетите финансови hosted/MVCC доказателства
-по-долу се използват повторно; production и пълният университетски MVP не са приети
-само от тази локална release проверка.
+P2 hosted ordinary-JWT приемане: пет групи PASS, включително деветте категории,
+anti-spoof/atomic откази, запазена NULL/history, празен ticket-only scope без registry
+и revoke със същия JWT. Шест local-frontend→hosted UI групи и шест actual production
+smoke групи PASS. Проверени са 13 production маршрута/CSP, 26 assets и 14 действителни
+production снимки на 375/1440 px в двете теми, личната справка, logout/profile switch.
+Cleanup и отделната read-only baseline сверка са PASS; временните права/връзки/сесии
+са оттеглени, историята е запазена, operator credentials са изчистени.
+
+Предишните финансови/Auth/Storage/MVCC доказателства са използвани повторно;
+този release smoke не е нов пълен финансов/MVCC набор. CALC-04, expense attachment,
+останалите начислителни методи, начални салда/пълен баланс, отчети, импорт/експорт
+и другите непокрити приети MVP процеси остават незавършени.
+[Изпълнен cutover и recovery ограничения](supabase/README.md#interim-finance-p2-release).
+
+### История на предходните локални и hosted приемания
+
+Числата и статусите по-долу са за датата на съответния пакет. Старите изрази
+„frontend предстои“/„P2 неприложена“ описват онези checkpoints; текущият production
+статус е горният. Frontend на приетите тук модули вече е публикуван чрез PR #10.
 
 **Пред-release UI/branding/help — локално проверен пакет:** общ header с постоянно
 достижими „Табло“, „Акаунт“ и „Изход“ след вход, отделно профилно административно меню,

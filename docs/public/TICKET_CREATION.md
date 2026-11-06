@@ -1,6 +1,40 @@
 # Създаване на сигнал и ticket-only контекст — P2
 
-## Междинен release review, 06.11.2026
+## Hosted cutover и production приемане, 06.11.2026
+
+**Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
+`9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
+`6aedeea5e28bf5fe312e1f85` е READY/published на 06.11.2026, 15:13:55 UTC.
+Backend е потвърден с **38 приложени версии**; P2 `20261104212948` е приложена
+еднократно. CALC-04 не е включен в този release и не е приложен.
+
+Изолираният exact dry-run показа само P2; всички предишни SQL версии са запазени.
+SHA256 на LF/Git съдържанието е
+`1048e7f5fd9d9fe92c7c5ca6a707e8c4af4623e8a7d2c690b3cd5f46df6b396d`;
+disk/CRLF hash е `8e1864f898a5d2cef02b3aabdc46e151193f0100cb1c47733bc7a864400fa98f`.
+Това са различни line endings на същия SQL, без редакция на миграцията.
+
+Пет ordinary-JWT API групи PASS: девет изрични категории; empty/unknown/legacy/
+spoof/foreign/direct-DML откази без частичен сигнал; запазена стара NULL категория
+и staff revision/reason/history; минимален празен ticket-only scope без registry;
+отнемане на право със същия непроменен JWT. Шест frontend→hosted UI групи и шест
+actual production smoke групи са PASS. Production снимките (14) са действително
+прегледани на mobile/desktop и двете теми; localhost screenshots не ги заместват.
+
+Запазени са 12 маркирани синтетични сигнала/13 събития и audit историята. Exact
+cleanup и отделна read-only сверка потвърдиха baseline, непроменени финансови записи
+и Auth акаунти, без останали временни права/връзки/сесии. Secrets са изчистени.
+Няма нов P2 native MVCC набор; старите финансови/Storage проверки не са повторени.
+
+Apply 14:52:00 UTC → publish 15:13:55 UTC: прозорецът е около 22 минути, удължен от
+две тесни UI/navigation поправки. Старите отворени tabs трябва да се презаредят;
+category-less create отказва 23514. Няма автоматично „Друго“. Стар frontend rollback
+сам не отменя DB договора. [Recovery](../../supabase/README.md#interim-finance-p2-release).
+
+Следващите локални checkpoints и бъдещият тогава план са история на подготовката;
+не са инструкция за повторен apply/setup или твърдение за текущ pending статус.
+
+## Исторически междинен release review, 06.11.2026
 
 Пред-CALC кандидатът `b47ad97` е проверен в отделен release worktree. Повторени са само
 тесните P2 интеграции:10 DB/RLS и9 localhost UI/service групи,375/1440 в двете теми,
@@ -51,7 +85,7 @@ UI различава loading, empty в разрешен scope, no-access/нер
 signed-out и техническа грешка. Грешка/липсваща схема не е empty или authorization PASS.
 Няма задачи/известия или промяна на финансовия договор. Local/mock/PGlite не е hosted PASS.
 
-## Локално приемане
+## Историческо локално приемане
 
 Нова **неприложена** `20261104212948_owner_ticket_category_contexts.sql`, SHA-256
 `1048e7f5fd9d9fe92c7c5ca6a707e8c4af4623e8a7d2c690b3cd5f46df6b396d`.
@@ -78,7 +112,7 @@ signed-out и техническа грешка. Грешка/липсваща �
 адаптирани за explicit category/новия import, без повторение на техните пълни набори.
 PGlite/локалната HTTP паралелност не доказват hosted PostgreSQL/MVCC. Няма hosted P2 PASS.
 
-## Бъдещо hosted приемане и release gate
+## Исторически hosted план — вече изпълнен на 06.11.2026
 
 1. Първо **изрично договорен cutover за category-less live клиента**: main/liveb5d9409
    изпраща3аргумента. След този candidate такава create заявка отказва23514, докато

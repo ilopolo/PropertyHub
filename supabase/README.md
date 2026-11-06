@@ -1,3 +1,13 @@
+## P6a unit CSV — НЕПРИЛОЖЕН локален candidate
+
+`20261106170356_registry_units_csv.sql`, SHA256 `cf7983d1578acbae6bcd0405b72b027fa02635f60887199b9499bec37abca342`.
+RLS-closed jobs/rows/unit-links и guarded auth-only stage/job/request/list/commit/
+export/context wrappers, без промяна на старите SQL или create_unit/current_date.
+Локалната fixture изключва CALC и прилага38предходни версии плюс само P6a. Няма hosted
+preflight/apply/credentials в този пакет. За бъдещ apply не използвай автоматично
+всички pending версии: exact actual applied history+самоP6a; CALC е изключен, P2 вече
+е applied. [Формат, сигурност, тестове и точен future hosted план](../docs/public/REGISTRY_CSV.md).
+
 ## Интеграция на main във финансовия клон, 06.11.2026
 
 Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.

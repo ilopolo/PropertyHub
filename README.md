@@ -1,4 +1,12 @@
-# PropertyHub
+#**P6a CSV обекти — локален пакет, извън production:** фиксиран UTF-8 шаблон,
+server staging/редови грешки/preview, изричен атомарен current-date импорт и scoped
+CSV export с formula-injection защита. Отделни prepare/commit/export права, stable
+external keys, inspect/replay и unchanged резултат при пренареден идентичен файл.
+5 domain,13 DB/RLS и9 реални локални UI/service групи, build/navigation за14HTML;
+миграция20261106170356 е **неприложена**. Няма CALC fixture обход или hosted/MVCC PASS.
+[Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
+
+ PropertyHub
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 
@@ -11,7 +19,7 @@ server scopes от draft/preview/charge проекциите и текущия s
 приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
 чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Тринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Четиринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
 [Хранилище](https://github.com/ilopolo/PropertyHub) · [Live приложение](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 

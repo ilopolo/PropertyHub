@@ -38,5 +38,9 @@ export async function loadWorkspace(){
   for(const feed of [feeds.drafts,feeds.preview,feeds.charges])for(const s of feed?.scopes||[])monthlyScopes.set(s.id,s);
   for(const c of account.contexts)if(c.can_manage_registry===true)monthlyScopes.set(c.scope_id,{id:c.scope_id,label:c.scope_label});
   feeds.monthly={scopes:[...monthlyScopes.values()]};
+  if(current.some(r=>r.permissions.some(p=>['prepare_registry_import','commit_registry_import','export_registry'].includes(p)))){
+    try{feeds.transfer=unwrap(await getClient().rpc('registry_csv_contexts').retry(false));}
+    catch{errors.push('transfer');}
+  }
   return {model:workspaceModel(account,feeds.admin,feeds),errors};
 }

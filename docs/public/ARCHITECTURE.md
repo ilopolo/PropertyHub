@@ -1,4 +1,15 @@
-# Реализирана архитектура
+### P6a — scoped unit CSV, локален пакет
+
+Отделен domain parser/UTF-8 шаблон/CSV serializer → service/controller/UI → guarded
+stage/inspect/commit/export RPC. Три конкретни RLS-closed таблици import_jobs,
+import_rows и external_record_links (unit-only FK); server packet SHA256/revision,
+parent fingerprint, exact mapping и idempotent operation receipts. Commit използва
+съществуващите create_unit/provenance validators и текущия scope период; няма
+исторически registry или финансов write път. Header заявява само минимални CSV
+contexts за релевантните explicit permission hints, не staging/export редовете.
+14HTML в този клон; production13 е непроменен. [Точен договор](REGISTRY_CSV.md).
+
+ Реализирана архитектура
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

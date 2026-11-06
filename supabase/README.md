@@ -1,12 +1,20 @@
-## P6a unit CSV — НЕПРИЛОЖЕН локален candidate
+## P6a unit CSV — applied schema, acceptance FAIL, local corrective candidate
 
 `20261106170356_registry_units_csv.sql`, SHA256 `cf7983d1578acbae6bcd0405b72b027fa02635f60887199b9499bec37abca342`.
 RLS-closed jobs/rows/unit-links и guarded auth-only stage/job/request/list/commit/
 export/context wrappers, без промяна на старите SQL или create_unit/current_date.
-Локалната fixture изключва CALC и прилага38предходни версии плюс само P6a. Няма hosted
-preflight/apply/credentials в този пакет. За бъдещ apply не използвай автоматично
-всички pending версии: exact actual applied history+самоP6a; CALC е изключен, P2 вече
-е applied. [Формат, сигурност, тестове и точен future hosted план](../docs/public/REGISTRY_CSV.md).
+Exact single-candidate apply на06.11.2026 и отделен inspect потвърждават39версии,
+P2 applied/CALC excluded, guarded RPC grants и затворени import tables. 7API групи
+и8native races са PASS; revoke/waiting-commit е FAIL. Hosted UI/export не е изпълнен.
+Нова20261106185945_registry_csv_current_rights.sql е **НЕПРИЛОЖЕНА**, с CSV-only
+live-time write predicate, без промяна на общите guards или предходния SQL.
+LF SHA256: `8152525c92772118e33094d609f2a19c0c79b084ed7ffe1ede00a84ee012acf8`.
+Целевите4local regression и13affected DB/RLS групи са PASS; това не е hosted/MVCC PASS.
+Cleanup/read-only baseline/temporary credential clearing са потвърдени; financial,
+audit/import историята и ясно маркираните QA units са запазени.
+След отделно разрешение: exact39actual applied versions + самоcorrective candidate,
+CALC остава изключен. Не прилагай повторноP6a и не избирай всички local pending files.
+[Формат, дефект, ограничения и тесен follow-up план](../docs/public/REGISTRY_CSV.md).
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

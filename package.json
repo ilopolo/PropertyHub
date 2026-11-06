@@ -97,7 +97,8 @@
     "check:unit-file-hosted-probes": "node scripts/check-unit-file-hosted-probes.mjs",
     "check:registry-csv-domain": "node scripts/check-registry-csv-domain.mjs",
     "check:registry-csv-db": "node scripts/check-registry-csv-db.mjs",
-    "check:registry-csv-browser": "node scripts/check-registry-csv-browser.mjs"
+    "check:registry-csv-browser": "node scripts/check-registry-csv-browser.mjs",
+    "check:registry-csv-current-rights": "node scripts/check-registry-csv-current-rights.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

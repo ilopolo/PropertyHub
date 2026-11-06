@@ -1,9 +1,47 @@
 # CSV обекти — ограничен P6a
 
-Пакетът е локално проверен в отделен feature клон, зависим от финансовия клон.
-Няма hosted apply/API/UI/MVCC или production приемане на P6a. Последното запазено
-backend доказателство е 38 приложени версии с P2; CALC-04 остава неприложен и
-блокиран от липсващ октомврийски fixture. CSV импортът не решава този blocker.
+Пакетът е в отделен feature клон, зависим от финансовия клон. Hosted приемането на
+06.11.2026 е **FAIL / release blocked**: 7 ordinary-JWT API групи и 8 native случая
+са PASS, но деветият native случай доказва commit след отнемане на право, докато
+заявката чака scope lock. Реалният hosted UI/export процес е **непроверен** и е спрян
+след дефекта. Няма production приемане или deployment на P6a.
+
+Точната `20261106170356_registry_units_csv.sql` е приложена еднократно след свежа
+38-version история и single-candidate dry-run. След нея са потвърдени **39** версии,
+RLS/grants и непроменени съществуващи клиентски функции. P2 е applied; CALC-04 е
+изключен и остава неприложен, блокиран от октомврийския fixture. CSV не решава този blocker.
+
+## Блокер и локална корекция
+
+Независими holder/contender/observer сесии доказват: holder прави scoped staging
+и отнема точното временно B назначение в една транзакция; B commit чака scope lock;
+observer вижда holder като blocker; holder commit освобождава бариерата. B заявката
+не отказва с очакваното `42501 / registry_csv_commit_revoked`, а създава един обект
+и exact receipt. Последващата read-only сверка потвърждава committed job/unit/link
+и отнетото право. Няма сляпо повторение или изтриване на този резултат.
+
+Причината е употребата на transaction-stable `now()` в общия scoped predicate:
+изтекъл след началото на чакащата транзакция grant още изглежда валиден спрямо
+нейния начален момент. [PostgreSQL current-time semantics](https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT)
+и [function snapshot semantics](https://www.postgresql.org/docs/current/xfunc-volatility.html)
+подкрепят локалното възпроизвеждане на проблема.
+
+Нова **НЕПРИЛОЖЕНА** `20261106185945_registry_csv_current_rights.sql` добавя затворен
+private live-time predicate само за CSV stage/commit проверките преди/след locks.
+Не променя общия финансов/registry guard, публичните RPC подписи, права, snapshots
+или вече приложен SQL. Няма директен authenticated/anon EXECUTE на новия helper.
+Четири целеви локални групи възпроизвеждат стария дефект, проверяват expired
+prepare/commit refusal без частичен запис, helper ACL и валиден commit/replay.
+13-те засегнати P6a DB/RLS групи са повторени успешно с корекцията. Това **не е**
+hosted/MVCC доказателство за поправката.
+
+Cleanup е PASS с отделна read-only проверка: 9 временни назначения са оттеглени,
+6 собствени сесии са затворени, защитеният baseline и 7 Auth акаунта са непроменени.
+Запазени са 14 ясно маркирани synthetic units/14 текущи периода, 11 external links
+и 26 import jobs (12 committed, 8 ready, 6 invalid), плюс audit историята. Няма
+защитен unit archive RPC; обектите остават active, без direct-SQL lifecycle обход.
+Exact IDs/receipts са само в игнорирания run journal. Временните operator credentials
+са изчистени. PH-DEMO-V1, личните записи и preview4173 са запазени.
 
 ## Поддържан процес
 
@@ -116,7 +154,17 @@ workspace/assignment service regression и public review. PGlite/симулир�
 HTTP request interception и локално последователни competing requests **не са**
 Supabase hosted Auth/RLS или PostgreSQL MVCC доказателство.
 
-При бъдещо отделно разрешение:
+Първоначалният план по-долу остава история/обхват, а не инструкция за повторение на
+успешния apply или осемте PASS races. Точната следваща задача след отделно разрешение:
+fresh 39-version history/hash/compatibility gate → изолирана история с **единствен**
+candidate `20261106185945_registry_csv_current_rights.sql` (P6a вече applied, CALC
+изключен) → exact dry-run/apply/inspect → fresh nondemo baseline/own grants →
+повторение само на проваления revoke/waiting-commit native случай и тясната засегната
+ordinary-JWT regression → реален UI/export-byte/mobile/desktop/light/dark процес →
+exact cleanup. Старите request keys/committed резултати не се replay-ват като setup;
+новият run има нов marker. Допълнителният hosted apply не е разрешен в приключилия run.
+
+Първоначален приемателен план:
 
 1. Fresh project/history/hash/grants/client compatibility baseline. Последните 38
    версии са историческо доказателство. Изолиран CLI history съдържа точните actual

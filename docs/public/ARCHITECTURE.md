@@ -1,4 +1,6 @@
-### P6a — scoped unit CSV, локален пакет
+# Реализирана архитектура
+
+### P6a — scoped unit CSV, hosted blocker
 
 Отделен domain parser/UTF-8 шаблон/CSV serializer → service/controller/UI → guarded
 stage/inspect/commit/export RPC. Три конкретни RLS-closed таблици import_jobs,
@@ -8,8 +10,10 @@ parent fingerprint, exact mapping и idempotent operation receipts. Commit из�
 исторически registry или финансов write път. Header заявява само минимални CSV
 contexts за релевантните explicit permission hints, не staging/export редовете.
 14HTML в този клон; production13 е непроменен. [Точен договор](REGISTRY_CSV.md).
-
- Реализирана архитектура
+P6a schema е приложена (39 версии), но acceptance е FAIL: revoke по време на scope
+wait не се отразява правилно чрез transaction-stable clock. Новият локален CSV-only
+live-time guard е в неприложена corrective миграция20261106185945; общите финансови
+guards не са променени. Hosted UI/export и corrective native rerun остават gates.
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

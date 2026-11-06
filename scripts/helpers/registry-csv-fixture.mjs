@@ -1,6 +1,7 @@
 import{randomUUID}from'node:crypto';import{readFile}from'node:fs/promises';import{unitFileFixture}from'./unit-file-fixture.mjs';
-export async function registryCsvFixture(){const f=await unitFileFixture({beforeMigration:'20261105131317'});try{
+export async function registryCsvFixture({currentRights=true}={}){const f=await unitFileFixture({beforeMigration:'20261105131317'});try{
  await f.db.exec('begin;'+await readFile('supabase/migrations/20261106170356_registry_units_csv.sql','utf8')+'commit;');
+ if(currentRights)await f.db.exec('begin;'+await readFile('supabase/migrations/20261106185945_registry_csv_current_rights.sql','utf8')+'commit;');
  f.as=async(label,sql,args=[])=>{await f.db.exec('set role '+(label==='anon'?'anon':'authenticated'));await f.db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claims',$2,false)",[f.auth[label]||'',JSON.stringify({sub:f.auth[label],session_id:f.session[label]})]);let error;try{return await f.db.query(sql,args);}catch(e){error=e;throw e;}finally{try{await f.db.exec('reset role');}catch(e){if(!error)throw e;}}};
  const today=(await f.db.query('select current_date::text d')).rows[0].d;f.today=today;
  const old=(await f.as('A','select id from public.user_roles where scope_id=$1 and valid_to is null',[f.scope.A])).rows;for(const r of old)await f.as('orgA','select public.revoke_staff_role($1)',[r.id]);

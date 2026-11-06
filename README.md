@@ -1,12 +1,12 @@
-#**P6a CSV обекти — локален пакет, извън production:** фиксиран UTF-8 шаблон,
-server staging/редови грешки/preview, изричен атомарен current-date импорт и scoped
-CSV export с formula-injection защита. Отделни prepare/commit/export права, stable
-external keys, inspect/replay и unchanged резултат при пренареден идентичен файл.
-5 domain,13 DB/RLS и9 реални локални UI/service групи, build/navigation за14HTML;
-миграция20261106170356 е **неприложена**. Няма CALC fixture обход или hosted/MVCC PASS.
-[Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
+# PropertyHub
 
- PropertyHub
+**P6a CSV обекти — hosted FAIL, извън production:** точната миграция20261106170356
+е приложена; backend историята е39версии. 7ordinary-JWT API групи и8native races са
+PASS; revoke/waiting-commit race еFAIL. Hosted UI/export остава непроверен.
+Нова локално проверена20261106185945 корекция е **неприложена** и изисква отделно
+разрешение. Cleanup/baseline/credential clearing са потвърдени. Няма deployment,
+CALC apply, historical backdating или claim за общ hosted/MVCC PASS.
+[Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

@@ -1,3 +1,10 @@
+> Access correction: `20261106204645_current_write_access_guards.sql` е локално
+> проверен, **неприложен hosted** кандидат за ограничените write/wait/replay пътища.
+> Последният доказан backend baseline остава40версии. CALC е неприложен/fixture blocked;
+> бъдещият му apply изисква и отделен current-guard gate. Не прилагайте всички pending
+> миграции автоматично. Виж [точния статус и следващото приемане](supabase/README.md).
+
+
 # PropertyHub
 
 **P6a unit CSV — ограничен corrective hosted/API/UI/native PostgreSQL PASS,

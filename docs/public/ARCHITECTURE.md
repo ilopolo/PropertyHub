@@ -469,17 +469,28 @@ UI controller unit-files → service unit-files → guarded document RPC + Stora
 
 Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; Edgev1/S3 handler е deployed и hosted приемането е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Общият release включва source PR2/PR3 без нови backend операции; преди main се проверяват merged build/navigation/theme/Storage UI-service интеграцията, после тесен live smoke. Няма повторен hosted RLS/PKCE набор или load test. Виж [setup и release стъпките](../../supabase/README.md).
 
-## Ограничения на authorization при продължителни write операции
+## Authorization след изчакване — локална корекция, 06.11.2026
 
-Ограниченият преглед от 06.11.2026 установи отворени рискове извън поправените CSV
-пътища: общият scope helper сравнява валидността с transaction-start време;
-staff grant проверява caller authority преди lock без повторна проверка след него;
-document preparation и financial preview имат replay изход преди късен guard.
-Повторение на същия permission helper, idempotency, revisions и RLS сами не доказват
-актуално право след изчакване в SECURITY DEFINER операция. Отнемане чрез краен момент
-и естествено изтичане са отделни случаи от деактивиране на membership status.
+Ограниченият преглед установи transaction-clock проверки след wait, caller authority
+само преди staff-grant lock и document/preview replay преди повторен guard. Коригиращият
+кандидат `20261106204645_current_write_access_guards.sql` е локално проверен, **неприложен hosted**.
+Точно12именувани private write workers получават current guards след explicit locks и
+преди всички normal/replay returns, включително финален guard за rollback след implicit
+write/trigger waits. Public сигнатури, текущи права, ACL/RLS и бизнес формулите се запазват.
 
-Локални disposable probes възпроизвеждат представители; останалото е source review,
-не независими PostgreSQL сесии или hosted PASS. Нужен е отделен ограничен corrective
-пакет и целево приемане. Досегашните hosted резултати остават валидни за проверения им
-обхват; тези нови случаи не са покрити от тях. Не е променен SQL или access договорът.
+Три вътрешни VOLATILE PL/pgSQL helpers с празен search_path и затворен client EXECUTE
+използват fresh query snapshots и live authority intervals. READ COMMITTED се проверява;
+fixed-snapshot write отказва изрично. Общите read/RLS helpers не се заменят глобално.
+Revoke чрез valid_to, естествен expiry и status deactivation са отделни случаи; now()
+за business dates/snapshots/audit не се променя. Основание: [PostgreSQL volatility и
+snapshots](https://www.postgresql.org/docs/current/xfunc-volatility.html).
+
+23целеви локални групи PASS: old→fixed, разрешени контроли, authority/expiry/replay,
+точни суми, липса на частични financial/operation/audit записи и helper grants. Controlled
+disposable interleavings не са independent-session/native MVCC доказателство. Предстои
+отделно разрешено hosted приемане с observed waiters и committed revoke преди release.
+
+Последният доказан hosted baseline е40версии; P6a corrective hosted PASS и старият FAIL
+се пазят. CALC остава неприложен/fixture blocked, отделните monthly guards изискват
+companion gate преди бъдещ apply. Корекцията не зависи от CALC и не го обявява за готов.
+Виж [миграционните граници и следващото приемане](../../supabase/README.md).

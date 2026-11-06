@@ -1,3 +1,50 @@
+## Current write access correction — LOCAL PASS / HOSTED UNAPPLIED
+
+Кандидат `20261106204645_current_write_access_guards.sql`, LF SHA256
+`21246441eb6f6a0fe2956164d816d217a88f1927c5b2ca2dc9614cdc65fdde92`.
+Новите модули остават след corrective приемането. Не прилагай този файл автоматично:
+пакетът разрешава само локална реализация. Последни доказани40hostedверсии, без fresh
+backend заявка тук. Original+corrective P6a вече са приложени; CALC20261105131317 не е.
+
+Точно12privateworkers: cash_account_operation, fund_operation, classify_fund_movement,
+inbound_payment_operation, manual_payment_operation(+вътрешния _before_inbound worker),
+expense_operation, publish_charge_batch, activate_financial_rule, assign_staff_role,
+prepare_unit_document и create_financial_preview. Затваря transaction-clock/current
+rights, post-lock caller authority и early-replay guard класовете в този ограничен scope.
+Няма нов public API, GRANT/role/permission или промяна на старите SQL/финансови записи.
+
+Новите3privatehelpers са VOLATILE SECURITY DEFINER с search_path='', clientEXECUTEclosed;
+проверяват live time/current query snapshot само за write authority. Изискват READ COMMITTED
+(fixed-snapshot42501), без промяна на business dates/периоди/snapshots/точна аритметика.
+Миграцията проверява exact normalized prosrc MD5 на именуваните зависимости; непознат
+body отказва. Optional local CALC publisher annotations се пазят, но CALC не се изисква.
+Отделните monthly workers не са коригирани от този файл; future CALC apply изисква
+тесен companion access guard, освен съществуващия October fixture gate. Старият CALC SQL
+не се редактира. review_monthly_context вече има post-lock guard; там рискът е clock.
+
+Проверка: `npm run check:current-write-access` —23localgroups PASS с existing fixtures,
+old-problem reproduction, отделни revoke/real expiry, replay/new allowed controls,
+полезните финансови totals, atomic rollback и ACL/RLS equality. Това не е native MVCC PASS.
+Няма повторен full financial/Auth/Storage набор или нов framework.
+
+Следващ отделно разрешен hosted gate: fresh project/history/hash/grants/compatibility;
+isolated exact40applied +само този candidate, CALC excluded; exact single-candidate
+dry-run/apply/inspect. Ordinary JWT и same-JWT revoke за минималните права, retained
+history и protected baseline. Native holder/contender/observer: actual observed waiter
+преди independent guarded revoke commit, observer доказва revoke докато contender още
+чака, после release. Проверява се точният42501reason и committed state, не generic409.
+Existing observedTransactionRace/onObserved helper се използва без нов coordinator.
+Покриват се request/config/target-row waits и normal/replay/correction outputs за всички
+именувани workers; preserved-rights positive controls са задължителни. Expiry е отделен
+finite-interval случай с реално изчакване и SQL wall-time proof, без clock override.
+
+Org-admin committed-loss fixture изисква отделно изрично одобрен synthetic membership/
+role interval lifecycle: staff revoke НЕ отнема org_admin и няма guarded membership
+deactivation RPC. Без това точният authority-loss native случай остава BLOCKED, не PASS.
+Unknown writes се inspect-ват по exact receipts; own-only cleanup пази финансовата/
+audit история, възстановява baseline, затваря own native/Auth sessions и изчиства tokens.
+Няма hosted разрешение, credentials, setup, apply или cleanup от текущия локален пакет.
+
 ## P6a unit CSV — 40 applied versions, limited corrective hosted PASS
 
 `20261106170356_registry_units_csv.sql`, SHA256 `cf7983d1578acbae6bcd0405b72b027fa02635f60887199b9499bec37abca342`.

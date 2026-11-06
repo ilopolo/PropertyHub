@@ -95,6 +95,7 @@
     "check:unit-file-download-db": "node scripts/check-unit-file-download-db.mjs",
     "check:unit-file-download-integration": "node scripts/check-unit-file-download-integration.mjs",
     "check:unit-file-hosted-probes": "node scripts/check-unit-file-hosted-probes.mjs",
+    "check:current-write-access": "node scripts/check-current-write-access.mjs",
     "check:registry-csv-domain": "node scripts/check-registry-csv-domain.mjs",
     "check:registry-csv-db": "node scripts/check-registry-csv-db.mjs",
     "check:registry-csv-browser": "node scripts/check-registry-csv-browser.mjs",

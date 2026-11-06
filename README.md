@@ -1,15 +1,13 @@
-> Access correction: `20261106204645_current_write_access_guards.sql` е локално
-> проверен, **неприложен hosted** кандидат за ограничените write/wait/replay пътища.
-> Последният доказан backend baseline остава40версии. CALC е неприложен/fixture blocked;
-> бъдещият му apply изисква и отделен current-guard gate. Не прилагайте всички pending
-> миграции автоматично. Виж [точния статус и следващото приемане](supabase/README.md).
-
+> Current-write-access correction е приложена:41 backendверсии. Проверените API/native/UI
+> пътища са PASS; org-admin authority-loss native case остава **UNVERIFIED/P1 release gate**.
+> Това не е общо hosted/production приемане. CALC е неприложен/fixture blocked.
+> [Резултати по функция и точни ограничения](supabase/README.md).
 
 # PropertyHub
 
 **P6a unit CSV — ограничен corrective hosted/API/UI/native PostgreSQL PASS,
 извън production.** Корекция20261106185945 е приложена еднократно с окончателния
-hash; backend историята е40версии. Пет тесни ordinary-JWT групи, два реални native
+hash; тогавашната backend история е40версии. Пет тесни ordinary-JWT групи, два реални native
 revoke отказа и два разрешени контрола са PASS. Реалният frontend→hosted UI/export
 поток е проверен, включително CSV bytes/raw-formula защита и8mobile/desktop/две теми
 снимки. Cleanup/baseline/credential clearing са потвърдени; първоначалният FAIL и

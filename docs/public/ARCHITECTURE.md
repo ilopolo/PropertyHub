@@ -469,28 +469,28 @@ UI controller unit-files → service unit-files → guarded document RPC + Stora
 
 Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; Edgev1/S3 handler е deployed и hosted приемането е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Общият release включва source PR2/PR3 без нови backend операции; преди main се проверяват merged build/navigation/theme/Storage UI-service интеграцията, после тесен live smoke. Няма повторен hosted RLS/PKCE набор или load test. Виж [setup и release стъпките](../../supabase/README.md).
 
-## Authorization след изчакване — локална корекция, 06.11.2026
+## Authorization след изчакване — ограничено hosted приемане, 07.11.2026
 
-Ограниченият преглед установи transaction-clock проверки след wait, caller authority
-само преди staff-grant lock и document/preview replay преди повторен guard. Коригиращият
-кандидат `20261106204645_current_write_access_guards.sql` е локално проверен, **неприложен hosted**.
-Точно12именувани private write workers получават current guards след explicit locks и
-преди всички normal/replay returns, включително финален guard за rollback след implicit
-write/trigger waits. Public сигнатури, текущи права, ACL/RLS и бизнес формулите се запазват.
+Корекция 20261106204645 е приложена еднократно след exact fresh preflight/dry-run;
+independent inspect потвърди 41 versions и 12 именувани private worker bodies. Три вътрешни
+VOLATILE helpers с празен search_path и затворен client EXECUTE проверяват current
+authority след wait и преди normal/replay return. READ COMMITTED е изрично условие;
+неподдържана fixed-snapshot изолация отказва 42501. Общият read/RLS договор, public
+сигнатури, точните финансови суми, business dates и исторически snapshots са запазени.
 
-Три вътрешни VOLATILE PL/pgSQL helpers с празен search_path и затворен client EXECUTE
-използват fresh query snapshots и live authority intervals. READ COMMITTED се проверява;
-fixed-snapshot write отказва изрично. Общите read/RLS helpers не се заменят глобално.
-Revoke чрез valid_to, естествен expiry и status deactivation са отделни случаи; now()
-за business dates/snapshots/audit не се променя. Основание: [PostgreSQL volatility и
-snapshots](https://www.postgresql.org/docs/current/xfunc-volatility.html).
+23 local regression groups остават отделно доказателство. Новите 9 ordinary-JWT групи,
+50 qualified native WAIT случая и 6 tight real frontend/service контрола са PASS за
+проверените пътища. Native proof включва независими сесии, observed waiter, committed
+revoke или отделно реално expiry преди release, positive controls и final committed
+state без partial records; има и реални FK wait rollback проверки. Fixed-snapshot
+отказите са отделни early denials. Това не е всички възможни lock interleavings.
 
-23целеви локални групи PASS: old→fixed, разрешени контроли, authority/expiry/replay,
-точни суми, липса на частични financial/operation/audit записи и helper grants. Controlled
-disposable interleavings не са independent-session/native MVCC доказателство. Предстои
-отделно разрешено hosted приемане с observed waiters и committed revoke преди release.
+assign_staff_role caller org-admin loss/expiry native case остава UNVERIFIED и P 1
+release gate: няма разрешен guarded fixture; allowed/foreign-org контролите не го
+заместват. Няма директно SQL отнемане на org_admin, нов lifecycle или demo B mutation.
+Document проверката е metadata-only; старите Storage/Auth/MVCC набори не са повторени.
 
-Последният доказан hosted baseline е40версии; P6a corrective hosted PASS и старият FAIL
-се пазят. CALC остава неприложен/fixture blocked, отделните monthly guards изискват
-companion gate преди бъдещ apply. Корекцията не зависи от CALC и не го обявява за готов.
-Виж [миграционните граници и следващото приемане](../../supabase/README.md).
+Independent cleanup сверка потвърди baseline/Auth, ended own grants и 0 own connections;
+финансовата/audit история е retained, временните operator credentials са изчистени.
+CALC остава неприложен/fixture blocked и изисква companion guard gate. Няма deployment.
+Виж [резултатите за всяка функция и оставащите граници](../../supabase/README.md).

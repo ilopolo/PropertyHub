@@ -11,6 +11,7 @@ export function renderWorkspace({model:m,errors},context,menu,links,add,dashboar
   if(m.contexts.some(c=>c.finance))actions.push(['pages/finances.html','Финанси']);
   if(m.contexts.some(c=>c.expenses))actions.push(['pages/finances.html#expenses','Разходи']);
   if(m.contexts.some(c=>c.monthly))actions.push(['pages/finances.html#monthly-management','Месечно управление']);
+  if(m.contexts.some(c=>c.transfer))actions.push(['pages/data-transfer.html','Импорт и експорт']);
   if(m.contexts.some(c=>c.mode==='owner'))actions.push(['pages/account.html#owner-home','Моите имоти']);
   if(m.ownerFinance)actions.push(['pages/account.html#my-finances','Моите финанси']);
   for(const n of document.querySelectorAll('[data-workspace-registry]'))n.hidden=!m.contexts.some(c=>c.registry);

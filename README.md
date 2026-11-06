@@ -1,5 +1,15 @@
 # PropertyHub
 
+**P6a unit CSV — ограничен corrective hosted/API/UI/native PostgreSQL PASS,
+извън production.** Корекция20261106185945 е приложена еднократно с окончателния
+hash; backend историята е40версии. Пет тесни ordinary-JWT групи, два реални native
+revoke отказа и два разрешени контрола са PASS. Реалният frontend→hosted UI/export
+поток е проверен, включително CSV bytes/raw-formula защита и8mobile/desktop/две теми
+снимки. Cleanup/baseline/credential clearing са потвърдени; първоначалният FAIL и
+локалните regression доказателства са запазени като история. Няма production
+приемане, merge/deployment, CALC apply или historical backdating.
+[Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
+
 ## Интеграция на main във финансовия клон, 06.11.2026
 
 Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
@@ -11,7 +21,7 @@ server scopes от draft/preview/charge проекциите и текущия s
 приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
 чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Тринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Четиринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
 [Хранилище](https://github.com/ilopolo/PropertyHub) · [Live приложение](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 

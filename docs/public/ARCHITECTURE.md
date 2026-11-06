@@ -1,5 +1,24 @@
 # Реализирана архитектура
 
+### P6a — scoped unit CSV, ограничен corrective hosted PASS
+
+Отделен domain parser/UTF-8 шаблон/CSV serializer → service/controller/UI → guarded
+stage/inspect/commit/export RPC. Три конкретни RLS-closed таблици import_jobs,
+import_rows и external_record_links (unit-only FK); server packet SHA256/revision,
+parent fingerprint, exact mapping и idempotent operation receipts. Commit използва
+съществуващите create_unit/provenance validators и текущия scope период; няма
+исторически registry или финансов write път. Header заявява само минимални CSV
+contexts за релевантните explicit permission hints, не staging/export редовете.
+14HTML в този клон; production13 е непроменен. [Точен договор](REGISTRY_CSV.md).
+P6a schema и точната корекция20261106185945 са приложени (40 версии). CSV-only
+volatile live-time guard и post-advisory staging replay проверката имат отделни
+реални native committed-revoke/waiter доказателства и положителни контроли. Public
+signatures/grants/RLS и общите финансови guards са запазени. Пет targeted JWT групи,
+четири native случая и реален frontend→hosted UI/export-byte процес са PASS;
+8wait-exit/4current-rights/13DB локални групи остават отделни доказателства.
+Cleanup възстановява baseline и пази registry/import/audit историята. Първоначалният
+hosted FAIL и aborted QA barrier са запазени; P6a не е публикуван в production.
+
 ## Интеграция на main във финансовия клон, 06.11.2026
 
 Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.

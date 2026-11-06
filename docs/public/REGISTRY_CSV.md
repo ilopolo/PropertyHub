@@ -1,17 +1,67 @@
 # CSV обекти — ограничен P6a
 
-Пакетът е в отделен feature клон, зависим от финансовия клон. Hosted приемането на
-06.11.2026 е **FAIL / release blocked**: 7 ordinary-JWT API групи и 8 native случая
-са PASS, но деветият native случай доказва commit след отнемане на право, докато
-заявката чака scope lock. Реалният hosted UI/export процес е **непроверен** и е спрян
-след дефекта. Няма production приемане или deployment на P6a.
+Пакетът е в отделен feature клон, зависим от финансовия клон. Ограниченото
+**corrective hosted/API/native PostgreSQL/UI приемане е PASS, 06.11.2026**.
+Първоначалният FAIL и последващите локални проверки са запазени по-долу като история.
+Няма production приемане, merge или deployment на P6a.
 
 Точната `20261106170356_registry_units_csv.sql` е приложена еднократно след свежа
-38-version история и single-candidate dry-run. След нея са потвърдени **39** версии,
+38-version история и single-candidate dry-run. След отделно разрешения corrective
+single-candidate apply са потвърдени **40** версии, точните function bodies/volatility,
 RLS/grants и непроменени съществуващи клиентски функции. P2 е applied; CALC-04 е
 изключен и остава неприложен, блокиран от октомврийския fixture. CSV не решава този blocker.
 
-## Блокер и локална корекция
+## Текущо corrective hosted приемане
+
+Свежата история съдържа точно 39 приложени версии преди корекцията. Изолираната
+CLI история включва тези точни файлове плюс единствен кандидат
+`20261106185945_registry_csv_current_rights.sql`, SHA256
+`7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
+Dry-run показва само него; apply е еднократен. Отделен read-only inspect потвърждава
+40 версии, exact private function bodies, `VOLATILE` live-time guard и непроменени
+public signatures/grants/RLS. Няма нови DB роли/допълнителни GRANT или Auth акаунти.
+Предишните read-only връзки са проверени по точните run идентификатори и липсват.
+
+Пет ordinary-JWT групи са PASS: липса на admin inheritance и четири тесни групи за
+разрешени stage/commit/идентично повторение, prepare+read и commit+manage зависимости,
+same-JWT revoke на replay/detail и export+read/revoke. Старият цялостен API набор не
+е повторен. Четири native случая използват независими holder/contender/observer:
+
+| Случай | Доказан ред и committed резултат |
+|---|---|
+| Waiting commit + revoke | Contender чака точния job row lock; независим ordinary-JWT revoke commit-ва; observer вижда отнетото право и все още блокирания contender; след release — `42501 / registry_csv_commit_revoked`, job остава ready/revision 1 без commit receipt и без units/periods/links |
+| Staging replay + revoke | Ordinary holder държи точния actor/request advisory lock чрез replay; след committed revoke observer още вижда waiter; след release — `42501 / registry_csv_prepare_revoked`, без връщане на защитения payload, втори job или domain записи |
+| Waiting commit със запазени права | Същият job barrier, разрешен commit и точно едно създаване; идентично повторение връща същия committed receipt |
+| Staging replay със запазени права | Наблюдаван advisory waiter; еднакъв разрешен резултат след release, без нови domain записи |
+
+Job бариерата е само `SELECT FOR UPDATE` върху собствения маркиран staged job чрез
+наличната operator връзка; contender и revoke са с ordinary-session права. Няма
+директен domain DML или промяна на права заради теста. Един по-ранен QA опит със scope
+бариера блокира revoke audit FK и изтича по timeout; exact read-only reconciliation
+потвърждава rollback на holder/contender/revoke и липса на частични записи преди
+новия опит. Той не е отчетен като продуктова FAIL или native PASS. Старите осем
+native PASS случая не са повторени. Двете реални корекции вече имат native доказателство.
+
+Отделен изолиран build/Edge profile на QA порт изпълнява реален local frontend →
+hosted backend: шаблон, грешки в невалиден CSV без загуба на файла, валиден preview,
+изричен commit, inspect/reload, export и role/revoke UI. Проверени са действителните
+download bytes за UTF-8/BOM, BG текст, quoting и embedded newlines. Отделен raw-input
+fixture доказва, че базата и server projection съдържат `=…`, а сваленият CSV добавя
+защитния апостроф; предварително sanitised input не се приема за това доказателство.
+Прегледани са осем актуални screenshots: 375/1440 px, светла/тъмна тема, четима
+хоризонтално превъртаща се preview таблица, без page overflow. Това не е production UI.
+
+Cleanup е потвърден с отделна read-only сверка: 10 собствени назначения са оттеглени,
+11 собствени сесии са затворени, няма останали собствени native връзки, membership
+baseline е възстановен, protected records и 7 Auth акаунта са непроменени. Новият run
+пази **6 units/6 периода/6 external links, 10 jobs (5 committed, 4 ready, 1 invalid),
+12 import rows и 41 audit записа**. Exact IDs/statuses са в игнорирания journal.
+Units остават маркирани active/needs_review; няма guarded archive_unit и не е
+използван direct-SQL lifecycle обход. Временните operator credentials са изчистени.
+Старият run cleanup не е повторен; PH-DEMO-V1, лични записи, CALC bindings и preview4173
+са запазени. Няма Netlify проверка, merge или deployment.
+
+## История на двата проблема и корекцията
 
 Независими holder/contender/observer сесии доказват: holder прави scoped staging
 и отнема точното временно B назначение в една транзакция; B commit чака scope lock;
@@ -26,11 +76,12 @@ observer вижда holder като blocker; holder commit освобождав�
 и [function snapshot semantics](https://www.postgresql.org/docs/current/xfunc-volatility.html)
 подкрепят локалното възпроизвеждане на проблема.
 
-**Окончателен локален кандидат, неприложен:**
+**Приложена точна корекция след отделно разрешение:**
 `20261106185945_registry_csv_current_rights.sql`, LF SHA256
 `7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
 Завършилата read-only hosted сверка потвърждава 39 версии и отсъствие на тази
-миграция **преди** редакцията ѝ. Зависимостите са приложената първоначална P6a
+миграция **преди** редакцията ѝ; новият run я прилага еднократно с окончателния hash.
+Зависимостите са приложената първоначална P6a
 миграция и съществуващите registry/access функции. CALC остава изключен.
 Разрешението за предишния hash `8152525c…acf8` **не важи** за променения кандидат.
 
@@ -58,7 +109,7 @@ staging и commit; 4 current-rights групи за стария clock дефе�
 засегнати P6a DB/RLS групи. Локалните expiry hooks са само в disposable fixture,
 без реални независими сесии или наблюдаван waiter. Това **не е** hosted/MVCC PASS.
 
-Cleanup е PASS с отделна read-only проверка: 9 временни назначения са оттеглени,
+Cleanup на **първоначалния FAIL run** е PASS с отделна read-only проверка: 9 временни назначения са оттеглени,
 6 собствени сесии са затворени, защитеният baseline и 7 Auth акаунта са непроменени.
 Запазени са 14 ясно маркирани synthetic units/14 текущи периода, 11 external links
 и 26 import jobs (12 committed, 8 ready, 6 invalid), плюс audit историята. Няма
@@ -66,7 +117,7 @@ Cleanup е PASS с отделна read-only проверка: 9 временни
 Exact IDs/receipts са само в игнорирания run journal. Временните operator credentials
 са изчистени. PH-DEMO-V1, личните записи и preview4173 са запазени.
 
-Corrective-only продължението е спряно **преди apply** при локалния review. Read-only
+Предходното read-only corrective продължение е спряно **преди apply** при локалния review. Read-only
 сверката е завършила, клиентският процес е приключил след rollback/end; няма отделен
 по-късен server-observer receipt за връзката. Няма нов setup, application записи,
 назначения или Auth сесии. Предоставените временни credentials са изчистени отново;
@@ -175,7 +226,7 @@ quoting, включително при водещи whitespace/control симв�
 да не бъдат загубени водещите нули от програмата. Export е справка, не import
 шаблон; unit_id не е право за запис, а защитният апостроф не се премахва сляпо.
 
-## Локални проверки и следващо hosted приемане
+## Проверки и следваща интеграция
 
 Проверки: `check:registry-csv-domain`, `check:registry-csv-db`,
 `check:registry-csv-browser`; isolated offline install/build/navigation, targeted
@@ -183,18 +234,14 @@ workspace/assignment service regression и public review. PGlite/симулир�
 HTTP request interception и локално последователни competing requests **не са**
 Supabase hosted Auth/RLS или PostgreSQL MVCC доказателство.
 
-Първоначалният план по-долу остава история/обхват, а не инструкция за повторение на
-успешния apply или осемте PASS races. Точната следваща задача след отделно разрешение:
-fresh 39-version history/hash/compatibility gate → изолирана история с **единствен**
-candidate `20261106185945_registry_csv_current_rights.sql` (P6a вече applied, CALC
-изключен) → exact dry-run/apply/inspect → fresh nondemo baseline/own grants →
-проваления revoke/waiting-commit native случай **и** staging replay след advisory wait
-с committed revoke, exact отказ и липса на частични записи; отделен разрешен commit
-при запазени права; тясна засегната ordinary-JWT regression → реален UI/export-byte/
-mobile/desktop/light/dark процес →
-exact cleanup. Старите request keys/committed резултати не се replay-ват като setup;
-новият run има нов marker. Нужен е нов изричен apply gate за окончателния hash;
-старото разрешение за различен hash не се използва.
+Двете P6a миграции вече са приложени. Не ги прилагай повторно и не replay-вай старите
+QA keys като нов setup. Следва преглед на draft PR #11 и отделно разрешена нормална
+Git интеграция към финансовия клон; main/live release остава отделен gate. При бъдещ
+release fresh историята трябва да отчете 40 приложени версии и неприложения CALC,
+без автоматично прилагане на всички local pending файлове. Пълният import/export MVP
+не е завършен само с unit CSV.
+
+Първоначалният план по-долу е запазена история/обхват, а не команда за повторение:
 
 Първоначален приемателен план:
 

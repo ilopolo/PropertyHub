@@ -1,14 +1,13 @@
 # PropertyHub
 
-**P6a CSV обекти — hosted FAIL, извън production:** точната миграция20261106170356
-е приложена; backend историята е39версии. 7ordinary-JWT API групи и8native races са
-PASS; revoke/waiting-commit race еFAIL. Hosted UI/export остава непроверен.
-Корекция20261106185945 е **неприложена**. След локално открит staging replay пропуск
-тя е допълнена с post-advisory проверка; окончателният hash изисква ново разрешение.
-8 wait-exit,4 current-rights и13 DB/RLS локални групи са PASS. Read-only сверка
-потвърждава39версии; corrective apply/setup не са започвали, credentials са изчистени.
-Първоначалният cleanup/baseline е запазен. Няма deployment,
-CALC apply, historical backdating или claim за общ hosted/MVCC PASS.
+**P6a unit CSV — ограничен corrective hosted/API/UI/native PostgreSQL PASS,
+извън production.** Корекция20261106185945 е приложена еднократно с окончателния
+hash; backend историята е40версии. Пет тесни ordinary-JWT групи, два реални native
+revoke отказа и два разрешени контрола са PASS. Реалният frontend→hosted UI/export
+поток е проверен, включително CSV bytes/raw-formula защита и8mobile/desktop/две теми
+снимки. Cleanup/baseline/credential clearing са потвърдени; първоначалният FAIL и
+локалните regression доказателства са запазени като история. Няма production
+приемане, merge/deployment, CALC apply или historical backdating.
 [Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
 
 ## Интеграция на main във финансовия клон, 06.11.2026

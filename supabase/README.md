@@ -1,23 +1,26 @@
-## P6a unit CSV — applied schema, acceptance FAIL, local corrective candidate
+## P6a unit CSV — 40 applied versions, limited corrective hosted PASS
 
 `20261106170356_registry_units_csv.sql`, SHA256 `cf7983d1578acbae6bcd0405b72b027fa02635f60887199b9499bec37abca342`.
 RLS-closed jobs/rows/unit-links и guarded auth-only stage/job/request/list/commit/
 export/context wrappers, без промяна на старите SQL или create_unit/current_date.
-Exact single-candidate apply на06.11.2026 и отделен inspect потвърждават39версии,
-P2 applied/CALC excluded, guarded RPC grants и затворени import tables. 7API групи
-и8native races са PASS; revoke/waiting-commit е FAIL. Hosted UI/export не е изпълнен.
-Нова20261106185945_registry_csv_current_rights.sql е **НЕПРИЛОЖЕНА**, с CSV-only
+Първоначалният exact single-candidate apply и отделен inspect потвърдиха39версии,
+P2 applied/CALC excluded, guarded RPC grants и затворени import tables. Първоначалният
+revoke/waiting-commit FAIL и7API/8nativePASS са запазена история, не са заличени.
+20261106185945_registry_csv_current_rights.sql е **ПРИЛОЖЕНА ЕДНОКРАТНО**, с CSV-only
 live-time write predicate, без промяна на общите guards или предходния SQL.
 Окончателен LF SHA256: `7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
-Завършил read-only preflight потвърди39версии и неприложеност преди редакцията.
+Новият run потвърди39версии преди single-candidate dry-run/apply и40след exactinspect.
 Нов post-advisory stage guard преди replay/mismatch затваря отделен локално доказан
 пропуск. Старото разрешение за hash815252…acf8 не важи за този променен кандидат.
 8wait-exit/4current-rights/13affected DB/RLS локални групи са PASS, не hosted/MVCC PASS.
-Няма corrective dry-run/apply/setup; временните operator credentials са изчистени.
+5targeted ordinaryJWT groups,2native refusal+2positive controls с observedwaiters и
+committedrevoke before release,realhostedUI/exportbytes/8reviewedimages са PASS.
+Exact cleanup/read-only baseline и ownsession/native-connection closure са потвърдени;
+временните operator credentials са изчистени. Няма production приемане/deployment.
 Cleanup/read-only baseline/temporary credential clearing са потвърдени; financial,
 audit/import историята и ясно маркираните QA units са запазени.
-След отделно разрешение: exact39actual applied versions + самоcorrective candidate,
-CALC остава изключен. Не прилагай повторноP6a и не избирай всички local pending files.
+За бъдещи действия fresh history трябва да отчита40applied версии; CALC остава
+изключен. Не прилагай повторноP6a/corrective и не избирай всички local pending files.
 [Формат, дефект, ограничения и тесен follow-up план](../docs/public/REGISTRY_CSV.md).
 
 ## Интеграция на main във финансовия клон, 06.11.2026

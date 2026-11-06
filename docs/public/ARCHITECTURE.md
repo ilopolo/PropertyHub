@@ -1,6 +1,6 @@
 # Реализирана архитектура
 
-### P6a — scoped unit CSV, hosted blocker
+### P6a — scoped unit CSV, ограничен corrective hosted PASS
 
 Отделен domain parser/UTF-8 шаблон/CSV serializer → service/controller/UI → guarded
 stage/inspect/commit/export RPC. Три конкретни RLS-closed таблици import_jobs,
@@ -10,15 +10,14 @@ parent fingerprint, exact mapping и idempotent operation receipts. Commit из�
 исторически registry или финансов write път. Header заявява само минимални CSV
 contexts за релевантните explicit permission hints, не staging/export редовете.
 14HTML в този клон; production13 е непроменен. [Точен договор](REGISTRY_CSV.md).
-P6a schema е приложена (39 версии), но acceptance е FAIL: revoke по време на scope
-wait не се отразява правилно чрез transaction-stable clock. Новият локален CSV-only
-live-time guard е в неприложена corrective миграция20261106185945; общите финансови
-guards не са променени. Тя включва и post-advisory stage guard преди replay/mismatch
-early exits; това затваря отделен локално доказан пропуск. Кандидатът е неприложен
-и hash-ът е променен след review, затова старото apply разрешение не важи.
-8wait-exit/4current-rights/13DB локални групи са PASS; hosted UI/export и native
-waiting-commit/staging-replay приемането остават gates. Read-only продължението не
-е променило backend историята от39версии и не е създавало setup или записи.
+P6a schema и точната корекция20261106185945 са приложени (40 версии). CSV-only
+volatile live-time guard и post-advisory staging replay проверката имат отделни
+реални native committed-revoke/waiter доказателства и положителни контроли. Public
+signatures/grants/RLS и общите финансови guards са запазени. Пет targeted JWT групи,
+четири native случая и реален frontend→hosted UI/export-byte процес са PASS;
+8wait-exit/4current-rights/13DB локални групи остават отделни доказателства.
+Cleanup възстановява baseline и пази registry/import/audit историята. Първоначалният
+hosted FAIL и aborted QA barrier са запазени; P6a не е публикуван в production.
 
 ## Интеграция на main във финансовия клон, 06.11.2026
 

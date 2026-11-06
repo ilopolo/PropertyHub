@@ -1,7 +1,10 @@
 import {randomUUID} from 'node:crypto';
+import {readFile,readdir} from 'node:fs/promises';
 import {unitFileFixture} from './unit-file-fixture.mjs';
 export async function ticketFileFixture(){
- const f=await unitFileFixture();
+ // Seed the historical category-less tickets BEFORE the mandatory-category cutover.
+ const cutover='20261104212948_owner_ticket_category_contexts.sql';
+ const f=await unitFileFixture({beforeMigration:cutover});
  try{
   await f.as('orgA','select public.revoke_staff_role($1)',[f.docRole]);
   f.ticketRole=(await f.as('orgA',"select public.assign_staff_role($1,$2,$3,'manager',array['manage_tickets']) id",[f.org.A,f.auth.doc,f.scope.A])).rows[0].id;
@@ -18,6 +21,9 @@ export async function ticketFileFixture(){
   const foreignRole=(await f.as('B',"select id from public.user_roles where scope_id=$1 and role_code='manager'",[f.scope.B])).rows[0].id;
   await f.as('orgB','select public.revoke_staff_role($1)',[foreignRole]);
   f.foreignTicketRole=(await f.as('orgB',"select public.assign_staff_role($1,$2,$3,'manager',array['manage_tickets']) id",[f.org.B,f.auth.B,f.scope.B])).rows[0].id;
+  f.legacyTickets=(await f.db.query('select * from public.work_items order by id')).rows;
+  f.legacyEvents=(await f.db.query('select * from public.work_item_events order by id')).rows;
+  for(const file of(await readdir('supabase/migrations')).filter(p=>p.endsWith('.sql')&&p>=cutover).sort()){await f.db.exec('begin;'+await readFile('supabase/migrations/'+file,'utf8')+'commit;');f.migrations.push(file);}
   return f;
  }catch(error){await f.db.close();throw error;}
 }

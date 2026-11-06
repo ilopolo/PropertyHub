@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="bg"><head><meta charset="UTF-8"><link rel="icon" href="data:,"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Сигнали — PropertyHub</title></head>
+<html lang="bg"><head><meta charset="UTF-8"><link rel="icon" type="image/png" sizes="32x32" href="/branding/favicon-32.png" data-brand-icon><link rel="icon" type="image/svg+xml" href="/branding/favicon.svg" data-brand-icon><link rel="apple-touch-icon" sizes="180x180" href="/branding/apple-touch-icon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Сигнали — PropertyHub</title></head>
 <body><a class="skip-link btn btn-primary" href="#main">Към съдържанието</a><header id="navigation"></header>
-<main id="main" class="container"><p class="eyebrow">Поддръжка</p><h1>Сигнали</h1><p class="lead">Собствени сигнали и разрешена работа по обхват.</p>
+<main id="main" tabindex="-1" class="container"><p class="eyebrow">Поддръжка</p><h1>Сигнали</h1><p class="lead">Собствени сигнали и разрешена работа по обхват.</p>
 <div id="message" role="status" aria-live="polite" hidden></div><p id="ticket-access">Зареждане…</p>
 <section id="ticket-create" class="card mb-4" hidden><div class="card-body p-4"><h2 class="h4">Подай сигнал</h2><p>Само към текущ разрешен собствен имот. След подаването можеш да прикачиш един файл към сигнала.</p>
 <form id="new-ticket"><label class="form-label" for="ticket-unit">Имот и обхват</label><select id="ticket-unit" name="unit" class="form-select mb-3" required></select>
+<label class="form-label" for="ticket-category">Категория</label><select id="ticket-category" name="category" class="form-select mb-3" required></select>
 <label class="form-label" for="ticket-title">Заглавие</label><input id="ticket-title" name="title" class="form-control mb-3" maxlength="160" required>
 <label class="form-label" for="ticket-description">Описание</label><textarea id="ticket-description" name="description" class="form-control mb-3" rows="4" maxlength="4000" required></textarea>
 <button class="btn btn-success">Подай сигнал</button></form></div></section>

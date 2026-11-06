@@ -12,7 +12,7 @@ assert.equal(fix.slice(fix.indexOf('create or replace function')).trim().replace
 const f=await unitFileFixture(),password=randomUUID();let api,c;
 try{
  await f.as('orgA','select public.revoke_staff_role($1)',[f.docRole]);await f.as('orgA',"select public.assign_staff_role($1,$2,$3,'manager',array['manage_tickets'])",[f.org.A,f.auth.doc,f.scope.A]);
- const id=(await f.as('owner',"select public.create_ticket($1,'Synthetic revision','Synthetic description') id",[f.unit.A])).rows[0].id;
+ const id=(await f.as('owner',"select public.create_ticket($1,'Synthetic revision','Synthetic description','other') id",[f.unit.A])).rows[0].id;
  await f.as('doc',"select public.change_ticket_status($1,1,'accepted','Synthetic accepted')",[id]);
  const before=await f.db.query('select to_jsonb(w) row from public.work_items w where id=$1',[id]);
  await assert.rejects(f.as('doc',"select public.change_ticket_status($1,1,'in_progress','Synthetic stale')",[id]),e=>e.code==='PT409');

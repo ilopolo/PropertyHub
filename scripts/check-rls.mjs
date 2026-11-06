@@ -1,3 +1,5 @@
+import {assertHostedQaAllowed} from './helpers/demo-guard.mjs';
+assertHostedQaAllowed();
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';

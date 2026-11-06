@@ -12,17 +12,17 @@ try{
  api=await startUnitFileQaServer(f,password);
  async function client(label){const c=createClient('http://127.0.0.1:54331','sb_publishable_local_qa',{auth:{persistSession:false,autoRefreshToken:false}});clients.push(c);if(label){const r=await c.auth.signInWithPassword({email:label.toLowerCase()+'@propertyhub.invalid',password});assert.equal(r.error,null);}return c;}
  const owner=await client('owner'),staff=await client('doc'),foreign=await client('B'),anon=await client();
- const r=await owner.rpc('create_ticket',{unit:f.unit.A,title:'API synthetic',description:'API safe content'});assert.equal(r.error,null);const id=r.data;
+ const r=await owner.rpc('create_ticket',{unit:f.unit.A,title:'API synthetic',description:'API safe content',category:'other'});assert.equal(r.error,null);const id=r.data;
  const read=await staff.rpc('ticket_feed');assert.equal(read.error,null);assert.equal(read.data[0].unit_number,'03');assert.equal(read.data[0].can_manage,true);
  for(const [c,name,args,code]of [
-  [anon,'create_ticket',{unit:f.unit.A,title:'bad',description:'bad'},'42501'],
-  [foreign,'create_ticket',{unit:f.unit.A,title:'bad',description:'bad'},'42501'],
-  [owner,'create_ticket',{unit:f.unit.B,title:'bad',description:'bad'},'42501'],
+  [anon,'create_ticket',{unit:f.unit.A,title:'bad',description:'bad',category:'other'},'42501'],
+  [foreign,'create_ticket',{unit:f.unit.A,title:'bad',description:'bad',category:'other'},'42501'],
+  [owner,'create_ticket',{unit:f.unit.B,title:'bad',description:'bad',category:'other'},'42501'],
   [owner,'change_ticket_status',{item:id,expected_revision:1,next_status:'accepted',note:'bad'},'42501'],
   [foreign,'change_ticket_status',{item:id,expected_revision:1,next_status:'accepted',note:'bad'},'42501'],
   [staff,'change_ticket_status',{item:id,expected_revision:1,next_status:'completed',note:'skip'},'23514'],
  ]){const result=await c.rpc(name,args);assert.equal(result.error?.code,code);}
- const forged=await owner.rpc('create_ticket',{unit:f.unit.A,title:'forged',description:'forged',reporter_profile_id:f.profile.pending,scope_id:f.scope.B,status:'completed'});assert.ok(forged.error);
+ const forged=await owner.rpc('create_ticket',{unit:f.unit.A,title:'forged',description:'forged',category:'other',reporter_profile_id:f.profile.pending,scope_id:f.scope.B,status:'completed'});assert.ok(forged.error);
  assert.deepEqual((await foreign.rpc('ticket_feed')).data,[]);
  assert.equal((await staff.rpc('change_ticket_status',{item:id,expected_revision:1,next_status:'accepted',note:'API accepted'})).error,null);
  assert.equal((await staff.rpc('change_ticket_status',{item:id,expected_revision:1,next_status:'in_progress',note:'stale'})).error?.code,'PT409');

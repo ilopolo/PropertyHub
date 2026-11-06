@@ -3,7 +3,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {PGlite} from '@electric-sql/pglite';
 import {btree_gist} from '@electric-sql/pglite/contrib/btree_gist';
-export async function unitFileFixture(){
+export async function unitFileFixture({beforeMigration=null}={}){
  const db=new PGlite({extensions:{btree_gist}});
  try{
  await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create schema extensions;create schema storage;
@@ -19,7 +19,7 @@ export async function unitFileFixture(){
  create function storage.allow_only_operation(operation text) returns boolean language sql stable as $$select current_setting('storage.operation',true)='storage.'||operation$$;
  alter default privileges in schema public grant all on tables to anon,authenticated;
  alter default privileges in schema public grant execute on functions to anon,authenticated;`);
- const migrations=(await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort();
+ const migrations=(await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')&&(!beforeMigration||f<beforeMigration)).sort();
  for(const file of migrations)await db.exec('begin;'+await readFile('supabase/migrations/'+file,'utf8')+'commit;');
  const auth={},profile={},scope={},unit={},person={},org={},session={};
  const as=async(label,sql,args=[],operation='')=>{

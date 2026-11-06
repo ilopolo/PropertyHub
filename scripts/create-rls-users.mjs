@@ -1,3 +1,5 @@
+import {assertHostedQaAllowed} from './helpers/demo-guard.mjs';
+assertHostedQaAllowed();
 import { readFile, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { parseEnv } from 'node:util';

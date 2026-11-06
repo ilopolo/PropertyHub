@@ -1,0 +1,4 @@
+import {financialPreviewFeed,loadFinancialPreviewInputs,createFinancialPreview} from '../services/financial-preview.js';
+import {renderFinancialPreview} from '../ui/financial-preview.js';
+import {financeState} from '../ui/finance-help.js';
+export async function refreshFinancialPreview(){const root=document.querySelector('#financial-preview');root.dataset.ready='false';root.dataset.state='loading';root.textContent='Зареждане на изчислителните прегледи…';try{const data=await financialPreviewFeed();renderFinancialPreview(root,data,{load:loadFinancialPreviewInputs,create:async(...args)=>{await createFinancialPreview(...args);await refreshFinancialPreview();}});}catch(error){root.replaceChildren();financeState(root,error.code==='42501'?'no-access':'error',error.code==='42501'?'Нямаш достъп до изчислителния преглед.':'Изчислителният преглед не е зареден поради техническа грешка. Натисни „Обнови“.');}root.dataset.ready='true';}

@@ -9,15 +9,15 @@ try{
  assert.deepEqual(ticketContent(' Test ',' Description '),{title:'Test',description:'Description'});
  for(const pair of [['','x'],['x',''],['x'.repeat(161),'ok'],['ok','x'.repeat(4001)]])assert.throws(()=>ticketContent(...pair));
  assert.equal(ticketContent('😀'.repeat(160),'x').title.length,320);assert.equal(nextTicketStatus('completed'),'in_progress');checks.push('domain required content, exact Unicode limits and transitions');
- const id=(await f.as('owner','select public.create_ticket($1,$2,$3) id',[f.unit.A,'Synthetic leak','Synthetic description'])).rows[0].id;
+ const id=(await f.as('owner',"select public.create_ticket($1,$2,$3,'other') id",[f.unit.A,'Synthetic leak','Synthetic description'])).rows[0].id;
  const row=(await f.as('owner','select * from public.work_items')).rows[0];assert.equal(row.scope_id,f.scope.A);assert.equal(row.reporter_profile_id,f.profile.owner);assert.equal(row.status,'new');
  assert.equal((await f.as('owner','select * from public.work_item_events')).rows.length,1);
  for(const who of ['anon','pending','A','B','platform','orgA','doc']){
-  await denied(who,'select public.create_ticket($1,$2,$3)',[f.unit.A,'bad','bad'],'42501');
+  await denied(who,"select public.create_ticket($1,$2,$3,'other')",[f.unit.A,'bad','bad'],'42501');
   if(who!=='anon')assert.equal((await f.as(who,'select * from public.work_items')).rows.length,0);
  }
- await denied('owner','select public.create_ticket($1,$2,$3)',[f.unit.B,'bad','bad'],'42501');
- for(const pair of [['','x'],['x',''],['x'.repeat(161),'ok'],['ok','x'.repeat(4001)]])await denied('owner','select public.create_ticket($1,$2,$3)',[f.unit.A,...pair],'23514');
+ await denied('owner',"select public.create_ticket($1,$2,$3,'other')",[f.unit.B,'bad','bad'],'42501');
+ for(const pair of [['','x'],['x',''],['x'.repeat(161),'ok'],['ok','x'.repeat(4001)]])await denied('owner',"select public.create_ticket($1,$2,$3,'other')",[f.unit.A,...pair],'23514');
  checks.push('server derives author/scope/new; only verified current owner can create; foreign unit and invalid content denied');
  for(const who of ['owner','A','orgA','platform']){
   await denied(who,"update public.work_items set status='completed' where id=$1",[id],'42501');
@@ -56,6 +56,6 @@ try{
  await f.as('orgA','select public.revoke_staff_role($1)',[role]);assert.equal((await f.as('doc','select public.ticket_feed() data')).rows[0].data.length,0);
  await f.as('A','select public.revoke_owner_link($1,$2,$3,$4)',[f.scope.A,f.link,'Synthetic','Synthetic revoke']);
  assert.equal((await f.as('owner','select public.ticket_feed() data')).rows[0].data.length,0);assert.equal((await f.as('owner','select * from public.work_item_events')).rows.length,0);
- await denied('owner','select public.create_ticket($1,$2,$3)',[f.unit.A,'bad','revoked'],'42501');checks.push('fresh local identity evaluation after scoped role and owner link revocation');
+ await denied('owner',"select public.create_ticket($1,$2,$3,'other')",[f.unit.A,'bad','revoked'],'42501');checks.push('fresh local identity evaluation after scoped role and owner link revocation');
  await mkdir('.local/tickets-qa',{recursive:true});await writeFile('.local/tickets-qa/db.json',JSON.stringify({pass:true,runtime:'disposable PGlite; simulated Auth identity, not hosted Supabase',checks},null,2));console.log('PASS tickets DB/RLS/domain:',checks.length,'groups');
 }finally{await f.db.close();}

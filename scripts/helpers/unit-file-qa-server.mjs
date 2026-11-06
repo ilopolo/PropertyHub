@@ -10,7 +10,7 @@ export async function startUnitFileQaServer(f,qaPassword,options={}){
  const user=label=>({id:f.auth[label],email:`${label.toLowerCase()}@propertyhub.invalid`,email_confirmed_at:new Date().toISOString(),is_anonymous:false,aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{display_name:'Synthetic '+label}});
  const server=createServer((req,res)=>{queue=queue.then(async()=>{
   const url=new URL(req.url,'http://127.0.0.1'),chunks=[];for await(const chunk of req)chunks.push(chunk);const body=Buffer.concat(chunks);
-  res.setHeader('Access-Control-Allow-Origin','http://127.0.0.1:5173');res.setHeader('Access-Control-Allow-Headers','*');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS');res.setHeader('Cache-Control','no-store');
+  res.setHeader('Access-Control-Allow-Origin',options.origin||'http://127.0.0.1:5173');res.setHeader('Access-Control-Allow-Headers','*');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS');res.setHeader('Cache-Control','no-store');
   const json=(data,status=200)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data));};
   if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
   const label=sessions.get((req.headers.authorization||'').replace('Bearer ',''))||'anon';
@@ -24,7 +24,7 @@ export async function startUnitFileQaServer(f,qaPassword,options={}){
    if(url.pathname==='/auth/v1/user')return label==='anon'?json({message:'Unauthorized'},401):json(user(label));
    if(url.pathname==='/auth/v1/logout'){sessions.delete((req.headers.authorization||'').replace('Bearer ',''));return json({});}
    if(url.pathname.startsWith('/rest/v1/rpc/')&&req.method==='POST'){
-    const name=url.pathname.split('/').at(-1),args=JSON.parse(body.length?body:'{}');if(!/^[a-z_]+$/.test(name))return json({},404);
+    const name=url.pathname.split('/').at(-1),args=JSON.parse(body.length?body:'{}');if(!/^[a-z_][a-z0-9_]*$/.test(name))return json({},404);
     const candidates=(await f.db.query(`select p.proargnames,p.pronargs,p.proargtypes::oid[] types,p.proretset,t.typname
      from pg_proc p join pg_namespace n on n.oid=p.pronamespace join pg_type t on t.oid=p.prorettype where n.nspname='public' and p.proname=$1`,[name])).rows;
     const candidate=candidates.find(p=>Object.keys(args).every(k=>p.proargnames.slice(0,p.pronargs).includes(k)));if(!candidate)return json({message:'Unknown fixture RPC'},404);
@@ -66,8 +66,8 @@ export async function startUnitFileQaServer(f,qaPassword,options={}){
     }
    }
    return json({message:'Unsupported local QA route'},404);
-  }catch(error){failures.push({path:url.pathname,code:error.code,message:error.message});return json({code:error.code||'QA_TRANSPORT',message:error.message},error.code==='42501'?403:400);}
+  }catch(error){failures.push({path:url.pathname,code:error.code,message:error.message});return json({code:error.code||'QA_TRANSPORT',message:error.message},error.code==='42501'?403:error.code==='PT409'?409:400);}
  }).catch(()=>{if(!res.headersSent)res.writeHead(500);res.end();});});
- await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(54331,'127.0.0.1',resolve);});
+ await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(options.port||54331,'127.0.0.1',resolve);});
  return {transfers,objects,failures,close:()=>new Promise(resolve=>server.close(resolve))};
 }

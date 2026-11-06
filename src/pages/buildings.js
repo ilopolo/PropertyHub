@@ -1,4 +1,5 @@
 import './main.js';
+import {getWorkspaceScope,setWorkspaceScope} from '../ui/workspace-context.js';
 import { loadAccount } from '../services/auth.js';
 import { listUnits, createUnit, verifyRegistryRecord } from '../services/registry.js';
 import { listScopeSetups, completeScopeSetup } from '../services/access.js';
@@ -12,6 +13,7 @@ import { showOwnership } from './ownership.js';
 import { showOccupancy } from './occupancy.js';
 import {showOwnerVerification,hideOwnerVerification} from './owner-access.js';
 import {showUnitFiles,canManageFiles} from './unit-files.js';
+import {showUnitShares,hideUnitShares,canReadUnitShares} from './unit-shares.js';
 
 let account;
 const scopeSelect = document.querySelector('#scope');
@@ -22,8 +24,11 @@ document.querySelector('#setup-provenance').innerHTML = provenanceFields('setup'
 document.querySelector('#create-unit').lastElementChild.insertAdjacentHTML('beforebegin', provenanceFields('unit'));
 async function showUnits() {
   const revision = ++loadRevision;
+  if(!scopeSelect.value){scopeSelect.disabled=false;hideOwnerVerification();hideUnitShares();document.querySelector('#units').replaceChildren();document.querySelector('#registry-status').textContent='Нямаш служебен достъп до избрания контекст.';document.querySelector('#registry').hidden=true;return;}
+  document.querySelector('#registry-status').textContent='Зареждане на избрания контекст…';
   scopeSelect.disabled = true;
   hideOwnerVerification();
+  hideUnitShares();
   document.querySelector('#ownership').hidden = true;
   document.querySelector('#occupancy').hidden = true;
   try {
@@ -49,10 +54,13 @@ async function showUnits() {
   if (revision !== loadRevision) return;
   await showOccupancy(scope,units,date,Boolean(context?.can_manage_registry));
   if (revision !== loadRevision) return;
+  if(canReadUnitShares(account,scope)) await showUnitShares(scope,date);
+  if (revision !== loadRevision) return;
   await showOwnerVerification(scope,account);
   if (revision !== loadRevision) return;
   document.querySelector('#registry-count').textContent = `${units.length} обекта с принадлежност към ${calendarLabel(date)}. Това не удостоверява пълнотата на регистъра.`;
   if (!units.length) list.textContent = 'Няма достъпни обекти с принадлежност за избраната дата.';
+  document.querySelector('#registry-status').textContent='Разрешен служебен контекст: '+context.scope_label;
   const types = { apartment:'Апартамент',shop:'Магазин',office:'Офис',garage:'Гараж',other:'Обект' };
   for (const unit of units) {
     const li = document.createElement('li'); li.className = 'list-group-item text-break';
@@ -74,7 +82,8 @@ async function showUnits() {
   }
   } finally { if (revision === loadRevision) scopeSelect.disabled = false; }
 }
-scopeSelect.addEventListener('change', () => showUnits().catch(error => message(authError(error),true)));
+scopeSelect.addEventListener('change', () => setWorkspaceScope(scopeSelect.value));
+window.addEventListener('workspace-scope',event=>{if(!account)return;const allowed=account.contexts.some(c=>c.scope_id===event.detail);if(allowed){scopeSelect.value=event.detail;document.querySelector('#registry').hidden=false;}else scopeSelect.value='';showUnits().catch(error=>message(authError(error),true));});
 bindForm('#registry-filter', async () => { await showUnits(); message('Прегледът към избраната дата е зареден.'); });
 bindForm('#create-unit', async (data,form) => {
   await createUnit(scopeSelect.value,String(data.get('number')).trim(),String(data.get('type')),String(data.get('floor')).trim(),String(data.get('area')),readProvenance(data));
@@ -97,10 +106,11 @@ async function refresh() {
     document.querySelector('#setup-inbox').hidden = !setups.length;
   }
   if (!account) document.querySelector('#registry-status').textContent = 'Влез с потвърден акаунт за достъп до регистъра.';
-  else if (!account.contexts.length) document.querySelector('#registry-status').textContent = 'Няма разрешени обхвати. Нужно е проверено служебно назначение.';
+  else if (!account.contexts.length) document.querySelector('#registry-status').textContent = 'Нямаш служебен достъп до сграда. Провери назначенията в акаунта си; собствените имоти са в отделния собствен изглед.';
   else {
     document.querySelector('#registry-status').textContent = 'Заредени са разрешените контексти. Данните се филтрират от сървъра.';
     account.contexts.forEach(c => option(scopeSelect,c.scope_id,`${c.organization_name} · ${c.scope_label}`));
+    const saved=getWorkspaceScope();if(saved)scopeSelect.value=saved;
     document.querySelector('#registry').hidden = false;
     await showUnits();
   }

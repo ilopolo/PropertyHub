@@ -1,0 +1,5 @@
+import{expenseFeed,saveExpense,payExpense,reverseExpensePayment,replaceExpensePayment}from'../services/expenses.js';import{renderExpenses}from'../ui/expenses.js';import{financeState}from'../ui/finance-help.js';import{expensesBg as bg}from'../i18n/expenses-bg.js';
+let generation=0;
+export async function refreshExpenses(){const root=document.getElementById('expenses');if(!root)return;const current=++generation;root.replaceChildren();root.dataset.ready='false';root.dataset.state='loading';root.textContent=bg.loading;
+ try{const data=await expenseFeed();if(current!==generation)return;const refresh=(fn,posted=false)=>async(...args)=>{await fn(...args);await refreshExpenses();if(posted)window.dispatchEvent(new CustomEvent('fund-data-changed'));};renderExpenses(root,data,{save:refresh(saveExpense),pay:refresh(payExpense,true),reverse:refresh(reverseExpensePayment,true),replace:refresh(replaceExpensePayment,true)});if(location.hash==='#expenses')root.scrollIntoView({block:'start'});}
+ catch(e){if(current!==generation)return;root.replaceChildren();financeState(root,e.code==='42501'?'no-access':'error',e.code==='42501'?bg.noAccess:bg.error);}root.dataset.ready='true';}

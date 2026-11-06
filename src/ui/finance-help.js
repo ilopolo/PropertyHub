@@ -1,0 +1,2 @@
+export function financeDetails(title,...nodes){const d=document.createElement('details'),s=document.createElement('summary');s.textContent=title;d.className='mt-3 mb-3';d.append(s,...nodes);return d;}
+export function financeState(root,state,text){root.dataset.state=state;const p=document.createElement('p');p.textContent=text;root.append(p);if(state==='no-access'||state==='no-context'){const a=document.createElement('a');a.href=import.meta.env.BASE_URL+'pages/account.html';a.textContent='Към акаунта и достъпа';root.append(a);}}

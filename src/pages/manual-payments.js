@@ -1,0 +1,5 @@
+import{manualPaymentFeed,recordManualPayment,allocateManualPayment,reverseManualPayment,replaceManualPayment}from'../services/manual-payments.js';
+import{renderManualPayments}from'../ui/manual-payments.js';import{financeState}from'../ui/finance-help.js';
+export async function refreshManualPayments(){const root=document.getElementById('manual-payments');root.dataset.ready='false';root.dataset.state='loading';root.textContent='Зареждане на плащанията…';
+ try{const data=await manualPaymentFeed();const refresh=fn=>async(...args)=>{await fn(...args);await refreshManualPayments();window.dispatchEvent(new CustomEvent('fund-data-changed'));};renderManualPayments(root,data,{record:refresh(recordManualPayment),allocate:refresh(allocateManualPayment),reverse:refresh(reverseManualPayment),replace:refresh(replaceManualPayment)});}
+ catch(e){root.replaceChildren();financeState(root,e.code==='42501'?'no-access':'error',e.code==='42501'?'Нямаш достъп до плащания.':'Плащанията не са заредени поради техническа грешка. Натисни „Обнови“.');}root.dataset.ready='true';}

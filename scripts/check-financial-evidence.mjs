@@ -1,0 +1,53 @@
+// LOCAL PostgreSQL + actual SDK/HTTP. Simulated Auth/serialized transport, not hosted proof.
+import assert from 'node:assert/strict';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+import {createClient} from '@supabase/supabase-js';
+import {financialEvidenceFixture,completeEvidence,resolutionPayload} from './helpers/financial-evidence-fixture.mjs';
+import {rulePayload} from './helpers/financial-draft-fixture.mjs';
+import {startUnitFileQaServer} from './helpers/unit-file-qa-server.mjs';
+import {financialEvidenceDraft,financialEvidenceGaps,evidenceSchema,moneyClaim} from '../src/domain/financial-evidence.js';
+process.on('uncaughtException',e=>{console.error('Financial evidence check:',e.code||'',e.message,'position',e.position||'');process.exit(1);});
+const f=await financialEvidenceFixture(),checks=[],out='.local/finance-evidence-qa',clients=[],password=randomUUID();let api;
+const as=(l,sql,args=[])=>f.as(l,sql,args),row=async id=>(await f.db.query('select * from public.resolutions where id=$1',[id])).rows[0];
+const audit=async()=>(await f.db.query('select count(*)::int n from public.audit_events')).rows[0].n;
+const save=(l,id,rev,p)=>as(l,"select public.save_financial_basis_evidence($1,$2,$3,$4,'Synthetic evidence correction')",[f.scope.A,id,rev,p]);
+const review=(l,id,rev,result='reviewed')=>as(l,"select public.review_financial_basis($1,$2,$3,$4,'Synthetic documented review; no legal certification')",[f.scope.A,id,rev,result]);
+const deny=(p,code='23514')=>assert.rejects(p,e=>e.code===code);
+try{
+ const id=(await as('A',"select public.save_financial_resolution($1,null,0,$2,'Synthetic basis') id",[f.scope.A,resolutionPayload()])).rows[0].id;
+ const good=completeEvidence(f.unit.A);assert.equal(moneyClaim('0'),'0.00');assert.equal(moneyClaim(null),null);assert.equal(moneyClaim('12.3'),'12.30');
+ const decimal={...good,approved_cost:'0.30',reported_available:'0.50',authorized_use:'0.10',target_collection:'0.20'};assert.equal(financialEvidenceDraft(decimal,await row(id)).target_collection,'0.20');
+ for(const v of ['1.001','-1','1e3','NaN',2,Infinity,'1000000000000.00'])assert.throws(()=>moneyClaim(v));
+ assert(financialEvidenceGaps({...evidenceSchema},await row(id)).includes('reported_available'));checks.push('exact decimal strings/BigInt cents; unknown differs from zero; no rounding/exponent/number coercion');
+ await save('A',id,1,{...evidenceSchema,record_kind:'synthetic',approved_cost:'800.00'});assert.equal((await row(id)).verification_status,'needs_review');
+ const before=await audit();await deny(review('doc',id,2));assert.equal(await audit(),before);await review('doc',id,2,'changes_requested');assert.equal((await row(id)).verification_status,'changes_requested');
+ await save('A',id,3,decimal);assert.equal((await row(id)).reviewed_by,null);await review('doc',id,4);const reviewed=await row(id);assert.equal(reviewed.verification_status,'reviewed');assert.equal(reviewed.reviewed_by,f.profile.doc);assert.equal(reviewed.reviewed_revision,5);assert.equal(reviewed.status,'recorded_draft');
+ const rule=(await as('A',"select public.save_financial_rule($1,null,0,$2,'Synthetic inactive rule') id",[f.scope.A,rulePayload(id)])).rows[0].id;
+ assert.equal((await f.db.query('select status from public.allocation_rule_versions where id=$1',[rule])).rows[0].status,'draft');checks.push('partial basis persists with gaps; explicit reviewer can request correction or review complete synthetic claims; no automatic status/activation');
+ const bad=[{...good,approved_cost:'799.99'},{...good,authorized_use:'1000.01'},{...good,reported_available:1000},{...good,target_collection:'500.001'},{...good,target_collection:'0.00'},{...good,approved_cost:'-1.00'},{...good,unit_ids:[f.unit.A,f.unit.A]},{...good,due_on:'2027-01-01'},{...good,due_on:'2026-09-01'},{...good,funds_as_of:'2999-01-01'},{...good,funds_as_of:'2026-02-30'},{...good,evidence_sha256:'claim'},{...good,reviewed_by:f.profile.A},{...good,denominator:'complex'}];
+ const beforeInvalid=await audit();for(const p of bad)await deny(save('A',id,5,p),p.funds_as_of==='2026-02-30'?'22008':'23514');
+ await deny(save('A',id,5,{...good,unit_ids:[f.unit.B]}),'42501');assert.equal(await audit(),beforeInvalid);assert.deepEqual(await row(id),reviewed);checks.push('invalid known funding, precision, period, dates, duplicate/foreign participants and forged review fields leave row/audit unchanged');
+ for(const l of ['A','owner','orgA','platform','B'])await deny(review(l,id,5),'42501');
+ for(const l of ['owner','orgA','platform','B','doc'])await deny(save(l,id,5,good),'42501');
+ await deny(as('orgA',"select public.assign_staff_role($1,$2,$3,'cashier',array['publish_rules'])",[f.org.A,f.auth.owner,f.scope.A]));
+ await deny(as('A',"update public.resolutions set verification_status='reviewed',evidence=$1 where id=$2",[good,id]),'42501');
+ assert.equal((await as('B','select * from public.resolutions where id=$1',[id])).rows.length,0);assert.equal((await as('doc','select public.financial_draft_feed() x')).rows[0].x.scopes[0].can_prepare,false);
+ checks.push('scoped explicit manager review only; no preparer/cashier/controller/admin/owner/foreign inheritance; direct DML and self-declared actor refused');
+ api=await startUnitFileQaServer(f,password);
+ async function login(l){const c=createClient('http://127.0.0.1:54331','sb_publishable_local_qa_only',{auth:{persistSession:false,autoRefreshToken:false}});clients.push(c);assert(!(await c.auth.signInWithPassword({email:l.toLowerCase()+'@propertyhub.invalid',password})).error);return c;}
+ const A=await login('A'),D=await login('doc');
+ const source=(await readFile('src/services/financial-drafts.js','utf8')).replace("import {getClient,unwrap} from './supabase.js';","const getClient=()=>globalThis.__financialEvidenceClient;const unwrap=({data,error})=>{if(error)throw error;return data;};").replaceAll("'../domain/financial-drafts.js'",JSON.stringify(new URL('../src/domain/financial-drafts.js',import.meta.url).href)).replaceAll("'../domain/financial-evidence.js'",JSON.stringify(new URL('../src/domain/financial-evidence.js',import.meta.url).href));
+ const service=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));globalThis.__financialEvidenceClient=A;
+ const old=await row(id);const outcomes=await Promise.allSettled([service.saveFinancialBasisEvidence(f.scope.A,old,good,'Synthetic concurrent edit one'),service.saveFinancialBasisEvidence(f.scope.A,old,good,'Synthetic concurrent edit two')]);assert.equal(outcomes.filter(v=>v.status==='fulfilled').length,1);assert.equal(outcomes.find(v=>v.status==='rejected').reason.code,'PT409');
+ assert.equal((await row(id)).verification_status,'needs_review');assert.equal(await audit(),beforeInvalid+1);const newer=await row(id);
+ const start=Date.now(),stale=await A.rpc('save_financial_basis_evidence',{scope:f.scope.A,target:id,expected_revision:old.revision,payload:good,note:'Synthetic stale'});assert.equal(stale.error.status,undefined);assert.equal(stale.status,409);const elapsed=Date.now()-start;assert(elapsed<2000);assert.deepEqual(await row(id),newer);assert.equal(await audit(),beforeInvalid+1);
+ globalThis.__financialEvidenceClient=D;await service.reviewFinancialBasis(f.scope.A,newer,{outcome:'reviewed'},'Synthetic current revision reviewed');assert.equal((await row(id)).reviewed_revision,7);
+ const snapshot=(await f.db.query('select resolution_snapshot from public.allocation_rule_versions where id=$1',[rule])).rows[0].resolution_snapshot;assert.equal(snapshot.revision,5);
+ globalThis.__financialEvidenceClient=A;await service.saveFinancialResolution(f.scope.A,await row(id),resolutionPayload(),'Synthetic same-payload resave invalidates review');assert.equal((await row(id)).verification_status,'needs_review');assert.equal((await row(id)).reviewed_by,null);
+ const history=(await f.db.query("select safe_delta from public.audit_events where target_id=$1 and action='review_financial_basis' order by happened_at",[id])).rows;assert.equal(history.length,3);assert(history.some(h=>h.safe_delta.after.reviewed_revision===7));
+ checks.push('actual service/SDK/HTTP: one current write/one409, no rejected audit, reload/current review, edits invalidate review while snapshots/reviewer history persist');
+ const token=(await D.auth.getSession()).data.session.access_token;await as('orgA','select public.revoke_staff_role($1)',[f.reviewerRole]);const denied=await D.rpc('review_financial_basis',{scope:f.scope.A,target:id,expected_revision:8,outcome:'reviewed',note:'Synthetic revoked reviewer'});assert.equal(denied.status,403);assert.equal((await D.auth.getSession()).data.session.access_token,token);assert.equal((await D.rpc('financial_draft_feed')).data.resolutions.length,0);
+ const acl=(await f.db.query("select has_function_privilege('anon','public.review_financial_basis(uuid,uuid,integer,text,text)','EXECUTE') anon,has_function_privilege('authenticated','private.validate_financial_evidence(public.resolutions,jsonb)','EXECUTE') helper")).rows[0];assert.deepEqual(acl,{anon:false,helper:false});checks.push('current role revoke closes review/read in same local session; minimal helper/anonymous ACL; no money or activation endpoints');
+ await mkdir(out,{recursive:true});await writeFile(out+'/db-service.json',JSON.stringify({pass:true,hosted:false,runtime:'PGlite + actual SDK/HTTP with simulated Auth and serialized DB calls',checks,staleHttp409Ms:elapsed,acl,cleanup:'all clients/HTTP/PGlite close in finally; local disposable synthetic data only'},null,2));console.log('PASS financial evidence:',checks.length,'local DB/domain/service groups');
+}finally{delete globalThis.__financialEvidenceClient;for(const c of clients){await c.auth.signOut();c.auth.stopAutoRefresh();}await api?.close();await f.db.close();}

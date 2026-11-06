@@ -21,7 +21,7 @@ async function refresh() {
     const identity = document.createElement('p'); identity.className = 'small text-break'; identity.textContent = `Профил: ${request.requester_profile_id} · Заявка: ${request.id}`;
     const form = document.createElement('form'); form.id = `review-${index}`;
     form.innerHTML = `<label class="form-label" for="note-${index}">Основание за проверката / отказа</label><textarea id="note-${index}" class="form-control mb-3" name="note" maxlength="300" required></textarea><div class="d-flex flex-wrap gap-2"><button class="btn btn-success" name="decision" value="activate">Активирай проверената организация</button><button class="btn btn-outline-danger" name="decision" value="reject">Откажи заявката</button></div>`;
-    card.append(title, details, identity, form); list.append(card);
+    const identifiers=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Идентификатори за проверката';identifiers.append(summary,identity);card.append(title, details, form,identifiers); list.append(card);
     let decision;
     form.addEventListener('submit', event => { decision = event.submitter?.value; });
     bindForm(`#${form.id}`, async data => {
@@ -29,7 +29,7 @@ async function refresh() {
       if (decision === 'activate') await activateOrganization(request, note);
       else if (decision === 'reject') await closeRequest(request, 'rejected', note);
       else throw new Error('Decision required');
-      await refresh(); message(decision === 'activate' ? 'Организацията и отделното org admin назначение са записани.' : 'Заявката е отказана.');
+      await refresh(); message(decision === 'activate' ? 'Организацията и отделното организационно администриране са записани.' : 'Заявката е отказана.');
     });
   });
 }

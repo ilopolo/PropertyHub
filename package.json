@@ -7,6 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:org-admin": "node scripts/check-org-admin.mjs",
+    "check:org-admin-browser": "node scripts/check-org-admin-browser.mjs",
     "check:session-ui": "node scripts/check-session-ui.mjs",
     "check:monthly-management": "node scripts/check-monthly-management.mjs",
     "check:monthly-management-browser": "node scripts/check-monthly-management-browser.mjs",

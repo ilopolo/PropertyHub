@@ -511,3 +511,27 @@ CALC остава неприложен/fixture blocked и изисква compani
 са PASS. Два таба и остарял отговор са проверени с детерминиран fake HTTP transport,
 не с hosted записи. Production потвърждението на трите UI поправки предстои;
 org-admin authority-loss остава отделният UNVERIFIED gate, описан по-горе.
+
+## Org-admin lifecycle — локално проверен, неприложен
+
+Двата нови RPC входа `org_admin_directory(org)` и `org_admin_operation(...)` извеждат
+caller от сесията и изискват текущ org-admin/manage_members в точната активна org.
+Операцията приема само action, точни grant/member IDs, expected organization revision,
+изричен срок, причина и request key. Няма actor/permissions/status override от клиента.
+Private revisions и immutable operation receipts са RLS-closed. Има post-wait guards
+преди replay и write; фиксиран snapshot се отказва. Public read/RLS договорът не е разширен.
+
+Отделен authority mutex сериализира admin lifecycle. Съществуващият staff assignment
+запазва своя различен lock. Authority-table triggers използват try-lock при вече
+придобит row lock, отказвайки конфликт вместо да обръщат реда на изчакване.
+Deferred constraint проверява крайния administrator/безсрочна-верига invariant и при
+membership/profile/status промени. Няма нов публичен вход за обща редакция на тези
+таблици и няма Auth-schema trigger. Промени извън приложните операции в Auth/provider
+се нуждаят от отделния recovery договор; DB статус не доказва работещ човешки login.
+
+Атомарният self-handover допуска само изрично проверения преход към друг допустим
+администратор; не заобикаля profile/member/Auth проверката. Историята пази предишния
+интервал, новия grant и server-derived actor/target labels. След self-end клиентът
+презарежда актуалния account режим; непотвърден запис не се показва като успех.
+17 локални DB/RLS групи и 8 browser/service групи са PASS, без native MVCC твърдение.
+Неприложеният SQL и отделният hosted план са описани в [Supabase setup](../../supabase/README.md).

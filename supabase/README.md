@@ -1,3 +1,62 @@
+## Org-admin lifecycle — local acceptance / UNAPPLIED, 07.11.2026
+
+Candidate: `20261107091138_org_admin_lifecycle.sql`, LF SHA256
+`18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Depends on the installed current-write helpers and the existing immutable-preview
+trigger helper; CALC is not a dependency. The historical hosted count remains41,
+not a fresh server inspection. This package has no hosted apply, fixture or credential.
+
+New RPCs: `org_admin_directory(org)` and
+`org_admin_operation(org,request_key,operation,target_role_id,target_membership_id,expected_revision,ends_at,reason)`.
+Operations are `grant`, `end`, `handover`. Caller and `manage_members` come from a
+current org-admin in that exact active organization. Recipients are confirmed active
+existing members. No role/permission/actor override, inherited platform authority,
+membership editor, Auth mutation, operational permission transfer or recovery bypass.
+Recovery's case reviewer and authorization issuer remain a separate product decision.
+
+Private revision and immutable receipt tables have RLS and no client table grants.
+Only the two guarded private workers and public invoker wrappers are executable by
+authenticated clients; internal helpers/trigger functions are closed. Existing table
+ACL/RLS and the12 current-write workers are unchanged. Grant/end serializes on a
+dedicated authority mutex. Lifecycle request replay is guarded after waits. Exact
+global authority revision rejects stale input. Self-end is a verified intentional
+transition with final member/profile/Auth checks and another remaining administrator.
+
+Application authority-table changes trigger a shared try-lock/revision update and
+deferred final-state continuity check. This covers membership shortening/inactivation,
+profile disable/unlink and organization status transitions without exposing those
+editors. History cannot be deleted/reopened. A permanent grant+membership anchor must
+remain; timed grants cannot silently leave the organization without an administrator.
+The deferred check permits existing atomic onboarding and handover. No `auth` schema
+trigger is installed; provider-side account changes/lost access require the separate
+recovery process. See [PostgreSQL trigger semantics](https://www.postgresql.org/docs/current/trigger-definition.html).
+
+Local PASS:17 targeted DB/domain/RLS groups,8 real Edge/SDK/HTTP→disposable PGlite
+groups; exact replay, current access, last-admin/self-handover, real short expiry at
+a controlled local boundary, immutable history, rollback, same-session revoke,
+onboarding compatibility,375/1440px/two themes. Build/navigation PASS. Controlled local
+hooks and fake Auth are **not** independent native PostgreSQL or hosted JWT evidence.
+Three additional `check:org-admin -- --receipt-only` controls reach the actual receipt
+insert before caller/recipient refusal or success; failures leave no partial grant,
+profile, revision, audit or receipt. The SQL hash is unchanged.
+
+Future acceptance requires separate authorization: fresh project/history/hash/ACL/
+compatibility and sole-candidate isolated dry-run; CALC stays excluded, already-applied
+P2/P6a/current-write versions stay exact. Then only the authorized lifecycle candidate,
+isolated non-demo receipts/baseline, ordinary JWT plus independent holder/contender/
+observer. For the primary `assign_staff_role` case, hold its existing staff-org
+advisory lock `hashtextextended(org::text,0)`, observe the contender waiting, end its
+caller's run-owned admin grant through the distinct authority mutex via the guarded
+lifecycle, prove committed end before release, then require42501 and no new staff
+grant/result/audit. A separate identical-result replay uses the exact recipient staff
+role row barrier. Never hold the caller admin grant or authority-revision row in
+the holder. Preserve the full lock/wait/end/commit/release order. Test allowed controls,
+separate real expiry, lifecycle request/authority replay waits, duplicate/handover
+conflicts and concurrent last-admin protection. A trigger try-lock conflict is a
+specific PT409 outcome, not an observed-waiter PASS. Inspect unknown writes before
+retry. Restore only own effective rights via guarded new grants/ends, retain all
+history and verify cleanup independently. No full old finance/Auth/Storage rerun.
+
 ## Current write access correction — limited hosted acceptance, 07.11.2026
 
 20261106204645_current_write_access_guards.sql е **приложена еднократно** след fresh

@@ -6,11 +6,13 @@ import { bindForm, message, option } from '../ui/forms.js';
 import { dateTime } from '../ui/provenance.js';
 import { authError } from '../i18n/auth-bg.js';
 import {setOwnerVerifier} from '../services/owner-access.js';
+import {refreshOrgAdmins} from './org-admin-lifecycle.js';
 
 let account;
 const organization = document.querySelector('#organization');
 async function showOrganization() {
   const org = organization.value;
+  const adminLoad=refreshOrgAdmins(org);
   const scopes = document.querySelector('#staff-context'); scopes.replaceChildren();
   account.contexts.filter(c => c.organization_id === org && c.can_manage_members).forEach(c => option(scopes, c.scope_id, c.scope_label));
   document.querySelector('#assign-staff button').disabled = !scopes.options.length;
@@ -18,6 +20,7 @@ async function showOrganization() {
   const staff = document.querySelector('#staff'); staff.replaceChildren();
   const setups = document.querySelector('#setups'); setups.replaceChildren();
   const [roles, requests] = await Promise.all([organizationStaff(org), listScopeSetups()]);
+  await adminLoad;
   if (org !== organization.value) return;
   for (const role of roles) {
     const card = document.createElement('article'); card.className = 'card card-body text-break';

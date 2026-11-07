@@ -7,6 +7,11 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "check:org-admin": "node scripts/check-org-admin.mjs",
+    "check:org-admin-browser": "node scripts/check-org-admin-browser.mjs",
+    "check:session-ui": "node scripts/check-session-ui.mjs",
+    "check:monthly-management": "node scripts/check-monthly-management.mjs",
+    "check:monthly-management-browser": "node scripts/check-monthly-management-browser.mjs",
     "check:expenses": "node scripts/check-expenses.mjs",
     "check:expenses-browser": "node scripts/check-expenses-browser.mjs",
     "check:funds": "node scripts/check-funds.mjs",
@@ -92,7 +97,13 @@
     "check:unit-file-download": "node scripts/check-unit-file-download.mjs",
     "check:unit-file-download-db": "node scripts/check-unit-file-download-db.mjs",
     "check:unit-file-download-integration": "node scripts/check-unit-file-download-integration.mjs",
-    "check:unit-file-hosted-probes": "node scripts/check-unit-file-hosted-probes.mjs"
+    "check:unit-file-hosted-probes": "node scripts/check-unit-file-hosted-probes.mjs",
+    "check:current-write-access": "node scripts/check-current-write-access.mjs",
+    "check:registry-csv-domain": "node scripts/check-registry-csv-domain.mjs",
+    "check:registry-csv-db": "node scripts/check-registry-csv-db.mjs",
+    "check:registry-csv-browser": "node scripts/check-registry-csv-browser.mjs",
+    "check:registry-csv-current-rights": "node scripts/check-registry-csv-current-rights.mjs",
+    "check:registry-csv-wait-exits": "node scripts/check-registry-csv-wait-exits.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

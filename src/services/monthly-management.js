@@ -1,0 +1,11 @@
+import {getClient,unwrap} from './supabase.js';
+import {monthlySource,monthlyPeriod} from '../domain/monthly-management.js';
+import {previewNote} from '../domain/financial-preview.js';
+const rpc=async(name,args)=>unwrap(await getClient().rpc(name,args).retry(false));
+export const monthlyManagementFeed=()=>rpc('monthly_management_feed');
+export const loadMonthlyContext=(scope,month_start)=>{monthlyPeriod(month_start);return rpc('load_monthly_context',{scope,month_start});};
+export const reviewMonthlyContext=(scope,month_start,expected_token,reference,note,key)=>rpc('review_monthly_context',{scope,month_start,expected_token,completeness_reference:previewNote(reference),note:previewNote(note),request_key:key});
+export const saveMonthlyRule=(scope,target,revision,payload,note,key)=>rpc('save_monthly_management_rule',{scope,target,expected_revision:revision,payload:monthlySource(payload),note:previewNote(note),request_key:key});
+export const loadMonthlyInputs=(scope,rule_id)=>rpc('load_monthly_management_inputs',{scope,rule_id});
+export const activateMonthlyRule=(scope,target,revision,expected_token,note,key)=>rpc('activate_monthly_management_rule',{scope,target,expected_revision:revision,expected_token,note:previewNote(note),request_key:key});
+export const createMonthlyPreview=(scope,rule_id,expected_token,note,key)=>rpc('create_monthly_management_preview',{scope,rule_id,expected_token,note:previewNote(note),request_key:key});

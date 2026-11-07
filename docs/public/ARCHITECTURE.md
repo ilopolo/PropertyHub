@@ -1,5 +1,41 @@
 # Реализирана архитектура
 
+### P6a — scoped unit CSV, ограничен corrective hosted PASS
+
+Отделен domain parser/UTF-8 шаблон/CSV serializer → service/controller/UI → guarded
+stage/inspect/commit/export RPC. Три конкретни RLS-closed таблици import_jobs,
+import_rows и external_record_links (unit-only FK); server packet SHA256/revision,
+parent fingerprint, exact mapping и idempotent operation receipts. Commit използва
+съществуващите create_unit/provenance validators и текущия scope период; няма
+исторически registry или финансов write път. Header заявява само минимални CSV
+contexts за релевантните explicit permission hints, не staging/export редовете.
+14HTML в този клон; production13 е непроменен. [Точен договор](REGISTRY_CSV.md).
+P6a schema и точната корекция20261106185945 са приложени (40 версии). CSV-only
+volatile live-time guard и post-advisory staging replay проверката имат отделни
+реални native committed-revoke/waiter доказателства и положителни контроли. Public
+signatures/grants/RLS и общите финансови guards са запазени. Пет targeted JWT групи,
+четири native случая и реален frontend→hosted UI/export-byte процес са PASS;
+8wait-exit/4current-rights/13DB локални групи остават отделни доказателства.
+Cleanup възстановява baseline и пази registry/import/audit историята. Първоначалният
+hosted FAIL и aborted QA barrier са запазени; P6a не е публикуван в production.
+
+## Интеграция на main във финансовия клон, 06.11.2026
+
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
+## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
+
+Typed domain/service/controller/UI/BG → guarded monthly adapters → съществуващи resolutions/rule versions/immutable previews и общ save/review/publish engine. Нов monthly_context_reviews пази explicit whole-month registry completeness source; новата категория е equal_units/TARIFF, без FND-F05 rounding/qualification. Snapshot/claim модел monthly-owner-occupant-v1, точни q/N×q и исторически parties; старите FND feeds са изолирани, публичните charge v2 подписи са запазени. Person contacts/raw registry evidence не се връщат в новия финансов DTO.
+
+16 DB/domain/RLS +8 реални локални UI/service групи, 4 визуални mobile/desktop/две теми, offline ci/build/navigation PASS. Миграция 20261105131317_monthly_management_equal_tariff.sql е неприложена; hosted/MVCC не са доказани. [Договор, права, ограничения и бъдещ план](MONTHLY_MANAGEMENT.md).
+
 ## Междинен production release, 06.11.2026
 
 **Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
@@ -432,3 +468,96 @@ UI controller unit-files → service unit-files → guarded document RPC + Stora
 ## Private-file hosted status —01.11.2026
 
 Приложени са четирите Storage миграции:20261031113950,20261101081203,20261101082303 и20261101094452; общо18 миграции/25 application tables, без нова таблица в последния пакет. Старите SQL са неизменени. Предишният cached-byte FAIL е запазен като история; Edgev1/S3 handler е deployed и hosted приемането е PASS: реални621byte/5MiB SHA256, default/owner isolation, direct/signing/S3 user-token откази, role И owner-link revoke със същия JWT, no-store/DYNAMIC headers и cleanup. Actual browser/local frontend→hosted upload/download/removal е проверен;2screenshots375light/1440dark са действително разгледани. Общият release включва source PR2/PR3 без нови backend операции; преди main се проверяват merged build/navigation/theme/Storage UI-service интеграцията, после тесен live smoke. Няма повторен hosted RLS/PKCE набор или load test. Виж [setup и release стъпките](../../supabase/README.md).
+
+## Authorization след изчакване — ограничено hosted приемане, 07.11.2026
+
+Корекция 20261106204645 е приложена еднократно след exact fresh preflight/dry-run;
+independent inspect потвърди 41 versions и 12 именувани private worker bodies. Три вътрешни
+VOLATILE helpers с празен search_path и затворен client EXECUTE проверяват current
+authority след wait и преди normal/replay return. READ COMMITTED е изрично условие;
+неподдържана fixed-snapshot изолация отказва 42501. Общият read/RLS договор, public
+сигнатури, точните финансови суми, business dates и исторически snapshots са запазени.
+
+23 local regression groups остават отделно доказателство. Новите 9 ordinary-JWT групи,
+50 qualified native WAIT случая и 6 tight real frontend/service контрола са PASS за
+проверените пътища. Native proof включва независими сесии, observed waiter, committed
+revoke или отделно реално expiry преди release, positive controls и final committed
+state без partial records; има и реални FK wait rollback проверки. Fixed-snapshot
+отказите са отделни early denials. Това не е всички възможни lock interleavings.
+
+Към първоначалното current-write приемане assign_staff_role caller org-admin loss/expiry
+native case остана UNVERIFIED/P1 поради fixture ограничение. Последващият lifecycle
+run по-долу го затваря с guarded revoke и отделно реално expiry, без SQL bypass или
+demo mutation. Историческите allowed/foreign-org контроли сами не го заместваха.
+Document проверката е metadata-only; старите Storage/Auth/MVCC набори не са повторени.
+
+Independent cleanup сверка потвърди baseline/Auth, ended own grants и 0 own connections;
+финансовата/audit история е retained, временните operator credentials са изчистени.
+CALC остава неприложен/fixture blocked и изисква companion guard gate. Няма deployment.
+Виж [резултатите за всяка функция и оставащите граници](../../supabase/README.md).
+
+## Съгласуваност на клиентската сесия
+
+Един SDK observer проследява самоличността на сесията. При промяна shell изчиства
+предишното съдържание и автоматично отваря акаунта; повторни събития за същия потребител
+не предизвикват навигационен цикъл. Account, workspace и личните справки проверяват
+ревизията на клиентската сесия преди показване на асинхронен резултат. Това предотвратява
+презаписване от закъснял отговор; текущото server authorization остава задължително.
+Неуспешно account зареждане пази отделно error състояние с retry и изход.
+
+Общите renderers заменят само запазени технически demo маркери за показване;
+оригиналните стойности и действителните имена се пазят. Обозначението за демонстрационни
+данни остава видимо. Разходният no-access renderer използва едно действие към акаунта.
+Деветте локални browser/service групи (`check:session-ui`) и изолираният build/navigation
+са PASS. Два таба и остарял отговор са проверени с детерминиран fake HTTP transport,
+не с hosted записи. Production потвърждението на трите UI поправки предстои;
+org-admin authority-loss е проверен отделно в lifecycle run-а по-долу; този local UI
+пакет самостоятелно не го доказва.
+
+## Org-admin lifecycle — ограничено hosted приемане
+
+Двата нови RPC входа `org_admin_directory(org)` и `org_admin_operation(...)` извеждат
+caller от сесията и изискват текущ org-admin/manage_members в точната активна org.
+Операцията приема само action, точни grant/member IDs, expected organization revision,
+изричен срок, причина и request key. Няма actor/permissions/status override от клиента.
+Private revisions и immutable operation receipts са RLS-closed. Има post-wait guards
+преди replay и write; фиксиран snapshot се отказва. Public read/RLS договорът не е разширен.
+
+Отделен authority mutex сериализира admin lifecycle. Съществуващият staff assignment
+запазва своя различен lock. Authority-table triggers използват try-lock при вече
+придобит row lock, отказвайки конфликт вместо да обръщат реда на изчакване.
+Deferred constraint проверява крайния administrator/безсрочна-верига invariant и при
+membership/profile/status промени. Няма нов публичен вход за обща редакция на тези
+таблици и няма Auth-schema trigger. Промени извън приложните операции в Auth/provider
+се нуждаят от отделния recovery договор; DB статус не доказва работещ човешки login.
+
+Атомарният self-handover допуска само изрично проверения преход към друг допустим
+администратор; не заобикаля profile/member/Auth проверката. Историята пази предишния
+интервал, новия grant и server-derived actor/target labels. След self-end клиентът
+презарежда актуалния account режим; непотвърден запис не се показва като успех.
+17 локални DB/RLS групи и 8 browser/service групи са PASS, без native MVCC твърдение.
+Приложеният SQL и точният обхват на hosted доказателствата са описани в [Supabase setup](../../supabase/README.md).
+
+Първият read-only run на07.11.2026 е исторически BLOCKED преди apply при41версии,
+без разрешен onboarding approver. Последващият run използва едно лично нормално
+platform approval, без автоматизация на личния профил или QA platform grant.
+Fresh global compatibility, isolated single-candidate dry-run, exact apply и independent
+inspect са PASS:42versions,10exact function bodies,9triggers, closed helper/table
+grants и непроменен общ RLS договор. CALC не е включена.
+
+Шест ordinary-JWT групи и11независими native PostgreSQL случая доказват разрешени
+операции, post-lock revoke/реално expiry, replay, row-wait и request/authority mutex
+пътища, duplicate и stale конкурентен end/handover с проверени committed записи.
+При primary staff gate revoke commit-ва преди release на отделния staff lock;
+при общ authority mutex се доказва реалният сериализиран ред. Няма изкуствен deadlock.
+Шест tight frontend→hosted контрола включват grant/replay, last-admin/stale отказ,
+self-handover/account refresh, нов grant при възстановяване и отделен staff режим.
+Четирите mobile/desktop/light/dark изображения са прегледани.
+
+Cleanup е независимо проверен: предходните public записи, Auth брой и0own sessions/
+connections. Приетият маркиран контекст/история и един permanent QA admin остават;
+другото QA членство е roleless. Временните operator credentials са изчистени.
+Indirect membership/profile mutations са hosted UNVERIFIED: няма guarded mutation
+вход, затова има local trigger proof и installed-trigger/closed-DML metadata evidence,
+без директен SQL тест. Recovery reviewer/issuer и Auth/provider възстановяването
+остават отделен договор. Няма production deployment или общ MVP PASS.

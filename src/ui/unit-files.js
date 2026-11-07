@@ -7,7 +7,7 @@ export function fileSection() {
 }
 export function uploadForm(id) {
  const form=document.createElement('form'); form.className='mb-3';
- form.innerHTML=`<label class="form-label" for="file-${id}">PDF файл · до 5 MiB</label><input id="file-${id}" name="file" type="file" accept="application/pdf,.pdf" required class="form-control mb-3"><label class="form-label" for="audience-${id}">Достъп до този файл</label><select id="audience-${id}" name="audience" class="form-select mb-3"><option value="staff">Само упълномощени служители</option><option value="owners">И текущи проверени собственици на този имот</option></select><p class="small">Не качвай излишни лични данни. Няма антивирусна проверка или визуализация на PDF.</p><button class="btn btn-success">Качи private файл</button>`;
+ form.innerHTML=`<label class="form-label" for="file-${id}">PDF файл · до 5 MiB</label><input id="file-${id}" name="file" type="file" accept="application/pdf,.pdf" required class="form-control mb-3"><label class="form-label" for="audience-${id}">Достъп до този файл</label><select id="audience-${id}" name="audience" class="form-select mb-3"><option value="staff">Само упълномощени служители</option><option value="owners">И текущи проверени собственици на този имот</option></select><p class="small">Не качвай излишни лични данни. Няма антивирусна проверка или визуализация на PDF.</p><button class="btn btn-success">Качи защитения файл</button>`;
  return form;
 }
 export function fileRow(file, canManage, onDownload, onRemove) {

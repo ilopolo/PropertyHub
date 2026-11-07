@@ -1,5 +1,6 @@
 import { calendarLabel } from '../domain/registry.js';
 import { dateTime } from './provenance.js';
+import { humanText } from './public-text.js';
 
 export function unitDetails(unit) {
   const details = document.createElement('details');
@@ -19,7 +20,7 @@ export function unitDetails(unit) {
   ];
   for (const [label, value] of entries) {
     const term = document.createElement('dt'); term.className = 'col-sm-4'; term.textContent = label;
-    const text = document.createElement('dd'); text.className = 'col-sm-8 text-break'; text.textContent = value;
+    const text = document.createElement('dd'); text.className = 'col-sm-8 text-break'; text.textContent = humanText(value);
     list.append(term, text);
   }
   const note = document.createElement('p'); note.className = 'small mt-2'; note.textContent = 'Показани са текущите записани стойности за обекта. Датата филтрира принадлежността към обхвата, а не стари версии на полетата. Това не е дата на придобиване. Известно от и въведено в системата са отделни дати. Проверка на реда не попълва липсващата площ и не доказва пълен регистър или финансова готовност.';

@@ -15,6 +15,8 @@ export function workspaceModel(account,admin,feeds,now=Date.now()){
     add(s.id,s.label,'staff','finance',c?.organization_name||organization?.name);
   }
   for(const s of feeds.expenses?.scopes||[])add(s.id,s.label,'staff','expenses');
+  for(const s of feeds.monthly?.scopes||[])add(s.id,s.label,'staff','monthly');
+  for(const s of feeds.transfer||[])add(s.id,s.label,'staff','transfer');
   for(const u of feeds.owned||[])add(u.scope_id,u.scope_label,'owner','tickets');
   // Fresh guarded discovery is authoritative even when there are no tickets or registry rights.
   for(const s of feeds.ticketContexts||[])add(s.scope_id,s.scope_label,'staff','tickets');

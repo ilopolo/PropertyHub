@@ -1,3 +1,227 @@
+## Org-admin lifecycle — limited hosted/API/native/UI PASS, 07.11.2026
+
+Exact `20261107091138_org_admin_lifecycle.sql` was applied once after fresh global
+compatibility and an isolated CLI dry-run containing only that candidate. LF SHA256:
+`18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Independent inspection confirms **42 applied versions**,10exact function bodies,
+9enabled triggers (four deferred continuity checks), closed internal helper/table
+grants, unchanged existing function bodies and public table grants/RLS/policies.
+CALC remains absent. This supersedes, without erasing, the blocked preflight below.
+
+One personally performed platform approval used the existing protected UI. Its
+fulfilled request, organization, first permanent admin/membership and audit were
+inspected before further setup; activation was not repeated. No personal credentials,
+QA platform grants, new Auth accounts or direct SQL authority mutations were used.
+
+| Evidence | Result and boundary |
+|---|---|
+| Ordinary JWT/API |6groups PASS: guarded scope setup, authority/isolation, last-admin rollback, self-grant/finite-anchor refusal, grant/replay/stale/mismatch, same-JWT revoke/history; staff rights unchanged by admin operations |
+| Primary authority-loss |Observed staff-lock waiter; guarded caller-admin revoke committed before release; `assign_staff_role` returned42501 Forbidden without a new staff grant. Preserved-authority control succeeded |
+| Recipient-row wait |Guarded staff-end held the row; admin revoke committed independently before release; waiting assignment returned42501 without replacement |
+| Replay |Exact real receipt replay waited on its request mutex: allowed result preserved once; committed authority loss refused without disclosing old result |
+| Authority serialization |Revoke-first and replay-first orders followed the actual shared mutex; final committed authority and receipts checked |
+| Real expiry |Separate short wall-clock term cases at staff and replay waits refused42501 after observed expiry; no clock changes/backdating |
+| Concurrent lifecycle |One receipt/grant for duplicate key; competing end/end and end/handover preserve permanent authority, with42501 or exact stale PT409 as appropriate |
+| Native total |11qualified independent holder/contender/observer cases PASS, actual waiter before release and committed-state checks; not all possible interleavings |
+| Frontend→hosted |6targeted controls PASS on separate local QA origin: grant/replay, last-admin/stale refusal, handover/account refresh, new grant restore, self-end preserving staff. Four actual375/1440light/dark screenshots reviewed; not production |
+| Indirect mutations |Hosted membership/profile mutation remains UNVERIFIED: no guarded entrypoint. Installed triggers/catalog and local trigger regression remain separate evidence; no SQL bypass |
+| Recovery |Reviewer/issuer unresolved; no temporary recovery authorization or bypass |
+
+Independent own-only cleanup confirms the original public records unchanged, Auth
+count unchanged, zero own Auth sessions/native peers and closed verifier. Temporary
+operator token/URI were cleared. The explicitly accepted marked fixture retains one
+permanent QA admin with permanent active membership, a roleless second membership,
+building/scope/assignment and immutable requests/grants/operations/audit history.
+No guarded organization/completed-scope/membership archive exists; none was bypassed.
+Temporary staff/admin grants were ended; no claim that every newly created record
+was removed. Financial values/business dates and pre-existing history were unchanged.
+
+QA-only mapping/navigation/response-body/NULL-filter issues were inspected and fixed
+locally in private adapters; committed writes were inspected before resume, never
+blindly repeated. No product SQL correction or second apply was needed. The existing
+local17DB/8UI and3post-receipt checks remain distinct and were not rerun.
+No main merge, production deployment, Netlify query, CALC apply or demo mutation.
+
+## Historical org-admin hosted preflight — compatibility PASS / fixture BLOCKED, 07.11.2026
+
+Fresh supported-connector read-only evidence confirms the exact project is healthy
+and has41 applied versions. The lifecycle candidate and CALC are absent. The candidate
+LF SHA256 remains `18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Global compatibility:3organizations/23memberships/3admin assignments,0blockers.
+Before/after org/member/admin metadata match; all profile statuses and role assignments
+also match. Independent read-only verification reports Auth7/profiles7
+and0run-native connections. This is not a native TLS/CLI/application acceptance result.
+
+The approved QA identity set has no current platform approver for the complete
+isolated onboarding/last-admin fixture. Existing onboarding requires explicit platform
+authority. A platform principal outside that approved set was not used, and pending
+profiles were not promoted merely to make the test possible. No grant/status/Auth
+mutation, recovery bypass or automatic fixture repair was performed.
+
+STOP occurred before CLI dry-run/apply/setup/login/API/native/UI. The lifecycle SQL
+remains **UNAPPLIED**. Native caller authority-loss, normal lifecycle API/UI and the
+indirect membership/profile mutation cases remain **UNVERIFIED**; no product FAIL
+is inferred from this fixture limitation. Recovery reviewer/issuer is a separate
+unresolved product decision. Completing the fixture requires separate approval of
+an eligible existing onboarding actor/context, not an implicit platform grant.
+Operator token/URI were absent and unused; no temporary application resources or
+sessions were created. No old cleanup or historical tests were repeated.
+
+## Historical org-admin local acceptance — candidate UNAPPLIED then, 07.11.2026
+
+Candidate: `20261107091138_org_admin_lifecycle.sql`, LF SHA256
+`18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Depends on the installed current-write helpers and the existing immutable-preview
+trigger helper; CALC is not a dependency. The historical hosted count remains41,
+not a fresh server inspection. This package has no hosted apply, fixture or credential.
+
+New RPCs: `org_admin_directory(org)` and
+`org_admin_operation(org,request_key,operation,target_role_id,target_membership_id,expected_revision,ends_at,reason)`.
+Operations are `grant`, `end`, `handover`. Caller and `manage_members` come from a
+current org-admin in that exact active organization. Recipients are confirmed active
+existing members. No role/permission/actor override, inherited platform authority,
+membership editor, Auth mutation, operational permission transfer or recovery bypass.
+Recovery's case reviewer and authorization issuer remain a separate product decision.
+
+Private revision and immutable receipt tables have RLS and no client table grants.
+Only the two guarded private workers and public invoker wrappers are executable by
+authenticated clients; internal helpers/trigger functions are closed. Existing table
+ACL/RLS and the12 current-write workers are unchanged. Grant/end serializes on a
+dedicated authority mutex. Lifecycle request replay is guarded after waits. Exact
+global authority revision rejects stale input. Self-end is a verified intentional
+transition with final member/profile/Auth checks and another remaining administrator.
+
+Application authority-table changes trigger a shared try-lock/revision update and
+deferred final-state continuity check. This covers membership shortening/inactivation,
+profile disable/unlink and organization status transitions without exposing those
+editors. History cannot be deleted/reopened. A permanent grant+membership anchor must
+remain; timed grants cannot silently leave the organization without an administrator.
+The deferred check permits existing atomic onboarding and handover. No `auth` schema
+trigger is installed; provider-side account changes/lost access require the separate
+recovery process. See [PostgreSQL trigger semantics](https://www.postgresql.org/docs/current/trigger-definition.html).
+
+Local PASS:17 targeted DB/domain/RLS groups,8 real Edge/SDK/HTTP→disposable PGlite
+groups; exact replay, current access, last-admin/self-handover, real short expiry at
+a controlled local boundary, immutable history, rollback, same-session revoke,
+onboarding compatibility,375/1440px/two themes. Build/navigation PASS. Controlled local
+hooks and fake Auth are **not** independent native PostgreSQL or hosted JWT evidence.
+Three additional `check:org-admin -- --receipt-only` controls reach the actual receipt
+insert before caller/recipient refusal or success; failures leave no partial grant,
+profile, revision, audit or receipt. The SQL hash is unchanged.
+
+Future acceptance requires separate authorization: fresh project/history/hash/ACL/
+compatibility and sole-candidate isolated dry-run; CALC stays excluded, already-applied
+P2/P6a/current-write versions stay exact. Then only the authorized lifecycle candidate,
+isolated non-demo receipts/baseline, ordinary JWT plus independent holder/contender/
+observer. For the primary `assign_staff_role` case, hold its existing staff-org
+advisory lock `hashtextextended(org::text,0)`, observe the contender waiting, end its
+caller's run-owned admin grant through the distinct authority mutex via the guarded
+lifecycle, prove committed end before release, then require42501 and no new staff
+grant/result/audit. A separate identical-result replay uses the exact recipient staff
+role row barrier. Never hold the caller admin grant or authority-revision row in
+the holder. Preserve the full lock/wait/end/commit/release order. Test allowed controls,
+separate real expiry, lifecycle request/authority replay waits, duplicate/handover
+conflicts and concurrent last-admin protection. A trigger try-lock conflict is a
+specific PT409 outcome, not an observed-waiter PASS. Inspect unknown writes before
+retry. Restore only own effective rights via guarded new grants/ends, retain all
+history and verify cleanup independently. No full old finance/Auth/Storage rerun.
+
+## Current write access correction — limited hosted acceptance, 07.11.2026
+
+20261106204645_current_write_access_guards.sql е **приложена еднократно** след fresh
+40-version preflight и sole-candidate dry-run. LF SHA256:
+21246441eb6f6a0fe2956164d816d217a88f1927c5b2ca2dc9614cdc65fdde92. Independent inspect потвърди 41 версии,
+exact 12 worker/3 helper bodies, непроменени owners/ACL/RLS/read helpers и затворен client
+EXECUTE за helper-ите. Public signatures и финансовите договори са непроменени.
+Няма общ read/RLS refactor. PostgREST настройки и действителните ordinary-JWT writes
+са съвместими с READ COMMITTED; native режимът е измерен. Fixed-snapshot writes отказват
+42501 current_write_isolation_unsupported; проверени cash и 10 допълнителни public входа.
+
+9 targeted API groups и 50 qualified native WAIT случая са PASS:22 committed revokes,
+10 real expiries,18 allowed controls. Независими holder/contender/observer доказват waiter
+и authority loss преди release; exact откази и committed snapshots доказват липса на
+partial financial/receipt/audit записи. Един по-ранен неквалифициран expiry опит е
+запазен отделно и не се брои за PASS. Няма нов продуктов SQL или повторен full suite.
+6 tight real local-frontend→hosted UI/service контрола са PASS; две целеви снимки са
+прегледани. Това не е production smoke, пълен visual matrix или Storage byte приемане.
+
+### Проверено по функция
+
+| Private worker | Конкретно hosted доказателство | Резултат и граница |
+| --- | --- | --- |
+| cash_account_operation | JWT create/replay; native request wait revoke/expiry/allowed; edit и deactivate target-row wait revoke/allowed | PASS; exact versions/receipts, без частичен config |
+| fund_operation | JWT create/replay; native request wait revoke/expiry/allowed; edit и deactivate target-row wait revoke/allowed | PASS; history/сметкови връзки запазени |
+| classify_fund_movement | JWT пълно отнасяне и корекция; request wait revoke/expiry/allowed; movement-row wait след отнемане само на correct_finance | PASS; един current set, exact totals, без нов movement |
+| inbound_payment_operation | JWT receipt и atomic reversal/replacement; native request revoke/expiry/allowed, account-row revoke, correct_finance-only replay revoke; реален payer FK wait revoke/allowed | PASS; отказът отменя receipt/movement/mirror; replacement остава неотнесен |
+| manual_payment_operation | Public allocate вход с JWT и same-JWT revoke; native allocate chain revoke/expiry/allowed; fixed-snapshot отказ на входа | PASS за entry/delegation; няма собствен lock и не се отчита отделен race |
+| manual_payment_operation_before_inbound | Същата public allocation заявка достига advisory wait в този worker; revoke/expiry/allowed и committed totals | PASS за действително достигнатия allocation path; няма direct client EXECUTE; fixed-snapshot отказът е в wrapper, не отделно изпълнение тук |
+| expense_operation | JWT unpaid/partial payment; unpaid document revision и atomic replacement; request revoke/expiry/allowed, expense-row revoke, correct_finance-only replay revoke/allowed, реален fund-version FK wait revoke/allowed | PASS; no partial payment/outbound/fund/receipt, exact remaining и immutable история |
+| publish_charge_batch | JWT publish/replay; request revoke/expiry/allowed и batch-row revoke; четири charges/parties точно 500.00 | PASS за тези пътища; unpaid replacement branch няма нов отделен native race в този run |
+| activate_financial_rule | JWT normal/replay и native request wait revoke/expiry/allowed | PASS; не е отделно ново доказателство за всеки draft/basis/participant row lock |
+| prepare_unit_document | JWT metadata normal/replay и native scope-unit advisory revoke/expiry/allowed | PASS само за metadata; Storage/Edge/file bytes не са повторно приемани |
+| create_financial_preview | JWT normal/replay и native request wait revoke/expiry/allowed | PASS; недостъпният стар preview не се връща, няма partial preview/audit |
+| assign_staff_role | JWT allowed/exact-repeat и foreign-org denial; native preserved-authority waiter; fixed-snapshot denial | Първоначално caller loss/expiry UNVERIFIED; последващият lifecycle run в началото затваря точно този gate |
+
+Към първоначалния current-write run org-admin authority loss/expiry беше **UNVERIFIED**: нямаше допустим
+guarded lifecycle fixture. Не е отнеман org_admin с директен SQL и не е ползван demo B.
+Този конкретен P1 gate тогава блокираше WR-02 hosted затварянето; allowed контролът
+не го заместваше. Последващото guarded lifecycle приемане по-горе го затваря за
+доказаните revoke/expiry пътища. Това не разрешава автоматично deployment и не
+превръща останалите непроверени мутации в общ hosted PASS.
+
+Cleanup е потвърден с отделна read-only сверка:49 protected baseline tables и Auth account count 7
+unchanged; всички 38 temporary app grants ended, own Auth/native connections 0.
+Финансовата/audit история е запазена;4 нови маркирани units/current periods и scope
+остават retained, без директен SQL archive bypass. Operator token/URI са изчистени.
+Точните synthetic IDs/receipts/screenshots остават private. Непълната аналитичност
+не е пълен баланс; document metadata не е uploaded/verified attachment.
+
+CALC 20261105131317 остава неприложена/October-fixture blocked, с отделен companion
+current-guard gate. P2 и P6a не са прилагани повторно. Main/live не са обновявани;
+няма main merge, deployment или Netlify заявка в този пакет.
+
+## P6a unit CSV — historical 40-version checkpoint, limited corrective hosted PASS
+
+`20261106170356_registry_units_csv.sql`, SHA256 `cf7983d1578acbae6bcd0405b72b027fa02635f60887199b9499bec37abca342`.
+RLS-closed jobs/rows/unit-links и guarded auth-only stage/job/request/list/commit/
+export/context wrappers, без промяна на старите SQL или create_unit/current_date.
+Първоначалният exact single-candidate apply и отделен inspect потвърдиха39версии,
+P2 applied/CALC excluded, guarded RPC grants и затворени import tables. Първоначалният
+revoke/waiting-commit FAIL и7API/8nativePASS са запазена история, не са заличени.
+20261106185945_registry_csv_current_rights.sql е **ПРИЛОЖЕНА ЕДНОКРАТНО**, с CSV-only
+live-time write predicate, без промяна на общите guards или предходния SQL.
+Окончателен LF SHA256: `7d4cc5204d7c58812a6413fdafb386acb3e51149fe1a21f47a99e7e607c78623`.
+Новият run потвърди39версии преди single-candidate dry-run/apply и40след exactinspect.
+Нов post-advisory stage guard преди replay/mismatch затваря отделен локално доказан
+пропуск. Старото разрешение за hash815252…acf8 не важи за този променен кандидат.
+8wait-exit/4current-rights/13affected DB/RLS локални групи са PASS, не hosted/MVCC PASS.
+5targeted ordinaryJWT groups,2native refusal+2positive controls с observedwaiters и
+committedrevoke before release,realhostedUI/exportbytes/8reviewedimages са PASS.
+Exact cleanup/read-only baseline и ownsession/native-connection closure са потвърдени;
+временните operator credentials са изчистени. Няма production приемане/deployment.
+Cleanup/read-only baseline/temporary credential clearing са потвърдени; financial,
+audit/import историята и ясно маркираните QA units са запазени.
+За бъдещи действия fresh history трябва да отчита40applied версии; CALC остава
+изключен. Не прилагай повторноP6a/corrective и не избирай всички local pending files.
+[Формат, дефект, ограничения и тесен follow-up план](../docs/public/REGISTRY_CSV.md).
+
+## Интеграция на main във финансовия клон, 06.11.2026
+
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
+## P5 CALC-04 — ограничен месечен TARIFF, локално приет, 05.11.2026
+
+Нова НЕПРИЛОЖЕНА `20261105131317_monthly_management_equal_tariff.sql`, SHA256 `ef089cecd7c553264504e5047eeb5cd0f94d72328d84dc6099bef91945ce21ba`. 16 локални DB/domain/RLS и8 UI/service групи PASS, отделен ci/build/navigation; не hosted/native MVCC. Старите SQL са неизменени; последното запазено hosted доказателство е38 версии с приложена и production приета P2. Старият P2 frontend-cutover blocker е затворен; CALC остава блокиран от липсващ допустим октомврийски fixture. Не прилагай всички pending миграции автоматично.
+
+[Точни DTO/RPC/права и future hosted план](../docs/public/MONTHLY_MANAGEMENT.md). Scoped prepare_rules/publish_rules/manage_registry/prepare_charges/publish_charges и correct_finance остават изрични; няма нови права или admin inheritance. Само нови typed adapters към общия immutable charge engine; няма стар backfill/clock override или payment промени. Локално npm run check:monthly-management и check:monthly-management-browser.
+
 <a id="interim-finance-p2-release"></a>
 ## Междинен release — SQL и frontend cutover, 06.11.2026
 

@@ -30,5 +30,17 @@ export async function loadWorkspace(){
     try{feeds[key]=unwrap(await getClient().rpc(rpc).retry(false));for(const s of feeds[key]?.scopes||[])covered.add(s.id);}
     catch{errors.push(key);}
   }
+  // These existing guarded projections use exactly the alternatives in
+  // can_read_monthly: drafts OR charge read OR current manage_registry.
+  // Preview scopes require read_rules/prepare_charges, also monthly read rights.
+  // Reuse only their scopes; monthly rule/preview history loads inside the module.
+  const monthlyScopes=new Map();
+  for(const feed of [feeds.drafts,feeds.preview,feeds.charges])for(const s of feed?.scopes||[])monthlyScopes.set(s.id,s);
+  for(const c of account.contexts)if(c.can_manage_registry===true)monthlyScopes.set(c.scope_id,{id:c.scope_id,label:c.scope_label});
+  feeds.monthly={scopes:[...monthlyScopes.values()]};
+  if(current.some(r=>r.permissions.some(p=>['prepare_registry_import','commit_registry_import','export_registry'].includes(p)))){
+    try{feeds.transfer=unwrap(await getClient().rpc('registry_csv_contexts').retry(false));}
+    catch{errors.push('transfer');}
+  }
   return {model:workspaceModel(account,feeds.admin,feeds),errors};
 }

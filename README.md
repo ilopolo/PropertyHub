@@ -1,10 +1,40 @@
+> Org-admin lifecycle е приложен: **42 backend версии**. Ограничените ordinary-JWT,
+> native PostgreSQL и local frontend→hosted UI проверки са PASS. Първоначалният
+> `assign_staff_role` authority-loss/expiry gate е затворен за доказаните пътища.
+> Косвените membership/profile mutations без guarded вход остават UNVERIFIED;
+> recovery reviewer/issuer е нерешен. Няма production публикация; CALC е неприложен.
+> [Резултати по функция и точни ограничения](supabase/README.md).
+
 # PropertyHub
 
-Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Тринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
+**P6a unit CSV — ограничен corrective hosted/API/UI/native PostgreSQL PASS,
+извън production.** Корекция20261106185945 е приложена еднократно с окончателния
+hash; тогавашната backend история е40версии. Пет тесни ordinary-JWT групи, два реални native
+revoke отказа и два разрешени контрола са PASS. Реалният frontend→hosted UI/export
+поток е проверен, включително CSV bytes/raw-formula защита и8mobile/desktop/две теми
+снимки. Cleanup/baseline/credential clearing са потвърдени; първоначалният FAIL и
+локалните regression доказателства са запазени като история. Няма production
+приемане, merge/deployment, CALC apply или historical backdating.
+[Формат, права, граници и бъдещо приемане](docs/public/REGISTRY_CSV.md).
+
+## Интеграция на main във финансовия клон, 06.11.2026
+
+Актуалният main f8f39aa е интегриран със запазена история във финансовия клон.
+Production остава на 9b98359; тази интеграция не е deployment. CALC-04 кодът и
+неприложената му миграция са запазени. Месечната навигация използва вече разрешените
+server scopes от draft/preview/charge проекциите и текущия server can_manage_registry;
+не зарежда monthly rule/preview историята в header и не дава права от име на роля.
+Реалният monthly service/RPC проверява отново достъпа при отваряне. P2 cutover е
+приключен; CALC hosted/MVCC остава BLOCKED от октомврийския fixture, не става PASS
+чрез Git merge. Няма промяна на SQL, финансови права, формули или write механизми.
+
+Учебно multi-page приложение за управление на етажна собственост с HTML/CSS, чист JavaScript, Bootstrap, Node/npm/Vite и Supabase DB/Auth. Четиринадесет HTML входа в този клон, български интерфейс, светла/тъмна тема. Целият приет университетски MVP още не е завършен.
 
 [Хранилище](https://github.com/ilopolo/PropertyHub) · [Live приложение](https://propertyhub-ilopolo.netlify.app) · [Архитектура и ER диаграми](docs/public/ARCHITECTURE.md) · [Supabase setup](supabase/README.md)
 
 ## Реално състояние
+
+**P5 CALC-04 — локален PASS:** изрично одобрена положителна месечна ставка в цели EUR центове × пълен проверен състав. Само приключил календарен месец и поддържаният единствен owner/occupant случай, отделно прегледана лична отговорност. 16 DB/domain/RLS и 8 реални localhost UI/service групи, 4 визуални 375/1440 light/dark снимки, изолиран offline ci/build/navigation PASS. Новата `20261105131317_monthly_management_equal_tariff.sql` е **НЕПРИЛОЖЕНА**; hosted/MVCC/production не са доказани за CALC-04. Последното запазено hosted доказателство е38 версии, включително production приетата P2. CALC hosted остава блокиран: липсва допустим пълен октомврийски fixture. [Договор и бъдещ acceptance план](docs/public/MONTHLY_MANAGEMENT.md).
 
 **Production, 06.11.2026:** PR #10 е merge-нат със запазена история в
 `9b9835990a540525ed87229fa4590e2e77d1ce4f`. Един automatic Netlify production deployment
@@ -15,7 +45,7 @@ Backend е потвърден с **38 приложени версии**; P2 `202
 Включени са registry/signal/attachment процесите, P1 „Моите финанси“, P2 explicit
 категория и ticket-only навигация, FND-F05, payments/accounts/inbound, P4a и P4b,
 както и логото, помощта и демонстрационните контакти. PR #8 историята е включена;
-PR #8 остава отделен, а финансовият PR #9 остава отворен с неприключения CALC-04.
+GitHub отчита PR #8 като merged чрез включената история; финансовият PR #9 остава отворен с неприключения CALC-04.
 
 P2 hosted ordinary-JWT приемане: пет групи PASS, включително деветте категории,
 anti-spoof/atomic откази, запазена NULL/history, празен ticket-only scope без registry
@@ -198,3 +228,59 @@ Brevo Free custom SMTP се използва за Auth confirmation и password 
 Оттеглянето пази кой/кога/защо и спира следващия owner read от същата сесия. Корекцията е revoke и нова проверка; старият request key не възстановява отнет достъп. Собственикът вижда само текущите разрешени идентификатори, не чужди лица, finance/history или operational registry. Няма нова owner role/membership от link. Личните demo права не са променяни. Целеви команди: npm.cmd run check:owner-access-db, npm.cmd run check:owner-access-api и npm.cmd run check:owner-access-browser; hosted/UI scripts ползват само предварително проверените синтетични manifests и запазват заявки преди записи. Не пресъздавай fixtures при retry.
 
 Private-file browser QA: npm.cmd run check:unit-file-browser стартира собствен loopback dev5173/API54331 с изолирани синтетични данни. Портовете трябва да са свободни. Използва реален Edge/SDK/HTTP bytes с локален QA transport, не hosted Supabase Storage; не изисква ключове, SMTP или тестови Auth акаунти и не е demo достъп.
+
+## Локално проверени UI поправки
+
+При изход или смяна на профил от друг таб старото съдържание се изчиства и страницата
+автоматично зарежда текущия акаунт. Закъснял отговор от предишния профил не се показва;
+технически отказ при зареждане има отделно състояние с повторен опит и изход.
+Запазените демонстрационни маркери се показват с разбираемо обозначение, без преименуване
+на данните или действителните клиентски имена. Отказът за разходи има една връзка за достъп.
+
+`npm.cmd run check:session-ui` изпълнява девет целеви локални browser/service групи
+на собствен порт 5211, с реален Edge/SDK и детерминиран синтетичен HTTP transport.
+Не чете credentials и не изпраща hosted заявки. Проверени са два таба, A↔B,
+забавен отговор, retry/reload, общите renderers и 375/1440 px в двете теми.
+Тези поправки още изискват production проверка след отделно разрешен release;
+не променят server правата и не представляват hosted/MVCC приемане.
+
+## Организационни администратори — ограничено hosted приемане
+
+В „Екип и права“ има отделен процес за ново администраторско назначение,
+прекратяване и атомарно предаване към потвърден активен член на същата организация.
+Изисква текущ `org_admin` с `manage_members`; платформена роля не го наследява.
+Последният действащ администратор е защитен. Срочен администратор изисква друг
+действащ администратор с безсрочни назначение и членство. Причина, точен преглед,
+история и безопасно повторение са задължителни; служебни финансови/registry права
+не се копират. Възстановяването създава нов grant, а не отваря стария.
+
+`check:org-admin` (17 DB/domain/RLS групи) и `check:org-admin-browser` (8 реални
+локални frontend/service групи с disposable DB) са PASS. Проверени са 375/1440 px,
+двете теми, keyboard/reload и same-session revoke. Миграция
+`20261107091138_org_admin_lifecycle.sql` вече е **приложена**; ограниченото hosted
+приемане е описано по-долу отделно от локалните проверки. Recovery разрешението и неговият издател
+остават отделен договор; няма временен recovery bypass или общ status/member редактор.
+
+`npm.cmd run check:org-admin -- --receipt-only` проверява отделно трите крайни
+post-receipt контроли: загубена caller authority, недопустим recipient и разрешен
+запис. Локалните rollback проверки достигат receipt границата; не са native races.
+
+Първият read-only опит на07.11.2026 спря преди apply при41версии заради липсващо
+допустимо onboarding одобрение. Този исторически BLOCKED резултат е запазен.
+Последващият изрично разрешен run използва едно лично platform одобрение през
+нормалния интерфейс, без предоставяне на лични credentials или platform права на QA.
+Fresh compatibility и exact single-candidate dry-run са PASS; миграцията е приложена
+еднократно с непроменения разрешен hash. Independent inspect потвърди42версии,
+10function bodies,9triggers, grants/RLS и непроменените предходни функции.
+
+Ограничен hosted PASS:6ordinary-JWT/API групи,11native observed-waiter случая и
+6frontend/hosted UI контрола. Проверени са committed revoke преди release, отделно
+реално expiry, replay без стар защитен резултат, разрешени контроли, last-admin,
+duplicate/stale и конкурентни end/handover заявки без частични назначения.
+Четири реални375/1440light/dark снимки са прегледани. Финансовите/staff права не се
+прехвърлят с admin lifecycle. Независимият cleanup потвърди предходните записи и
+Auth броя,0own sessions/connections; временните operator credentials са изчистени.
+Приетият маркиран fixture остава с един permanent QA администратор, roleless второ
+членство и контекст/immutable история, тъй като няма guarded archive за тях.
+Косвените membership/profile hosted mutations остават UNVERIFIED без guarded вход;
+това не е общо production приемане или доказателство за всички lock interleavings.

@@ -1,6 +1,7 @@
 import {ticketStatuses,nextTicketStatus} from '../domain/tickets.js';
 import {ticketHandlingSummary,ticketEventLabel} from './ticket-handling.js';
-function element(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
+import {humanText} from './public-text.js';
+function element(tag,text,cls){const e=document.createElement(tag);e.textContent=humanText(text);if(cls)e.className=cls;return e;}
 export function renderTickets(root,tickets,onTransition,onAttachments=()=>{},onHandling=()=>{}){
  if(!tickets.length){root.append(element('p','Няма разрешени сигнали.'));return;}
  for(const ticket of tickets){

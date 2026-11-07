@@ -3,10 +3,11 @@ import { login, register, resendConfirmation, requestPasswordReset } from '../se
 import { bindForm, message } from '../ui/forms.js';
 import { authBg, recoveryBg, PASSWORD_HINT } from '../i18n/auth-bg.js';
 import { validNewPassword } from '../domain/password.js';
+import {leaveSessionPresentation} from '../ui/shell.js';
 const field = (data, name) => String(data.get(name) || '').trim();
 bindForm('#login', async (data, form) => {
   await login(field(data, 'email'), String(data.get('password')));
-  form.reset(); location.assign('/pages/account.html');
+  form.reset(); leaveSessionPresentation();
 });
 bindForm('#register', async (data, form) => {
   const password = String(data.get('password'));

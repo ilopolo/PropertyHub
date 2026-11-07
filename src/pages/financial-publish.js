@@ -3,7 +3,7 @@ import {renderChargeBatches} from '../ui/financial-publish.js';
 import {financeState} from '../ui/finance-help.js';
 export async function refreshChargeBatches(){
  const root=document.querySelector('#financial-publish');root.dataset.ready='false';root.dataset.state='loading';root.textContent='Зареждане на начисленията…';
- try{const data=await chargeBatchFeed();renderChargeBatches(root,data,{load:loadChargeBatchInputs,
+ try{const data=await chargeBatchFeed();data.batches=data.batches.filter(b=>b.publication_model!=='monthly-owner-occupant-v1');data.previews=data.previews.filter(p=>p.policy!=='equal-unit-cent-tariff-v1');renderChargeBatches(root,data,{load:loadChargeBatchInputs,
   save:async(...args)=>{await saveChargeBatch(...args);await refreshChargeBatches();},
   review:async(...args)=>{await reviewChargeBatch(...args);await refreshChargeBatches();},
   publish:async(...args)=>{await publishChargeBatch(...args);await refreshChargeBatches();}});

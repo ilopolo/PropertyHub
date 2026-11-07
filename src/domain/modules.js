@@ -7,5 +7,5 @@ export const modules = Object.freeze([
   { id: 'reports', label: 'Отчети', actions: ['reports.read'], available: false },
   { id: 'tickets', label: 'Сигнали', href: 'pages/tickets.html', actions: ['tickets.create'], available: true },
   { id: 'documents', label: 'Общ документен център (файлове към имоти и сигнали са налични)' , actions: ['documents.read'], available: false },
-  { id: 'transfer', label: 'Импорт и експорт', actions: ['registry.import'], available: false },
+  { id: 'transfer', label: 'CSV обекти — импорт и експорт', href:'pages/data-transfer.html', actions: ['registry.import'], available: true },
 ]);

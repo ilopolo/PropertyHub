@@ -262,3 +262,9 @@ Private-file browser QA: npm.cmd run check:unit-file-browser стартира с
 `npm.cmd run check:org-admin -- --receipt-only` проверява отделно трите крайни
 post-receipt контроли: загубена caller authority, недопустим recipient и разрешен
 запис. Локалните rollback проверки достигат receipt границата; не са native races.
+
+Fresh read-only preflight на07.11.2026 потвърди41backend версии и съвместими текущи
+org/member/admin данни. Hosted приемането спря **преди apply**: няма одобрен QA
+платформен approver за целия изолиран onboarding/last-admin fixture. Не са назначавани
+нови права за заобикаляне на тази липса. Миграцията остава неприложена;
+org-admin API/UI/native authority-loss/expiry още са UNVERIFIED.

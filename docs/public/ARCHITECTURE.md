@@ -535,3 +535,10 @@ membership/profile/status промени. Няма нов публичен вх�
 презарежда актуалния account режим; непотвърден запис не се показва като успех.
 17 локални DB/RLS групи и 8 browser/service групи са PASS, без native MVCC твърдение.
 Неприложеният SQL и отделният hosted план са описани в [Supabase setup](../../supabase/README.md).
+
+На07.11.2026 global hosted read-only compatibility gate е PASS за съществуващите
+данни, при41приложени версии. Run-ът е BLOCKED преди apply заради непълен одобрен
+QA onboarding fixture: наличната platform authority не е разрешен QA approver в този
+run. Няма hosted setup/login/write, нова роля или recovery bypass. Local PASS не се
+повишава до hosted PASS; API/UI/native proof и indirect mutation ограниченията остават
+отделно UNVERIFIED. Това е fixture ограничение, не установен нов продуктов SQL дефект.

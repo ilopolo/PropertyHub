@@ -1,3 +1,28 @@
+## Org-admin hosted preflight — compatibility PASS / fixture BLOCKED, 07.11.2026
+
+Fresh supported-connector read-only evidence confirms the exact project is healthy
+and has41 applied versions. The lifecycle candidate and CALC are absent. The candidate
+LF SHA256 remains `18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Global compatibility:3organizations/23memberships/3admin assignments,0blockers.
+Before/after org/member/admin metadata match; all profile statuses and role assignments
+also match. Independent read-only verification reports Auth7/profiles7
+and0run-native connections. This is not a native TLS/CLI/application acceptance result.
+
+The approved QA identity set has no current platform approver for the complete
+isolated onboarding/last-admin fixture. Existing onboarding requires explicit platform
+authority. A platform principal outside that approved set was not used, and pending
+profiles were not promoted merely to make the test possible. No grant/status/Auth
+mutation, recovery bypass or automatic fixture repair was performed.
+
+STOP occurred before CLI dry-run/apply/setup/login/API/native/UI. The lifecycle SQL
+remains **UNAPPLIED**. Native caller authority-loss, normal lifecycle API/UI and the
+indirect membership/profile mutation cases remain **UNVERIFIED**; no product FAIL
+is inferred from this fixture limitation. Recovery reviewer/issuer is a separate
+unresolved product decision. Completing the fixture requires separate approval of
+an eligible existing onboarding actor/context, not an implicit platform grant.
+Operator token/URI were absent and unused; no temporary application resources or
+sessions were created. No old cleanup or historical tests were repeated.
+
 ## Org-admin lifecycle — local acceptance / UNAPPLIED, 07.11.2026
 
 Candidate: `20261107091138_org_admin_lifecycle.sql`, LF SHA256

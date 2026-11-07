@@ -1,6 +1,8 @@
-> Current-write-access correction е приложена:41 backendверсии. Проверените API/native/UI
-> пътища са PASS; org-admin authority-loss native case остава **UNVERIFIED/P1 release gate**.
-> Това не е общо hosted/production приемане. CALC е неприложен/fixture blocked.
+> Org-admin lifecycle е приложен: **42 backend версии**. Ограничените ordinary-JWT,
+> native PostgreSQL и local frontend→hosted UI проверки са PASS. Първоначалният
+> `assign_staff_role` authority-loss/expiry gate е затворен за доказаните пътища.
+> Косвените membership/profile mutations без guarded вход остават UNVERIFIED;
+> recovery reviewer/issuer е нерешен. Няма production публикация; CALC е неприложен.
 > [Резултати по функция и точни ограничения](supabase/README.md).
 
 # PropertyHub
@@ -242,7 +244,7 @@ Private-file browser QA: npm.cmd run check:unit-file-browser стартира с
 Тези поправки още изискват production проверка след отделно разрешен release;
 не променят server правата и не представляват hosted/MVCC приемане.
 
-## Организационни администратори — локален кандидат
+## Организационни администратори — ограничено hosted приемане
 
 В „Екип и права“ има отделен процес за ново администраторско назначение,
 прекратяване и атомарно предаване към потвърден активен член на същата организация.
@@ -254,17 +256,31 @@ Private-file browser QA: npm.cmd run check:unit-file-browser стартира с
 
 `check:org-admin` (17 DB/domain/RLS групи) и `check:org-admin-browser` (8 реални
 локални frontend/service групи с disposable DB) са PASS. Проверени са 375/1440 px,
-двете теми, keyboard/reload и same-session revoke. Новата миграция
-`20261107091138_org_admin_lifecycle.sql` е **неприложена**; локалните резултати не
-затварят hosted authority-loss/expiry gate. Recovery разрешението и неговият издател
+двете теми, keyboard/reload и same-session revoke. Миграция
+`20261107091138_org_admin_lifecycle.sql` вече е **приложена**; ограниченото hosted
+приемане е описано по-долу отделно от локалните проверки. Recovery разрешението и неговият издател
 остават отделен договор; няма временен recovery bypass или общ status/member редактор.
 
 `npm.cmd run check:org-admin -- --receipt-only` проверява отделно трите крайни
 post-receipt контроли: загубена caller authority, недопустим recipient и разрешен
 запис. Локалните rollback проверки достигат receipt границата; не са native races.
 
-Fresh read-only preflight на07.11.2026 потвърди41backend версии и съвместими текущи
-org/member/admin данни. Hosted приемането спря **преди apply**: няма одобрен QA
-платформен approver за целия изолиран onboarding/last-admin fixture. Не са назначавани
-нови права за заобикаляне на тази липса. Миграцията остава неприложена;
-org-admin API/UI/native authority-loss/expiry още са UNVERIFIED.
+Първият read-only опит на07.11.2026 спря преди apply при41версии заради липсващо
+допустимо onboarding одобрение. Този исторически BLOCKED резултат е запазен.
+Последващият изрично разрешен run използва едно лично platform одобрение през
+нормалния интерфейс, без предоставяне на лични credentials или platform права на QA.
+Fresh compatibility и exact single-candidate dry-run са PASS; миграцията е приложена
+еднократно с непроменения разрешен hash. Independent inspect потвърди42версии,
+10function bodies,9triggers, grants/RLS и непроменените предходни функции.
+
+Ограничен hosted PASS:6ordinary-JWT/API групи,11native observed-waiter случая и
+6frontend/hosted UI контрола. Проверени са committed revoke преди release, отделно
+реално expiry, replay без стар защитен резултат, разрешени контроли, last-admin,
+duplicate/stale и конкурентни end/handover заявки без частични назначения.
+Четири реални375/1440light/dark снимки са прегледани. Финансовите/staff права не се
+прехвърлят с admin lifecycle. Независимият cleanup потвърди предходните записи и
+Auth броя,0own sessions/connections; временните operator credentials са изчистени.
+Приетият маркиран fixture остава с един permanent QA администратор, roleless второ
+членство и контекст/immutable история, тъй като няма guarded archive за тях.
+Косвените membership/profile hosted mutations остават UNVERIFIED без guarded вход;
+това не е общо production приемане или доказателство за всички lock interleavings.

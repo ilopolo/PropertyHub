@@ -485,9 +485,10 @@ revoke или отделно реално expiry преди release, positive co
 state без partial records; има и реални FK wait rollback проверки. Fixed-snapshot
 отказите са отделни early denials. Това не е всички възможни lock interleavings.
 
-assign_staff_role caller org-admin loss/expiry native case остава UNVERIFIED и P 1
-release gate: няма разрешен guarded fixture; allowed/foreign-org контролите не го
-заместват. Няма директно SQL отнемане на org_admin, нов lifecycle или demo B mutation.
+Към първоначалното current-write приемане assign_staff_role caller org-admin loss/expiry
+native case остана UNVERIFIED/P1 поради fixture ограничение. Последващият lifecycle
+run по-долу го затваря с guarded revoke и отделно реално expiry, без SQL bypass или
+demo mutation. Историческите allowed/foreign-org контроли сами не го заместваха.
 Document проверката е metadata-only; старите Storage/Auth/MVCC набори не са повторени.
 
 Independent cleanup сверка потвърди baseline/Auth, ended own grants и 0 own connections;
@@ -510,9 +511,10 @@ CALC остава неприложен/fixture blocked и изисква compani
 Деветте локални browser/service групи (`check:session-ui`) и изолираният build/navigation
 са PASS. Два таба и остарял отговор са проверени с детерминиран fake HTTP transport,
 не с hosted записи. Production потвърждението на трите UI поправки предстои;
-org-admin authority-loss остава отделният UNVERIFIED gate, описан по-горе.
+org-admin authority-loss е проверен отделно в lifecycle run-а по-долу; този local UI
+пакет самостоятелно не го доказва.
 
-## Org-admin lifecycle — локално проверен, неприложен
+## Org-admin lifecycle — ограничено hosted приемане
 
 Двата нови RPC входа `org_admin_directory(org)` и `org_admin_operation(...)` извеждат
 caller от сесията и изискват текущ org-admin/manage_members в точната активна org.
@@ -534,11 +536,28 @@ membership/profile/status промени. Няма нов публичен вх�
 интервал, новия grant и server-derived actor/target labels. След self-end клиентът
 презарежда актуалния account режим; непотвърден запис не се показва като успех.
 17 локални DB/RLS групи и 8 browser/service групи са PASS, без native MVCC твърдение.
-Неприложеният SQL и отделният hosted план са описани в [Supabase setup](../../supabase/README.md).
+Приложеният SQL и точният обхват на hosted доказателствата са описани в [Supabase setup](../../supabase/README.md).
 
-На07.11.2026 global hosted read-only compatibility gate е PASS за съществуващите
-данни, при41приложени версии. Run-ът е BLOCKED преди apply заради непълен одобрен
-QA onboarding fixture: наличната platform authority не е разрешен QA approver в този
-run. Няма hosted setup/login/write, нова роля или recovery bypass. Local PASS не се
-повишава до hosted PASS; API/UI/native proof и indirect mutation ограниченията остават
-отделно UNVERIFIED. Това е fixture ограничение, не установен нов продуктов SQL дефект.
+Първият read-only run на07.11.2026 е исторически BLOCKED преди apply при41версии,
+без разрешен onboarding approver. Последващият run използва едно лично нормално
+platform approval, без автоматизация на личния профил или QA platform grant.
+Fresh global compatibility, isolated single-candidate dry-run, exact apply и independent
+inspect са PASS:42versions,10exact function bodies,9triggers, closed helper/table
+grants и непроменен общ RLS договор. CALC не е включена.
+
+Шест ordinary-JWT групи и11независими native PostgreSQL случая доказват разрешени
+операции, post-lock revoke/реално expiry, replay, row-wait и request/authority mutex
+пътища, duplicate и stale конкурентен end/handover с проверени committed записи.
+При primary staff gate revoke commit-ва преди release на отделния staff lock;
+при общ authority mutex се доказва реалният сериализиран ред. Няма изкуствен deadlock.
+Шест tight frontend→hosted контрола включват grant/replay, last-admin/stale отказ,
+self-handover/account refresh, нов grant при възстановяване и отделен staff режим.
+Четирите mobile/desktop/light/dark изображения са прегледани.
+
+Cleanup е независимо проверен: предходните public записи, Auth брой и0own sessions/
+connections. Приетият маркиран контекст/история и един permanent QA admin остават;
+другото QA членство е roleless. Временните operator credentials са изчистени.
+Indirect membership/profile mutations са hosted UNVERIFIED: няма guarded mutation
+вход, затова има local trigger proof и installed-trigger/closed-DML metadata evidence,
+без директен SQL тест. Recovery reviewer/issuer и Auth/provider възстановяването
+остават отделен договор. Няма production deployment или общ MVP PASS.

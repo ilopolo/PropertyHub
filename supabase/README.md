@@ -1,4 +1,48 @@
-## Org-admin hosted preflight — compatibility PASS / fixture BLOCKED, 07.11.2026
+## Org-admin lifecycle — limited hosted/API/native/UI PASS, 07.11.2026
+
+Exact `20261107091138_org_admin_lifecycle.sql` was applied once after fresh global
+compatibility and an isolated CLI dry-run containing only that candidate. LF SHA256:
+`18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
+Independent inspection confirms **42 applied versions**,10exact function bodies,
+9enabled triggers (four deferred continuity checks), closed internal helper/table
+grants, unchanged existing function bodies and public table grants/RLS/policies.
+CALC remains absent. This supersedes, without erasing, the blocked preflight below.
+
+One personally performed platform approval used the existing protected UI. Its
+fulfilled request, organization, first permanent admin/membership and audit were
+inspected before further setup; activation was not repeated. No personal credentials,
+QA platform grants, new Auth accounts or direct SQL authority mutations were used.
+
+| Evidence | Result and boundary |
+|---|---|
+| Ordinary JWT/API |6groups PASS: guarded scope setup, authority/isolation, last-admin rollback, self-grant/finite-anchor refusal, grant/replay/stale/mismatch, same-JWT revoke/history; staff rights unchanged by admin operations |
+| Primary authority-loss |Observed staff-lock waiter; guarded caller-admin revoke committed before release; `assign_staff_role` returned42501 Forbidden without a new staff grant. Preserved-authority control succeeded |
+| Recipient-row wait |Guarded staff-end held the row; admin revoke committed independently before release; waiting assignment returned42501 without replacement |
+| Replay |Exact real receipt replay waited on its request mutex: allowed result preserved once; committed authority loss refused without disclosing old result |
+| Authority serialization |Revoke-first and replay-first orders followed the actual shared mutex; final committed authority and receipts checked |
+| Real expiry |Separate short wall-clock term cases at staff and replay waits refused42501 after observed expiry; no clock changes/backdating |
+| Concurrent lifecycle |One receipt/grant for duplicate key; competing end/end and end/handover preserve permanent authority, with42501 or exact stale PT409 as appropriate |
+| Native total |11qualified independent holder/contender/observer cases PASS, actual waiter before release and committed-state checks; not all possible interleavings |
+| Frontend→hosted |6targeted controls PASS on separate local QA origin: grant/replay, last-admin/stale refusal, handover/account refresh, new grant restore, self-end preserving staff. Four actual375/1440light/dark screenshots reviewed; not production |
+| Indirect mutations |Hosted membership/profile mutation remains UNVERIFIED: no guarded entrypoint. Installed triggers/catalog and local trigger regression remain separate evidence; no SQL bypass |
+| Recovery |Reviewer/issuer unresolved; no temporary recovery authorization or bypass |
+
+Independent own-only cleanup confirms the original public records unchanged, Auth
+count unchanged, zero own Auth sessions/native peers and closed verifier. Temporary
+operator token/URI were cleared. The explicitly accepted marked fixture retains one
+permanent QA admin with permanent active membership, a roleless second membership,
+building/scope/assignment and immutable requests/grants/operations/audit history.
+No guarded organization/completed-scope/membership archive exists; none was bypassed.
+Temporary staff/admin grants were ended; no claim that every newly created record
+was removed. Financial values/business dates and pre-existing history were unchanged.
+
+QA-only mapping/navigation/response-body/NULL-filter issues were inspected and fixed
+locally in private adapters; committed writes were inspected before resume, never
+blindly repeated. No product SQL correction or second apply was needed. The existing
+local17DB/8UI and3post-receipt checks remain distinct and were not rerun.
+No main merge, production deployment, Netlify query, CALC apply or demo mutation.
+
+## Historical org-admin hosted preflight — compatibility PASS / fixture BLOCKED, 07.11.2026
 
 Fresh supported-connector read-only evidence confirms the exact project is healthy
 and has41 applied versions. The lifecycle candidate and CALC are absent. The candidate
@@ -23,7 +67,7 @@ an eligible existing onboarding actor/context, not an implicit platform grant.
 Operator token/URI were absent and unused; no temporary application resources or
 sessions were created. No old cleanup or historical tests were repeated.
 
-## Org-admin lifecycle — local acceptance / UNAPPLIED, 07.11.2026
+## Historical org-admin local acceptance — candidate UNAPPLIED then, 07.11.2026
 
 Candidate: `20261107091138_org_admin_lifecycle.sql`, LF SHA256
 `18ccc7488d5ad4d41a42e814bff7c5eec0811be0eb5917c44c3a2380ecb1a2e4`.
@@ -116,13 +160,14 @@ partial financial/receipt/audit записи. Един по-ранен некв�
 | activate_financial_rule | JWT normal/replay и native request wait revoke/expiry/allowed | PASS; не е отделно ново доказателство за всеки draft/basis/participant row lock |
 | prepare_unit_document | JWT metadata normal/replay и native scope-unit advisory revoke/expiry/allowed | PASS само за metadata; Storage/Edge/file bytes не са повторно приемани |
 | create_financial_preview | JWT normal/replay и native request wait revoke/expiry/allowed | PASS; недостъпният стар preview не се връща, няма partial preview/audit |
-| assign_staff_role | JWT allowed/exact-repeat и foreign-org denial; native preserved-authority waiter; fixed-snapshot denial | Контролите PASS; caller org-admin authority loss/expiry native UNVERIFIED — няма разрешен guarded fixture |
+| assign_staff_role | JWT allowed/exact-repeat и foreign-org denial; native preserved-authority waiter; fixed-snapshot denial | Първоначално caller loss/expiry UNVERIFIED; последващият lifecycle run в началото затваря точно този gate |
 
-Org-admin authority loss/expiry в assign_staff_role остава **UNVERIFIED**: няма допустим
+Към първоначалния current-write run org-admin authority loss/expiry беше **UNVERIFIED**: нямаше допустим
 guarded lifecycle fixture. Не е отнеман org_admin с директен SQL и не е ползван demo B.
-Този конкретен P1 release gate блокира пълното WR-02 hosted затваряне и следващото
-публикуване на финансовите write промени до изрично разрешено решение; allowed контролът
-не го замества. Приложената защитна поправка не се представя за общ hosted PASS.
+Този конкретен P1 gate тогава блокираше WR-02 hosted затварянето; allowed контролът
+не го заместваше. Последващото guarded lifecycle приемане по-горе го затваря за
+доказаните revoke/expiry пътища. Това не разрешава автоматично deployment и не
+превръща останалите непроверени мутации в общ hosted PASS.
 
 Cleanup е потвърден с отделна read-only сверка:49 protected baseline tables и Auth account count 7
 unchanged; всички 38 temporary app grants ended, own Auth/native connections 0.
